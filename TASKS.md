@@ -8,7 +8,7 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Set up Go module and command entrypoint.
 - [x] Add `kitout version`.
 - [x] Add `kitout init`.
-- [ ] Add `internal/config` package with typed YAML structs.
+- [x] Add `internal/config` package with typed YAML structs.
 - [ ] Add config path resolution for explicit `--config`.
 - [ ] Add config loading from disk.
 - [ ] Add config validation with clear, structured errors.

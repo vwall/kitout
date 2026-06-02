@@ -26,6 +26,22 @@ All config files should include a version.
 version: 1
 ```
 
+The Go representation lives in `internal/config`. The MVP schema version is
+`config.CurrentVersion`, currently `1`.
+
+Scalar resource lists remain scalar in Go:
+
+- `casks` is `[]string`
+- `directories` is `[]string`
+- `brew.packages` is `[]string`
+
+Resources with named fields use typed structs:
+
+- `repos`
+- `symlinks`
+- `macos_defaults`
+- `shell`
+
 ## Complete example
 
 ```yaml
