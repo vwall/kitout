@@ -43,6 +43,11 @@ func ResolvePath(path string) (string, error) {
 }
 
 // LoadFile reads and decodes a Kitout YAML config file.
+//
+// Public config path behavior is intentionally explicit: path-bearing resource
+// fields are normalized in the returned Config. Relative resource paths resolve
+// from the directory containing this config file, while absolute paths, "~", and
+// environment variables keep their usual meaning.
 func LoadFile(path string) (LoadedConfig, error) {
 	resolvedPath, err := ResolvePath(path)
 	if err != nil {
@@ -61,8 +66,51 @@ func LoadFile(path string) (LoadedConfig, error) {
 		return LoadedConfig{}, fmt.Errorf("parse config %s: %w", resolvedPath, err)
 	}
 
+	cfg = resolveResourcePaths(filepath.Dir(resolvedPath), cfg)
+
 	return LoadedConfig{
 		Path:   resolvedPath,
 		Config: cfg,
 	}, nil
+}
+
+func resolveResourcePaths(baseDir string, cfg Config) Config {
+	for i, path := range cfg.Directories {
+		cfg.Directories[i] = resolveResourcePath(baseDir, path)
+	}
+
+	for i, repo := range cfg.Repos {
+		cfg.Repos[i].Path = resolveResourcePath(baseDir, repo.Path)
+	}
+
+	for i, symlink := range cfg.Symlinks {
+		cfg.Symlinks[i].Source = resolveResourcePath(baseDir, symlink.Source)
+		cfg.Symlinks[i].Target = resolveResourcePath(baseDir, symlink.Target)
+	}
+
+	return cfg
+}
+
+func resolveResourcePath(baseDir, path string) string {
+	expanded := os.ExpandEnv(path)
+	if expanded == "" {
+		return ""
+	}
+
+	if expanded == "~" || strings.HasPrefix(expanded, "~/") {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			if expanded == "~" {
+				expanded = home
+			} else {
+				expanded = filepath.Join(home, strings.TrimPrefix(expanded, "~/"))
+			}
+		}
+	}
+
+	if filepath.IsAbs(expanded) {
+		return filepath.Clean(expanded)
+	}
+
+	return filepath.Clean(filepath.Join(baseDir, expanded))
 }
