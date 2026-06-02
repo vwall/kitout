@@ -45,6 +45,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitOK
 	case "init":
 		return runInit(remainingArgs[1:], opts, stdout, stderr)
+	case "status":
+		return runStatus(remainingArgs[1:], opts, stdout, stderr)
 	case "version":
 		return runVersion(remainingArgs[1:], opts, stdout, stderr)
 	default:
@@ -71,16 +73,17 @@ Usage:
 
 Commands:
   init      Create a starter config file
+  status    Check configured resources
   version   Print version metadata
 
 Planned commands:
-  status    Check configured resources
   apply     Apply missing or incorrect resources
   doctor    Check local prerequisites and common problems
 
 Examples:
   kitout init
   kitout init --config ./kitout.yaml
+  kitout status --config ./kitout.yaml
   kitout version
 
 Global flags:
