@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -77,6 +78,73 @@ repos:
 	}
 }
 
+func TestLoadFileResolvesRelativeDirectoryEntriesFromConfigDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := writeConfigFileInDir(t, configDir, `version: 1
+
+directories:
+  - cache
+  - var/log
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	want := []string{
+		filepath.Join(configDir, "cache"),
+		filepath.Join(configDir, "var", "log"),
+	}
+	if got := loaded.Config.Directories; !slices.Equal(got, want) {
+		t.Fatalf("directories = %#v, want %#v", got, want)
+	}
+}
+
+func TestLoadFileResolvesRelativeRepoPathsFromConfigDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := writeConfigFileInDir(t, configDir, `version: 1
+
+repos:
+  - path: repos/kitout
+    url: git@github.com:vwall/kitout.git
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	want := filepath.Join(configDir, "repos", "kitout")
+	if got := loaded.Config.Repos[0].Path; got != want {
+		t.Fatalf("repo path = %q, want %q", got, want)
+	}
+}
+
+func TestLoadFileResolvesRelativeSymlinkPathsFromConfigDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := writeConfigFileInDir(t, configDir, `version: 1
+
+symlinks:
+  - source: dotfiles/zshrc
+    target: home/.zshrc
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	wantSource := filepath.Join(configDir, "dotfiles", "zshrc")
+	if got := loaded.Config.Symlinks[0].Source; got != wantSource {
+		t.Fatalf("symlink source = %q, want %q", got, wantSource)
+	}
+	wantTarget := filepath.Join(configDir, "home", ".zshrc")
+	if got := loaded.Config.Symlinks[0].Target; got != wantTarget {
+		t.Fatalf("symlink target = %q, want %q", got, wantTarget)
+	}
+}
+
 func TestLoadFileWrapsMissingFileError(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "missing.yaml")
 
@@ -139,7 +207,13 @@ repos:
 func writeConfigFile(t *testing.T, contents string) string {
 	t.Helper()
 
-	configPath := filepath.Join(t.TempDir(), "kitout.yaml")
+	return writeConfigFileInDir(t, t.TempDir(), contents)
+}
+
+func writeConfigFileInDir(t *testing.T, dir, contents string) string {
+	t.Helper()
+
+	configPath := filepath.Join(dir, "kitout.yaml")
 	if err := os.WriteFile(configPath, []byte(contents), 0o644); err != nil {
 		t.Fatalf("write config file: %v", err)
 	}
