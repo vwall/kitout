@@ -7,10 +7,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
-)
 
-const defaultConfigPath = "~/.config/kitout/kitout.yaml"
+	"github.com/vwall/kitout/internal/config"
+)
 
 const starterConfig = `# Kitout starter config.
 # Edit this file, then run:
@@ -56,10 +55,10 @@ func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 
 	configPath := opts.configPath
 	if configPath == "" {
-		configPath = defaultConfigPath
+		configPath = config.DefaultPath
 	}
 
-	resolvedPath, err := expandPath(configPath)
+	resolvedPath, err := config.ResolvePath(configPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "Invalid config path: %v\n", err)
 		return exitValidation
@@ -93,25 +92,4 @@ func writeStarterConfig(path string, force bool) error {
 	}
 
 	return os.WriteFile(path, []byte(starterConfig), 0o644)
-}
-
-func expandPath(path string) (string, error) {
-	if path == "" {
-		return "", errors.New("path is required")
-	}
-
-	expanded := os.ExpandEnv(path)
-	if expanded == "~" || strings.HasPrefix(expanded, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		if expanded == "~" {
-			expanded = home
-		} else {
-			expanded = filepath.Join(home, strings.TrimPrefix(expanded, "~/"))
-		}
-	}
-
-	return filepath.Clean(expanded), nil
 }
