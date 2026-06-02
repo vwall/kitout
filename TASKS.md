@@ -9,8 +9,8 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Add `kitout version`.
 - [x] Add `kitout init`.
 - [x] Add `internal/config` package with typed YAML structs.
-- [ ] Add config path resolution for explicit `--config`.
-- [ ] Add config loading from disk.
+- [x] Add config path resolution for explicit `--config`.
+- [x] Add config loading from disk.
 - [ ] Add config validation with clear, structured errors.
 - [ ] Add a basic human-readable output renderer.
 - [ ] Decide how much of `--json` should be scaffolded in Phase 1.
