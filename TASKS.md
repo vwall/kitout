@@ -11,17 +11,17 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Add `internal/config` package with typed YAML structs.
 - [x] Add config path resolution for explicit `--config`.
 - [x] Add config loading from disk.
-- [ ] Add config validation with clear, structured errors.
+- [x] Add config validation with clear, structured errors.
 - [ ] Add a basic human-readable output renderer.
 - [ ] Decide how much of `--json` should be scaffolded in Phase 1.
 
 ## Next: first status path
 
-- [ ] Add `kitout status` command stub.
-- [ ] Wire `kitout status` to load and validate config.
-- [ ] Render config validation failures with actionable messages.
-- [ ] Return planned exit codes for OK, changes, validation, and runtime errors.
-- [ ] Add tests for status with valid, missing, and invalid config files.
+- [x] Add `kitout status` command stub.
+- [x] Wire `kitout status` to load and validate config.
+- [x] Render config validation failures with actionable messages.
+- [x] Return planned exit codes for OK, validation, and runtime errors.
+- [x] Add tests for status with valid, missing, and invalid config files.
 
 ## Next: Phase 2 engine foundation
 

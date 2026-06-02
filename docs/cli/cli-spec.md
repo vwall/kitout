@@ -44,6 +44,13 @@ kitout status --config ./kitout.yaml
 kitout status --json
 ```
 
+Phase 1 behavior:
+
+- load and validate the selected config file
+- return `2` for config validation, parse, or unknown-field errors
+- return `3` for config read failures
+- do not check resource status until the engine is implemented
+
 Expected output:
 
 ```txt

@@ -29,6 +29,9 @@ version: 1
 The Go representation lives in `internal/config`. The MVP schema version is
 `config.CurrentVersion`, currently `1`.
 
+Validation should reject a missing `version` field and any version other than
+`config.CurrentVersion`.
+
 Scalar resource lists remain scalar in Go:
 
 - `casks` is `[]string`
@@ -41,6 +44,38 @@ Resources with named fields use typed structs:
 - `symlinks`
 - `macos_defaults`
 - `shell`
+
+## Required fields
+
+The root `version` field is required.
+
+Scalar resource entries must not be empty:
+
+- `brew.packages[]`
+- `casks[]`
+- `directories[]`
+
+Named resources require the fields needed to identify and apply the resource:
+
+- `repos[].path`
+- `repos[].url`
+- `symlinks[].source`
+- `symlinks[].target`
+- `macos_defaults[].domain`
+- `macos_defaults[].key`
+- `macos_defaults[].type`
+- `macos_defaults[].value`
+- `shell[].name`
+- `shell[].command`
+
+`macos_defaults[].type` must be one of:
+
+```txt
+bool
+int
+float
+string
+```
 
 ## Complete example
 
@@ -124,8 +159,11 @@ Examples:
 
 - same brew package twice
 - same cask twice
+- same directory twice
 - same target symlink twice
 - same repository path twice
+- same macOS default domain/key twice
+- same shell command name twice
 
 ## Unknown fields
 

@@ -170,6 +170,10 @@ func TestLoadFileReportsInvalidYAML(t *testing.T) {
 	if !strings.Contains(err.Error(), "parse config "+configPath) {
 		t.Fatalf("error = %q, want parse config path", err.Error())
 	}
+	var parseError ParseError
+	if !errors.As(err, &parseError) {
+		t.Fatalf("LoadFile error = %T %[1]v, want ParseError", err)
+	}
 }
 
 func TestLoadFileRejectsUnknownTopLevelFields(t *testing.T) {
@@ -201,6 +205,29 @@ repos:
 	}
 	if !strings.Contains(err.Error(), "remote") {
 		t.Fatalf("error = %q, want nested field name", err.Error())
+	}
+}
+
+func TestLoadFileValidatesConfig(t *testing.T) {
+	configPath := writeConfigFile(t, `version: 1
+
+brew:
+  packages:
+    - git
+    - git
+`)
+
+	_, err := LoadFile(configPath)
+	if err == nil {
+		t.Fatal("LoadFile returned nil error, want validation error")
+	}
+
+	var validationErrors ValidationErrors
+	if !errors.As(err, &validationErrors) {
+		t.Fatalf("LoadFile error = %T %[1]v, want ValidationErrors", err)
+	}
+	if !strings.Contains(err.Error(), "brew.packages[1] duplicates brew.packages[0] (git)") {
+		t.Fatalf("error = %q, want duplicate brew package guidance", err.Error())
 	}
 }
 
