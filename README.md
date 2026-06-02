@@ -70,6 +70,21 @@ Do not start with Linux support, secrets, templates, plugins, or a package manag
 - `rfcs/*.md`
 - `AGENTS.md`
 
+## Development
+
+Run the CLI locally with:
+
+```sh
+go run ./cmd/kitout version
+go run ./cmd/kitout init --config ./kitout.yaml
+```
+
+Run tests with:
+
+```sh
+go test ./...
+```
+
 ## Working principles
 
 1. Desired state over imperative scripting.
