@@ -50,6 +50,7 @@ Phase 1 behavior:
 - return `2` for config validation, parse, or unknown-field errors
 - return `3` for config read failures
 - do not check resource status until the engine is implemented
+- when `--json` is passed, print a small machine-readable response for config load, validation, and the current unimplemented status state
 
 Expected output:
 
@@ -161,17 +162,24 @@ Default output should be concise and readable.
 
 JSON output should be stable enough for tests and automation.
 
+Phase 1 `status --json` output only reports config validity and whether resource
+status checks are implemented. It does not include resource status summaries
+until the engine exists.
+
 Example:
 
 ```json
 {
-  "summary": {
-    "satisfied": 2,
-    "missing": 1,
-    "changed": 1,
-    "failed": 0
+  "command": "status",
+  "ok": true,
+  "config": {
+    "path": "/Users/example/.config/kitout/kitout.yaml",
+    "valid": true
   },
-  "resources": []
+  "status": {
+    "implemented": false,
+    "message": "Status checks are not implemented yet."
+  }
 }
 ```
 

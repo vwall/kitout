@@ -13,7 +13,7 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Add config loading from disk.
 - [x] Add config validation with clear, structured errors.
 - [x] Add a basic human-readable output renderer.
-- [ ] Decide how much of `--json` should be scaffolded in Phase 1.
+- [x] Decide how much of `--json` should be scaffolded in Phase 1.
 
 ## Next: first status path
 
