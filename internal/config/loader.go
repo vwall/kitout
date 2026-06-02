@@ -20,6 +20,20 @@ type LoadedConfig struct {
 	Config Config
 }
 
+// ParseError wraps YAML parsing and schema decode failures for a config file.
+type ParseError struct {
+	Path string
+	Err  error
+}
+
+func (err ParseError) Error() string {
+	return fmt.Sprintf("parse config %s: %v", err.Path, err.Err)
+}
+
+func (err ParseError) Unwrap() error {
+	return err.Err
+}
+
 // ResolvePath expands a user-provided config path into a clean filesystem path.
 func ResolvePath(path string) (string, error) {
 	if path == "" {
@@ -63,7 +77,11 @@ func LoadFile(path string) (LoadedConfig, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(contents))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&cfg); err != nil {
-		return LoadedConfig{}, fmt.Errorf("parse config %s: %w", resolvedPath, err)
+		return LoadedConfig{}, ParseError{Path: resolvedPath, Err: err}
+	}
+
+	if err := Validate(cfg); err != nil {
+		return LoadedConfig{}, err
 	}
 
 	cfg = resolveResourcePaths(filepath.Dir(resolvedPath), cfg)
