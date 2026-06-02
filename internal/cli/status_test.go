@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,6 +118,131 @@ func TestStatusQuietSuppressesSuccessOutput(t *testing.T) {
 	}
 }
 
+func TestStatusJSONReportsValidConfig(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath, "--json"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	response := decodeStatusJSON(t, stdout.String())
+	if response.Command != "status" {
+		t.Fatalf("command = %q, want status", response.Command)
+	}
+	if !response.OK {
+		t.Fatalf("ok = false, want true")
+	}
+	if response.Config == nil || response.Config.Path != configPath || !response.Config.Valid {
+		t.Fatalf("config = %+v, want valid config path %q", response.Config, configPath)
+	}
+	if response.Status == nil || response.Status.Implemented {
+		t.Fatalf("status = %+v, want unimplemented status state", response.Status)
+	}
+	if response.Error != nil {
+		t.Fatalf("error = %+v, want nil", response.Error)
+	}
+}
+
+func TestStatusJSONReportsValidationErrors(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+
+symlinks:
+  - source: ~/dotfiles/zshrc
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath, "--json"}, nil, &stdout, &stderr)
+	if code != exitValidation {
+		t.Fatalf("exit code = %d, want %d", code, exitValidation)
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	response := decodeStatusJSON(t, stdout.String())
+	if response.OK {
+		t.Fatalf("ok = true, want false")
+	}
+	if response.Config == nil || response.Config.Valid {
+		t.Fatalf("config = %+v, want invalid config status", response.Config)
+	}
+	if response.Error == nil || response.Error.Type != "validation" {
+		t.Fatalf("error = %+v, want validation error", response.Error)
+	}
+	if len(response.Error.Details) != 1 {
+		t.Fatalf("details = %+v, want one validation detail", response.Error.Details)
+	}
+	if response.Error.Details[0].Field != "symlinks[0].target" {
+		t.Fatalf("detail field = %q, want symlinks[0].target", response.Error.Details[0].Field)
+	}
+}
+
+func TestStatusJSONReportsParseErrors(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+unknown: true
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath, "--json"}, nil, &stdout, &stderr)
+	if code != exitValidation {
+		t.Fatalf("exit code = %d, want %d", code, exitValidation)
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	response := decodeStatusJSON(t, stdout.String())
+	if response.OK {
+		t.Fatalf("ok = true, want false")
+	}
+	if response.Config == nil || response.Config.Path != configPath || response.Config.Valid {
+		t.Fatalf("config = %+v, want invalid config path %q", response.Config, configPath)
+	}
+	if response.Error == nil || response.Error.Type != "parse" {
+		t.Fatalf("error = %+v, want parse error", response.Error)
+	}
+	if !strings.Contains(response.Error.Message, "unknown") {
+		t.Fatalf("message = %q, want unknown field", response.Error.Message)
+	}
+}
+
+func TestStatusJSONReportsMissingConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "missing.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath, "--json"}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	response := decodeStatusJSON(t, stdout.String())
+	if response.OK {
+		t.Fatalf("ok = true, want false")
+	}
+	if response.Error == nil || response.Error.Type != "runtime" {
+		t.Fatalf("error = %+v, want runtime error", response.Error)
+	}
+	if !strings.Contains(response.Error.Message, "Failed to load config: read config "+configPath) {
+		t.Fatalf("message = %q, want missing config guidance", response.Error.Message)
+	}
+}
+
 func writeCLIConfigFile(t *testing.T, contents string) string {
 	t.Helper()
 
@@ -126,4 +252,44 @@ func writeCLIConfigFile(t *testing.T, contents string) string {
 	}
 
 	return configPath
+}
+
+type statusJSONResponse struct {
+	Command string            `json:"command"`
+	OK      bool              `json:"ok"`
+	Config  *statusJSONConfig `json:"config"`
+	Status  *statusJSONState  `json:"status"`
+	Error   *statusJSONError  `json:"error"`
+}
+
+type statusJSONConfig struct {
+	Path  string `json:"path"`
+	Valid bool   `json:"valid"`
+}
+
+type statusJSONState struct {
+	Implemented bool   `json:"implemented"`
+	Message     string `json:"message"`
+}
+
+type statusJSONError struct {
+	Type    string                  `json:"type"`
+	Message string                  `json:"message"`
+	Details []statusJSONErrorDetail `json:"details"`
+}
+
+type statusJSONErrorDetail struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+func decodeStatusJSON(t *testing.T, output string) statusJSONResponse {
+	t.Helper()
+
+	var response statusJSONResponse
+	if err := json.Unmarshal([]byte(output), &response); err != nil {
+		t.Fatalf("decode JSON output %q: %v", output, err)
+	}
+
+	return response
 }
