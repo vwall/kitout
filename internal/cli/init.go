@@ -1,0 +1,117 @@
+package cli
+
+import (
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+const defaultConfigPath = "~/.config/kitout/kitout.yaml"
+
+const starterConfig = `# Kitout starter config.
+# Edit this file, then run:
+#   kitout status
+#   kitout apply --dry-run
+
+version: 1
+
+brew:
+  packages:
+    - git
+    - gh
+
+casks:
+  - visual-studio-code
+
+directories:
+  - ~/code
+  - ~/.config
+
+repos:
+  - path: ~/code/example
+    url: git@github.com:example/example.git
+    branch: main
+
+symlinks:
+  - source: ~/dotfiles/home/zshrc
+    target: ~/.zshrc
+    replace: false
+`
+
+func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+	force := false
+
+	fs := flag.NewFlagSet("init", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	addGlobalFlags(fs, &opts)
+	fs.BoolVar(&force, "force", false, "Overwrite an existing config file")
+
+	if err := fs.Parse(args); err != nil {
+		return exitValidation
+	}
+
+	configPath := opts.configPath
+	if configPath == "" {
+		configPath = defaultConfigPath
+	}
+
+	resolvedPath, err := expandPath(configPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "Invalid config path: %v\n", err)
+		return exitValidation
+	}
+
+	if err := writeStarterConfig(resolvedPath, force); err != nil {
+		if errors.Is(err, os.ErrExist) {
+			fmt.Fprintf(stderr, "Config already exists: %s\nUse --force to overwrite it.\n", resolvedPath)
+			return exitValidation
+		}
+
+		fmt.Fprintf(stderr, "Failed to create config: %v\n", err)
+		return exitRuntimeError
+	}
+
+	fmt.Fprintf(stdout, "Created config: %s\n", resolvedPath)
+	return exitOK
+}
+
+func writeStarterConfig(path string, force bool) error {
+	if !force {
+		if _, err := os.Stat(path); err == nil {
+			return os.ErrExist
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, []byte(starterConfig), 0o644)
+}
+
+func expandPath(path string) (string, error) {
+	if path == "" {
+		return "", errors.New("path is required")
+	}
+
+	expanded := os.ExpandEnv(path)
+	if expanded == "~" || strings.HasPrefix(expanded, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		if expanded == "~" {
+			expanded = home
+		} else {
+			expanded = filepath.Join(home, strings.TrimPrefix(expanded, "~/"))
+		}
+	}
+
+	return filepath.Clean(expanded), nil
+}
