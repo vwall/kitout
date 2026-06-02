@@ -99,6 +99,24 @@ func TestStatusAcceptsGlobalConfigFlagBeforeCommand(t *testing.T) {
 	}
 }
 
+func TestStatusQuietSuppressesSuccessOutput(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath, "--quiet"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("stdout = %q, want empty", stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
 func writeCLIConfigFile(t *testing.T, contents string) string {
 	t.Helper()
 
