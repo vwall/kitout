@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 
 	"github.com/vwall/kitout/internal/config"
@@ -18,6 +17,7 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		return exitValidation
 	}
 
+	renderer := newHumanRenderer(stdout, stderr, opts)
 	configPath := opts.configPath
 	if configPath == "" {
 		configPath = config.DefaultPath
@@ -28,19 +28,19 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		var validationErrors config.ValidationErrors
 		var parseError config.ParseError
 		if errors.As(err, &validationErrors) {
-			fmt.Fprintln(stderr, validationErrors.Error())
+			renderer.renderInvalidConfigDetails(validationErrors)
 			return exitValidation
 		}
 		if errors.As(err, &parseError) {
-			fmt.Fprintf(stderr, "Invalid config: %v\n", parseError)
+			renderer.renderInvalidConfig(parseError)
 			return exitValidation
 		}
 
-		fmt.Fprintf(stderr, "Failed to load config: %v\n", err)
+		renderer.renderConfigLoadFailure(err)
 		return exitRuntimeError
 	}
 
-	fmt.Fprintf(stdout, "Config valid: %s\n", loaded.Path)
-	fmt.Fprintln(stdout, "Status checks are not implemented yet.")
+	renderer.renderStatusConfigValid(loaded.Path)
+	renderer.renderStatusChecksNotImplemented()
 	return exitOK
 }
