@@ -1,0 +1,104 @@
+# Test Strategy
+
+## Goals
+
+Kitout should be safe to run repeatedly. Tests should prove that resources check status correctly, plan safely, and apply only intended changes.
+
+## Test levels
+
+### Unit tests
+
+Test each resource independently.
+
+Required cases:
+
+- satisfied state
+- missing state
+- changed state
+- failed state
+- dry-run behavior
+- command construction
+- error messages
+
+### Config tests
+
+Test:
+
+- valid config
+- missing version
+- unknown top-level key
+- unknown resource field
+- duplicate resources
+- invalid paths
+- invalid macOS default type
+
+### Engine tests
+
+Test:
+
+- status aggregation
+- plan building
+- dry-run does not call apply
+- apply order
+- partial failure handling
+- exit code mapping
+
+### CLI tests
+
+Test:
+
+- command flags
+- output summaries
+- JSON output
+- config path selection
+- help text examples
+
+## Command runner abstraction
+
+External commands must go through an interface.
+
+```go
+type Runner interface {
+    Run(ctx context.Context, name string, args ...string) (CommandResult, error)
+}
+```
+
+Tests should use a fake runner.
+
+Do not call real `brew`, `git`, `defaults`, or `ln` in unit tests.
+
+## Fixture structure
+
+```txt
+testdata/
+  configs/
+    valid.basic.yaml
+    invalid.unknown-field.yaml
+    invalid.duplicate.yaml
+  outputs/
+    status.basic.txt
+    apply.dry-run.txt
+```
+
+## Safety regression tests
+
+Add explicit tests that prove:
+
+- status does not apply changes
+- dry-run does not apply changes
+- symlink replacement defaults to false
+- shell command resources require explicit config
+- unknown config fields fail validation
+
+## Manual testing checklist
+
+Before release:
+
+```sh
+kitout doctor
+kitout init --config /tmp/kitout.yaml
+kitout status --config examples/kitout.yaml
+kitout apply --config examples/kitout.yaml --dry-run
+```
+
+Then test on a disposable macOS user account if possible.
