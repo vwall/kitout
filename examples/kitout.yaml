@@ -1,0 +1,39 @@
+version: 1
+
+brew:
+  packages:
+    - git
+    - ruby
+    - node
+    - pnpm
+    - gh
+
+casks:
+  - ghostty
+  - visual-studio-code
+  - 1password
+
+directories:
+  - ~/code
+  - ~/.config
+
+repos:
+  - path: ~/code/aubs
+    url: git@github.com:vrwaller/aubs.git
+    branch: main
+
+symlinks:
+  - source: ~/dotfiles/home/zshrc
+    target: ~/.zshrc
+    replace: false
+
+macos_defaults:
+  - domain: NSGlobalDomain
+    key: AppleShowAllExtensions
+    type: bool
+    value: true
+
+shell:
+  - name: Enable Corepack
+    command: corepack enable
+    when: missing-command:pnpm

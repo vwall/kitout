@@ -1,0 +1,14 @@
+# This file is an example only.
+# Do not commit real secrets.
+
+version: 1
+
+repos:
+  - path: ~/code/private-project
+    url: git@github.com:example/private-project.git
+    branch: main
+
+shell:
+  - name: Check 1Password CLI login
+    command: op account list
+    when: always
