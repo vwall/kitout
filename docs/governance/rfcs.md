@@ -33,6 +33,7 @@ Implemented
 - `0001-core-resource-model.md`
 - `0002-config-format.md`
 - `0003-command-surface.md`
+- `0004-asdf-resource.md`
 
 ## Template
 
