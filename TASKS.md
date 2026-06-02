@@ -25,12 +25,12 @@ as the phase-level map; use this file for near-term implementation tasks.
 
 ## Next: Phase 2 engine foundation
 
-- [ ] Add `internal/engine/resource.go` with the `Resource` interface.
-- [ ] Add status and apply result types.
-- [ ] Add explicit status values: satisfied, missing, changed, failed, skipped.
-- [ ] Add planner skeleton that checks resources without mutation.
-- [ ] Add dry-run plan result shape.
-- [ ] Add tests for planner aggregation and failure handling.
+- [x] Add `internal/engine/resource.go` with the `Resource` interface.
+- [x] Add status and apply result types.
+- [x] Add explicit status values: satisfied, missing, changed, failed, skipped.
+- [x] Add planner skeleton that checks resources without mutation.
+- [x] Add dry-run plan result shape.
+- [x] Add tests for planner aggregation and failure handling.
 
 ## Then: MVP resource scaffolding
 
