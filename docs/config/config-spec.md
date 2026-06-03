@@ -18,6 +18,10 @@ Repo-local path:
 
 Use `--config` to select a specific config file.
 
+The loader and validator for this schema are implemented in `internal/config`.
+Resource packages consume these structs, but the CLI status command is still in
+its config-validation scaffold and does not yet execute resource checks.
+
 ## Version
 
 All config files should include a version.
@@ -44,6 +48,13 @@ Resources with named fields use typed structs:
 - `symlinks`
 - `macos_defaults`
 - `shell`
+
+Current resource implementation coverage:
+
+- implemented resource packages: `brew.packages`, `casks`, `directories`,
+  `repos`, `symlinks`, and `shell`
+- parsed and validated but not yet implemented as a resource package:
+  `macos_defaults`
 
 ## Required fields
 
@@ -75,6 +86,16 @@ bool
 int
 float
 string
+```
+
+`shell[].when` is optional. When omitted, the shell command resource treats the
+command as always needed. Supported conditions are:
+
+```txt
+always
+missing-command:NAME
+exists:PATH
+missing:PATH
 ```
 
 ## Complete example
@@ -123,16 +144,31 @@ shell:
 
 ## Path expansion
 
-Kitout should support:
+The config path passed to `--config` supports:
 
 ```txt
 ~
 $HOME
+absolute paths
+```
+
+Path-bearing resource fields support:
+
+```txt
+~
+$HOME and other environment variables
 relative paths from the config file directory
 absolute paths
 ```
 
-Recommended behavior:
+The implemented path-bearing resource fields are:
+
+- `directories[]`
+- `repos[].path`
+- `symlinks[].source`
+- `symlinks[].target`
+
+Behavior:
 
 - normalize paths internally
 - display paths in user-friendly form when possible
@@ -140,7 +176,7 @@ Recommended behavior:
 
 ## Environment variables
 
-Support simple environment expansion for paths and commands.
+Support simple environment expansion for path fields.
 
 Example:
 
@@ -149,7 +185,8 @@ directories:
   - $HOME/code
 ```
 
-Do not support complex shell evaluation in config fields.
+Kitout does not support complex shell evaluation in config fields. Shell command
+strings are explicit commands and are not expanded by the config loader.
 
 ## Duplicate detection
 
@@ -167,9 +204,9 @@ Examples:
 
 ## Unknown fields
 
-Unknown top-level fields should fail validation.
+Unknown top-level fields fail validation.
 
-Unknown resource fields should fail validation.
+Unknown resource fields fail validation.
 
 This keeps config mistakes visible.
 

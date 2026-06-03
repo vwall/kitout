@@ -1,3 +1,6 @@
+# Example Kitout config for schema version 1.
+# This file is intended to stay valid against internal/config validation.
+
 version: 1
 
 brew:
@@ -28,6 +31,7 @@ symlinks:
     replace: false
 
 macos_defaults:
+  # Parsed and validated today; resource execution is planned.
   - domain: NSGlobalDomain
     key: AppleShowAllExtensions
     type: bool
