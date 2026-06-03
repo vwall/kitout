@@ -9,7 +9,7 @@ kitout
 ## Global flags
 
 ```txt
---config PATH       Path to config file
+--config PATH       Path to config file (default: ~/.config/kitout/kitout.yaml)
 --verbose           Show detailed command output
 --quiet             Reduce output
 --no-color          Disable colored output
@@ -18,8 +18,9 @@ kitout
 ```
 
 These flags are currently parsed by the root command and by implemented
-subcommands. `--config` is used by `init`, `status`, and `apply`; `--json` and
-`--quiet` currently affect `status` and `apply`.
+subcommands. `init`, `doctor`, `status`, and `apply` use
+`~/.config/kitout/kitout.yaml` by default; pass `--config` only to override that
+path. `--json` and `--quiet` currently affect `status` and `apply`.
 
 ## Commands
 
@@ -29,7 +30,7 @@ Creates a starter config file.
 
 ```sh
 kitout init
-kitout init --config ~/.config/kitout/kitout.yaml
+kitout init --config ./kitout.yaml
 ```
 
 Behavior:
@@ -44,8 +45,8 @@ Checks configured resources.
 
 ```sh
 kitout status
-kitout status --config ./kitout.yaml
 kitout status --json
+kitout status --config ./kitout.yaml
 ```
 
 Current behavior:
