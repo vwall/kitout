@@ -65,7 +65,8 @@ Over time, repeated shell commands should become first-class resources.
 Implemented as `resources.ShellCommandResource`. The MVP supports `always`,
 `missing-command:<name>`, `exists:<path>`, and `missing:<path>` conditions.
 Configured commands run through `sh -c` using the shared command runner
-interface.
+interface. `kitout apply` requires confirmation before running a shell command
+unless `--yes` is passed.
 
 ## Shared expectations
 

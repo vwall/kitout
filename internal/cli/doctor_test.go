@@ -19,24 +19,28 @@ func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
 	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
 		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
 		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
+		{result: doctorCommandResult("brew", []string{"--prefix"}, "/opt/homebrew\n")},
 		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
 	}}
-	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
 
 	report := checker.Check(context.Background(), configPath)
 
 	if report.HasFailures() {
 		t.Fatalf("HasFailures() = true, want false: %+v", report)
 	}
-	if report.Summary != (doctorSummary{Total: 7, OK: 7}) {
-		t.Fatalf("summary = %+v, want seven ok checks", report.Summary)
+	if report.Summary != (doctorSummary{Total: 9, OK: 9}) {
+		t.Fatalf("summary = %+v, want nine ok checks", report.Summary)
 	}
 	expectDoctorCalls(t, runner.calls, []doctorCommandCall{
 		{name: "xcode-select", args: []string{"-p"}},
 		{name: "brew", args: []string{"--version"}},
+		{name: "brew", args: []string{"--prefix"}},
 		{name: "git", args: []string{"--version"}},
 	})
 	assertDoctorItem(t, report, "Homebrew", doctorOK, "Homebrew 4.0.0")
+	assertDoctorItem(t, report, "Homebrew path", doctorOK, "Homebrew prefix is /opt/homebrew")
+	assertDoctorItem(t, report, "Shell environment", doctorOK, "SHELL and PATH look usable")
 	assertDoctorItem(t, report, "Config", doctorOK, "config is valid")
 	assertDoctorItem(t, report, "Path permissions", doctorOK, "no configured filesystem write targets")
 }
@@ -48,7 +52,12 @@ func TestDoctorCheckerReportsPrerequisiteFailures(t *testing.T) {
 		{err: doctorCommandError("brew", []string{"--version"})},
 		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
 	}}
-	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "linux", Arch: "amd64"})
+	checker := newDoctorChecker(runner, doctorSystemInfo{
+		OS:    "linux",
+		Arch:  "amd64",
+		Shell: executablePath(t),
+		Path:  "/usr/local/bin:/usr/bin:/bin",
+	})
 
 	report := checker.Check(context.Background(), configPath)
 
@@ -58,12 +67,13 @@ func TestDoctorCheckerReportsPrerequisiteFailures(t *testing.T) {
 	if report.Summary.Fail != 3 {
 		t.Fatalf("failures = %d, want 3", report.Summary.Fail)
 	}
-	if report.Summary.Warn != 1 {
-		t.Fatalf("warnings = %d, want 1", report.Summary.Warn)
+	if report.Summary.Warn != 2 {
+		t.Fatalf("warnings = %d, want 2", report.Summary.Warn)
 	}
 	assertDoctorItem(t, report, "macOS", doctorFail, "unsupported OS")
 	assertDoctorItem(t, report, "CPU architecture", doctorWarn, "Intel architecture")
 	assertDoctorItem(t, report, "Homebrew", doctorFail, "Homebrew is not available")
+	assertDoctorItem(t, report, "Homebrew path", doctorWarn, "skipped because Homebrew is not available")
 }
 
 func TestDoctorCheckerReportsInvalidConfig(t *testing.T) {
@@ -73,7 +83,7 @@ repos:
   - path: ~/code/kitout
 `)
 	runner := &fakeDoctorRunner{}
-	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
 
 	report := checker.Check(context.Background(), configPath)
 
@@ -108,7 +118,7 @@ func TestDoctorCheckerReportsWritableConfiguredPaths(t *testing.T) {
 		"  - source: "+filepath.Join(dir, "dotfile")+"\n"+
 		"    target: "+filepath.Join(dir, "link")+"\n")
 	runner := &fakeDoctorRunner{}
-	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
 
 	report := checker.Check(context.Background(), configPath)
 
@@ -133,7 +143,7 @@ func TestDoctorCheckerReportsUnwritableConfiguredPaths(t *testing.T) {
 		"directories:\n"+
 		"  - "+filepath.Join(locked, "code")+"\n")
 	runner := &fakeDoctorRunner{}
-	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
 
 	report := checker.Check(context.Background(), configPath)
 
@@ -145,6 +155,44 @@ func TestDoctorCheckerReportsUnwritableConfiguredPaths(t *testing.T) {
 	if !strings.Contains(item.Details["failures"], locked+" is not writable") {
 		t.Fatalf("failures = %q, want locked parent detail", item.Details["failures"])
 	}
+}
+
+func TestDoctorCheckerWarnsForUnexpectedAppleSiliconHomebrewPath(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
+		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
+		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
+		{result: doctorCommandResult("brew", []string{"--prefix"}, "/usr/local\n")},
+		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
+	}}
+	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	assertDoctorItem(t, report, "Homebrew path", doctorWarn, "expected /opt/homebrew")
+}
+
+func TestDoctorCheckerWarnsWhenShellPathMissesHomebrewBin(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
+		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
+		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
+		{result: doctorCommandResult("brew", []string{"--prefix"}, "/opt/homebrew\n")},
+		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
+	}}
+	info := healthyDoctorInfo(t, "arm64")
+	info.Path = "/usr/bin:/bin"
+	checker := newDoctorChecker(runner, info)
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	assertDoctorItem(t, report, "Shell environment", doctorWarn, "PATH does not include /opt/homebrew/bin")
 }
 
 func TestDoctorExitCodeAllowsWarnings(t *testing.T) {
@@ -216,6 +264,35 @@ func TestJSONRendererDoctorOutput(t *testing.T) {
 	if response.Doctor == nil || response.Doctor.Summary.OK != 1 {
 		t.Fatalf("doctor = %+v, want one ok check", response.Doctor)
 	}
+}
+
+func healthyDoctorInfo(t *testing.T, arch string) doctorSystemInfo {
+	t.Helper()
+
+	pathValue := "/usr/bin:/bin"
+	switch arch {
+	case "arm64":
+		pathValue = "/opt/homebrew/bin:" + pathValue
+	case "amd64":
+		pathValue = "/usr/local/bin:" + pathValue
+	}
+
+	return doctorSystemInfo{
+		OS:    "darwin",
+		Arch:  arch,
+		Shell: executablePath(t),
+		Path:  pathValue,
+	}
+}
+
+func executablePath(t *testing.T) string {
+	t.Helper()
+
+	path, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable: %v", err)
+	}
+	return path
 }
 
 func assertDoctorItem(t *testing.T, report doctorReport, name string, state doctorState, messageFragment string) {

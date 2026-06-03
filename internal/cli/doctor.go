@@ -45,8 +45,10 @@ type doctorSummary struct {
 }
 
 type doctorSystemInfo struct {
-	OS   string
-	Arch string
+	OS    string
+	Arch  string
+	Shell string
+	Path  string
 }
 
 type doctorChecker struct {
@@ -69,8 +71,10 @@ func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 	}
 
 	checker := newDoctorChecker(platform.NewExecRunner(), doctorSystemInfo{
-		OS:   runtime.GOOS,
-		Arch: runtime.GOARCH,
+		OS:    runtime.GOOS,
+		Arch:  runtime.GOARCH,
+		Shell: os.Getenv("SHELL"),
+		Path:  os.Getenv("PATH"),
 	})
 	report := checker.Check(context.Background(), configPath)
 
@@ -95,14 +99,21 @@ func newDoctorChecker(runner platform.Runner, info doctorSystemInfo) doctorCheck
 
 func (checker doctorChecker) Check(ctx context.Context, configPath string) doctorReport {
 	configItem, loaded, configOK := checker.checkConfig(configPath)
+	xcodeItem := checker.checkCommand(ctx, "Xcode Command Line Tools", "xcode-select", []string{"-p"}, "Install them with `xcode-select --install`.")
+	homebrewItem := checker.checkCommand(ctx, "Homebrew", "brew", []string{"--version"}, "Install Homebrew, then rerun `kitout doctor`.")
+	homebrewPathItem := checker.checkHomebrewPath(ctx, homebrewItem)
+	gitItem := checker.checkCommand(ctx, "Git", "git", []string{"--version"}, "Install Git or the Xcode Command Line Tools, then rerun `kitout doctor`.")
+	shellItem := checker.checkShellEnvironment()
 	report := doctorReport{
 		ConfigPath: configPath,
 		Items: []doctorItem{
 			checker.checkOS(),
 			checker.checkArchitecture(),
-			checker.checkCommand(ctx, "Xcode Command Line Tools", "xcode-select", []string{"-p"}, "Install them with `xcode-select --install`."),
-			checker.checkCommand(ctx, "Homebrew", "brew", []string{"--version"}, "Install Homebrew, then rerun `kitout doctor`."),
-			checker.checkCommand(ctx, "Git", "git", []string{"--version"}, "Install Git or the Xcode Command Line Tools, then rerun `kitout doctor`."),
+			xcodeItem,
+			homebrewItem,
+			homebrewPathItem,
+			gitItem,
+			shellItem,
 			configItem,
 		},
 	}
@@ -115,6 +126,169 @@ func (checker doctorChecker) Check(ctx context.Context, configPath string) docto
 	}
 
 	return report
+}
+
+func (checker doctorChecker) checkHomebrewPath(ctx context.Context, homebrewItem doctorItem) doctorItem {
+	if homebrewItem.State != doctorOK {
+		return doctorItem{
+			Name:    "Homebrew path",
+			State:   doctorWarn,
+			Message: "skipped because Homebrew is not available",
+			Fix:     "Install Homebrew, then rerun `kitout doctor`.",
+		}
+	}
+
+	result, err := checker.runner.Run(ctx, "brew", "--prefix")
+	if err != nil {
+		return doctorItem{
+			Name:    "Homebrew path",
+			State:   doctorFail,
+			Message: "Homebrew prefix could not be detected",
+			Fix:     "Run `brew doctor`, then rerun `kitout doctor`.",
+			Details: map[string]string{
+				"command": "brew --prefix",
+				"error":   err.Error(),
+			},
+		}
+	}
+
+	prefix := strings.TrimSpace(result.Stdout)
+	if prefix == "" {
+		return doctorItem{
+			Name:    "Homebrew path",
+			State:   doctorWarn,
+			Message: "Homebrew prefix was empty",
+			Fix:     "Run `brew doctor`, then rerun `kitout doctor`.",
+			Details: map[string]string{"command": "brew --prefix"},
+		}
+	}
+
+	expected := expectedHomebrewPrefix(checker.info.Arch)
+	if expected != "" && prefix != expected {
+		return doctorItem{
+			Name:    "Homebrew path",
+			State:   doctorWarn,
+			Message: fmt.Sprintf("Homebrew prefix is %s; expected %s for this architecture", prefix, expected),
+			Fix:     fmt.Sprintf("Use the Homebrew installation at %s or update PATH before running Kitout.", expected),
+			Details: map[string]string{
+				"command":  "brew --prefix",
+				"prefix":   prefix,
+				"expected": expected,
+			},
+		}
+	}
+
+	return doctorItem{
+		Name:    "Homebrew path",
+		State:   doctorOK,
+		Message: fmt.Sprintf("Homebrew prefix is %s", prefix),
+		Details: map[string]string{
+			"command": "brew --prefix",
+			"prefix":  prefix,
+		},
+	}
+}
+
+func expectedHomebrewPrefix(arch string) string {
+	switch arch {
+	case "arm64":
+		return "/opt/homebrew"
+	case "amd64":
+		return "/usr/local"
+	default:
+		return ""
+	}
+}
+
+func (checker doctorChecker) checkShellEnvironment() doctorItem {
+	shell := strings.TrimSpace(checker.info.Shell)
+	pathValue := strings.TrimSpace(checker.info.Path)
+	details := map[string]string{
+		"shell": shell,
+		"path":  pathValue,
+	}
+
+	if shell == "" {
+		return doctorItem{
+			Name:    "Shell environment",
+			State:   doctorWarn,
+			Message: "SHELL is not set",
+			Fix:     "Set SHELL to your login shell before running Kitout.",
+			Details: details,
+		}
+	}
+	info, err := os.Stat(shell)
+	if err != nil {
+		return doctorItem{
+			Name:    "Shell environment",
+			State:   doctorWarn,
+			Message: fmt.Sprintf("configured shell %s is not available", shell),
+			Fix:     "Set SHELL to an existing shell path before running Kitout.",
+			Details: details,
+		}
+	}
+	if info.IsDir() {
+		return doctorItem{
+			Name:    "Shell environment",
+			State:   doctorWarn,
+			Message: fmt.Sprintf("configured shell %s is a directory", shell),
+			Fix:     "Set SHELL to an executable shell path before running Kitout.",
+			Details: details,
+		}
+	}
+	if info.Mode().Perm()&0o111 == 0 {
+		return doctorItem{
+			Name:    "Shell environment",
+			State:   doctorWarn,
+			Message: fmt.Sprintf("configured shell %s is not executable", shell),
+			Fix:     "Set SHELL to an executable shell path before running Kitout.",
+			Details: details,
+		}
+	}
+	if pathValue == "" {
+		return doctorItem{
+			Name:    "Shell environment",
+			State:   doctorWarn,
+			Message: "PATH is not set",
+			Fix:     "Set PATH before running Kitout so external tools can be found.",
+			Details: details,
+		}
+	}
+
+	expectedBrewBin := expectedHomebrewBin(checker.info.Arch)
+	if expectedBrewBin != "" && !pathContains(pathValue, expectedBrewBin) {
+		return doctorItem{
+			Name:    "Shell environment",
+			State:   doctorWarn,
+			Message: fmt.Sprintf("PATH does not include %s", expectedBrewBin),
+			Fix:     fmt.Sprintf("Add %s to PATH before running Kitout.", expectedBrewBin),
+			Details: details,
+		}
+	}
+
+	return doctorItem{
+		Name:    "Shell environment",
+		State:   doctorOK,
+		Message: "SHELL and PATH look usable",
+		Details: details,
+	}
+}
+
+func expectedHomebrewBin(arch string) string {
+	prefix := expectedHomebrewPrefix(arch)
+	if prefix == "" {
+		return ""
+	}
+	return filepath.Join(prefix, "bin")
+}
+
+func pathContains(pathValue, dir string) bool {
+	for _, entry := range filepath.SplitList(pathValue) {
+		if entry == dir {
+			return true
+		}
+	}
+	return false
 }
 
 func (checker doctorChecker) checkOS() doctorItem {

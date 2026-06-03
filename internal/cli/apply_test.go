@@ -112,3 +112,100 @@ directories:
 		t.Fatalf("Stat(%q) error = %v, want directory to remain missing", missingDir, err)
 	}
 }
+
+func TestApplyRequiresConfirmationForShellCommand(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "created")
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Create marker
+    command: touch `+outputPath+`
+    when: always
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath}, strings.NewReader("no\n"), &stdout, &stderr)
+	if code != exitValidation {
+		t.Fatalf("exit code = %d, want %d", code, exitValidation)
+	}
+	if !strings.Contains(stderr.String(), "Risky apply actions require confirmation") {
+		t.Fatalf("stderr = %q, want confirmation prompt", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "touch "+outputPath) {
+		t.Fatalf("stderr = %q, want shell command detail", stderr.String())
+	}
+	if _, err := os.Stat(outputPath); !os.IsNotExist(err) {
+		t.Fatalf("Stat(%q) error = %v, want command not to run", outputPath, err)
+	}
+}
+
+func TestApplyYesSkipsShellCommandConfirmation(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "created")
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Create marker
+    command: touch `+outputPath+`
+    when: always
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "Risky apply actions require confirmation") {
+		t.Fatalf("stderr = %q, want no confirmation prompt", stderr.String())
+	}
+	if _, err := os.Stat(outputPath); err != nil {
+		t.Fatalf("Stat(%q) error = %v, want command to run", outputPath, err)
+	}
+}
+
+func TestApplyRequiresConfirmationForSymlinkReplacement(t *testing.T) {
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "source")
+	targetPath := filepath.Join(dir, "target")
+	if err := os.WriteFile(sourcePath, []byte("source\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	if err := os.WriteFile(targetPath, []byte("existing\n"), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+symlinks:
+  - source: `+sourcePath+`
+    target: `+targetPath+`
+    replace: true
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath}, strings.NewReader("no\n"), &stdout, &stderr)
+	if code != exitValidation {
+		t.Fatalf("exit code = %d, want %d", code, exitValidation)
+	}
+	if !strings.Contains(stderr.String(), "symlink symlink:"+targetPath) {
+		t.Fatalf("stderr = %q, want symlink replacement detail", stderr.String())
+	}
+	info, err := os.Lstat(targetPath)
+	if err != nil {
+		t.Fatalf("Lstat(%q) error = %v", targetPath, err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		t.Fatalf("target became a symlink after aborted apply")
+	}
+	content, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%q) error = %v", targetPath, err)
+	}
+	if string(content) != "existing\n" {
+		t.Fatalf("target content = %q, want existing file preserved", string(content))
+	}
+}
