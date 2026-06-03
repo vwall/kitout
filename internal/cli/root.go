@@ -47,7 +47,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "init":
 		return runInit(remainingArgs[1:], opts, stdout, stderr)
 	case "apply":
-		return runApply(remainingArgs[1:], opts, stdout, stderr)
+		return runApply(remainingArgs[1:], opts, stdin, stdout, stderr)
 	case "doctor":
 		return runDoctor(remainingArgs[1:], opts, stdout, stderr)
 	case "status":

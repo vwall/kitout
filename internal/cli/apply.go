@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
@@ -17,7 +19,7 @@ type applyOptions struct {
 	dryRun bool
 }
 
-func runApply(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr io.Writer) int {
 	var applyOpts applyOptions
 	fs := flag.NewFlagSet("apply", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -75,6 +77,14 @@ func runApply(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 		return exitRuntimeError
 	}
 
+	riskyItems := riskyApplyItems(plan)
+	if len(riskyItems) > 0 && !opts.yes {
+		if err := confirmRiskyApply(stdin, stderr, riskyItems); err != nil {
+			fmt.Fprintf(stderr, "%v\n", err)
+			return exitValidation
+		}
+	}
+
 	report := engine.NewExecutor().Apply(context.Background(), resourceList, plan)
 	if opts.json {
 		if err := jsonRenderer.renderApplyReport(loaded.Path, report); err != nil {
@@ -92,6 +102,53 @@ func runApply(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 		return exitApplyFailure
 	}
 	return exitOK
+}
+
+func riskyApplyItems(plan engine.Plan) []engine.PlanItem {
+	items := make([]engine.PlanItem, 0)
+	for _, item := range plan.Items {
+		if item.Action != engine.ActionApply {
+			continue
+		}
+		switch item.Type {
+		case "shell":
+			items = append(items, item)
+		case "symlink":
+			if item.State == engine.StateChanged {
+				items = append(items, item)
+			}
+		}
+	}
+	return items
+}
+
+func confirmRiskyApply(stdin io.Reader, stderr io.Writer, items []engine.PlanItem) error {
+	if stdin == nil {
+		return errors.New("confirmation required for risky apply actions; rerun with --yes to continue")
+	}
+
+	fmt.Fprintln(stderr, "Risky apply actions require confirmation:")
+	for _, item := range items {
+		fmt.Fprintf(stderr, "  %s %s", item.Type, item.ResourceID)
+		if command := item.Details["command"]; command != "" {
+			fmt.Fprintf(stderr, " (%s)", command)
+		}
+		fmt.Fprintln(stderr)
+	}
+	fmt.Fprint(stderr, "Continue? Type yes to apply: ")
+
+	scanner := bufio.NewScanner(stdin)
+	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("could not read confirmation: %w", err)
+		}
+		return errors.New("confirmation required; no changes made")
+	}
+	answer := strings.ToLower(strings.TrimSpace(scanner.Text()))
+	if answer != "yes" && answer != "y" {
+		return errors.New("apply aborted; no changes made")
+	}
+	return nil
 }
 
 func renderConfigError(command string, err error, opts globalOptions, renderer humanRenderer, jsonRenderer jsonRenderer, stderr io.Writer) int {
