@@ -116,7 +116,12 @@ func TestDoctorCheckerReportsWritableConfiguredPaths(t *testing.T) {
 		"    url: git@example.com:me/repo.git\n"+
 		"symlinks:\n"+
 		"  - source: "+filepath.Join(dir, "dotfile")+"\n"+
-		"    target: "+filepath.Join(dir, "link")+"\n")
+		"    target: "+filepath.Join(dir, "link")+"\n"+
+		"symlink_groups:\n"+
+		"  - source_root: "+filepath.Join(dir, "dotfiles", "home")+"\n"+
+		"    target_root: "+filepath.Join(dir, "home")+"\n"+
+		"    paths:\n"+
+		"      - .gitconfig\n")
 	runner := &fakeDoctorRunner{}
 	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
 
@@ -125,7 +130,7 @@ func TestDoctorCheckerReportsWritableConfiguredPaths(t *testing.T) {
 	if report.HasFailures() {
 		t.Fatalf("HasFailures() = true, want false: %+v", report)
 	}
-	assertDoctorItem(t, report, "Path permissions", doctorOK, "4 configured write target(s) look writable")
+	assertDoctorItem(t, report, "Path permissions", doctorOK, "5 configured write target(s) look writable")
 }
 
 func TestDoctorCheckerReportsUnwritableConfiguredPaths(t *testing.T) {

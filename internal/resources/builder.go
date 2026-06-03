@@ -30,7 +30,7 @@ func Build(cfg config.Config, runner platform.Runner) []engine.Resource {
 	for _, repo := range cfg.Repos {
 		resources = append(resources, NewRepo(repo.Path, repo.URL, repo.Branch, runner))
 	}
-	for _, symlink := range cfg.Symlinks {
+	for _, symlink := range cfg.ExpandedSymlinks() {
 		resources = append(resources, NewSymlink(symlink.Source, symlink.Target, symlink.Replace))
 	}
 	for _, item := range cfg.MacOSDefaults {
@@ -50,7 +50,7 @@ func resourceCount(cfg config.Config) int {
 		len(cfg.Casks) +
 		len(cfg.Directories) +
 		len(cfg.Repos) +
-		len(cfg.Symlinks) +
+		len(cfg.ExpandedSymlinks()) +
 		len(cfg.MacOSDefaults) +
 		len(cfg.Shell)
 }

@@ -110,6 +110,14 @@ func resolveResourcePaths(baseDir string, cfg Config) Config {
 		cfg.Symlinks[i].Target = resolveResourcePath(baseDir, symlink.Target)
 	}
 
+	for i, group := range cfg.SymlinkGroups {
+		cfg.SymlinkGroups[i].SourceRoot = resolveResourcePath(baseDir, group.SourceRoot)
+		cfg.SymlinkGroups[i].TargetRoot = resolveResourcePath(baseDir, group.TargetRoot)
+		for j, path := range group.Paths {
+			cfg.SymlinkGroups[i].Paths[j] = filepath.Clean(path)
+		}
+	}
+
 	return cfg
 }
 

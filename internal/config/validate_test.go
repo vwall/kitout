@@ -40,6 +40,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 		Directories:   []string{""},
 		Repos:         []Repo{{}},
 		Symlinks:      []Symlink{{}},
+		SymlinkGroups: []SymlinkGroup{{Paths: []string{""}}},
 		MacOSDefaults: []MacOSDefault{{}},
 		Shell:         []ShellCommand{{}},
 	}
@@ -59,6 +60,9 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 		"repos[0].url",
 		"symlinks[0].source",
 		"symlinks[0].target",
+		"symlink_groups[0].source_root",
+		"symlink_groups[0].target_root",
+		"symlink_groups[0].paths[0]",
 		"macos_defaults[0].domain",
 		"macos_defaults[0].key",
 		"macos_defaults[0].type",
@@ -94,6 +98,10 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 			{Source: "~/dotfiles/zshrc", Target: "~/.zshrc"},
 			{Source: "~/dotfiles/zshrc", Target: "~/.zshrc"},
 		},
+		SymlinkGroups: []SymlinkGroup{
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", Paths: []string{".zshrc"}},
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", Paths: []string{".gitconfig", ".gitconfig"}},
+		},
 		MacOSDefaults: []MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: false},
@@ -115,10 +123,44 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 		"directories[1]",
 		"repos[1].path",
 		"symlinks[1].target",
+		"symlink_groups[0].paths[0]",
+		"symlink_groups[1].paths[1]",
 		"macos_defaults[1]",
 		"shell[1].name",
 	} {
 		assertValidationErrorContains(t, err, field, "duplicates")
+	}
+}
+
+func TestValidateRequiresSymlinkGroupPaths(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		SymlinkGroups: []SymlinkGroup{
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~"},
+		},
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "symlink_groups[0].paths", "is required")
+}
+
+func TestValidateRejectsSymlinkGroupPathsOutsideRoots(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		SymlinkGroups: []SymlinkGroup{
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", Paths: []string{"/tmp/file", "../escape", "."}},
+		},
+	}
+
+	err := Validate(cfg)
+
+	for _, field := range []string{
+		"symlink_groups[0].paths[0]",
+		"symlink_groups[0].paths[1]",
+		"symlink_groups[0].paths[2]",
+	} {
+		assertValidationError(t, err, field, "must be a relative path below the group roots")
 	}
 }
 

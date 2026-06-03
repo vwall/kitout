@@ -59,6 +59,13 @@ repos:
 symlinks:
   - source: ~/dotfiles/home/zshrc
     target: ~/.zshrc
+
+symlink_groups:
+  - source_root: ~/dotfiles/home
+    target_root: ~
+    paths:
+      - .gitconfig
+      - .config/ghostty
 ```
 
 ## Initial scope
