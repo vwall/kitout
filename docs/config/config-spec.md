@@ -48,7 +48,7 @@ Resources with named fields use typed structs:
 - `asdf.tool_versions`
 - `repos`
 - `symlinks`
-- `symlink_groups` (planned, not implemented)
+- `symlink_groups`
 - `macos_defaults`
 - `shell`
 
@@ -56,8 +56,7 @@ Current resource implementation coverage:
 
 - implemented resource packages: `brew.packages`, `asdf.plugins`,
   `asdf.tool_versions`, `casks`, `directories`, `repos`, `symlinks`,
-  `macos_defaults`, and `shell`
-- planned config ergonomics: grouped symlink expansion via `symlink_groups`
+  `symlink_groups`, `macos_defaults`, and `shell`
 
 ## Required fields
 
@@ -79,6 +78,9 @@ Named resources require the fields needed to identify and apply the resource:
 - `repos[].url`
 - `symlinks[].source`
 - `symlinks[].target`
+- `symlink_groups[].source_root`
+- `symlink_groups[].target_root`
+- `symlink_groups[].paths`
 - `macos_defaults[].domain`
 - `macos_defaults[].key`
 - `macos_defaults[].type`
@@ -155,8 +157,6 @@ symlinks:
     target: ~/.zshrc
     replace: false
 
-# Planned, not implemented yet. This would expand to independent symlink
-# resources with the same safety behavior as explicit symlinks.
 symlink_groups:
   - source_root: ./home
     target_root: ~
@@ -204,12 +204,12 @@ The implemented path-bearing resource fields are:
 - `repos[].path`
 - `symlinks[].source`
 - `symlinks[].target`
-
-Planned path-bearing fields:
-
 - `symlink_groups[].source_root`
 - `symlink_groups[].target_root`
-- `symlink_groups[].paths[]`
+
+`symlink_groups[].paths[]` entries are relative path fragments below their
+group roots. They are cleaned internally, but they do not resolve relative to
+the config file directory on their own.
 
 Behavior:
 
@@ -245,7 +245,7 @@ Examples:
 - same directory twice
 - same target symlink twice
 - same expanded symlink target twice, including conflicts between `symlinks`
-  and planned `symlink_groups`
+  and `symlink_groups`
 - same repository path twice
 - same macOS default domain/key twice
 - same shell command name twice

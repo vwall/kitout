@@ -167,6 +167,39 @@ symlinks:
 	}
 }
 
+func TestLoadFileResolvesRelativeSymlinkGroupRootsFromConfigDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := writeConfigFileInDir(t, configDir, `version: 1
+
+symlink_groups:
+  - source_root: dotfiles/home
+    target_root: home
+    replace: true
+    paths:
+      - ./.zshrc
+      - .config/ghostty
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	group := loaded.Config.SymlinkGroups[0]
+	wantSourceRoot := filepath.Join(configDir, "dotfiles", "home")
+	if group.SourceRoot != wantSourceRoot {
+		t.Fatalf("source_root = %q, want %q", group.SourceRoot, wantSourceRoot)
+	}
+	wantTargetRoot := filepath.Join(configDir, "home")
+	if group.TargetRoot != wantTargetRoot {
+		t.Fatalf("target_root = %q, want %q", group.TargetRoot, wantTargetRoot)
+	}
+	wantPaths := []string{".zshrc", filepath.Join(".config", "ghostty")}
+	if !slices.Equal(group.Paths, wantPaths) {
+		t.Fatalf("paths = %#v, want %#v", group.Paths, wantPaths)
+	}
+}
+
 func TestLoadFileWrapsMissingFileError(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "missing.yaml")
 

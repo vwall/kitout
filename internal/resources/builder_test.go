@@ -28,6 +28,13 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		Symlinks: []config.Symlink{
 			{Source: "/Users/nix/dotfiles/zshrc", Target: "/Users/nix/.zshrc", Replace: true},
 		},
+		SymlinkGroups: []config.SymlinkGroup{
+			{
+				SourceRoot: "/Users/nix/dotfiles/home",
+				TargetRoot: "/Users/nix",
+				Paths:      []string{".gitconfig", ".config/ghostty"},
+			},
+		},
 		MacOSDefaults: []config.MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
 		},
@@ -50,6 +57,8 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		"directory:/Users/nix/code",
 		"repo:/Users/nix/code/kitout",
 		"symlink:/Users/nix/.zshrc",
+		"symlink:/Users/nix/.gitconfig",
+		"symlink:/Users/nix/.config/ghostty",
 		"macos_default:NSGlobalDomain/AppleShowAllExtensions",
 		"shell:Enable Corepack",
 	}
@@ -61,7 +70,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 			t.Fatalf("resource[%d] = %q, want %q; all = %#v", i, got[i], want[i], got)
 		}
 	}
-	if _, ok := resources[7].(MacOSDefaultResource); !ok {
-		t.Fatalf("resource[7] = %T, want MacOSDefaultResource", resources[7])
+	if _, ok := resources[9].(MacOSDefaultResource); !ok {
+		t.Fatalf("resource[9] = %T, want MacOSDefaultResource", resources[9])
 	}
 }

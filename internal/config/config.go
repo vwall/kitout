@@ -1,5 +1,7 @@
 package config
 
+import "path/filepath"
+
 // CurrentVersion is the first supported Kitout config schema version.
 const CurrentVersion = 1
 
@@ -12,6 +14,7 @@ type Config struct {
 	Directories   []string       `yaml:"directories,omitempty"`
 	Repos         []Repo         `yaml:"repos,omitempty"`
 	Symlinks      []Symlink      `yaml:"symlinks,omitempty"`
+	SymlinkGroups []SymlinkGroup `yaml:"symlink_groups,omitempty"`
 	MacOSDefaults []MacOSDefault `yaml:"macos_defaults,omitempty"`
 	Shell         []ShellCommand `yaml:"shell,omitempty"`
 }
@@ -52,6 +55,41 @@ type Symlink struct {
 	Source  string `yaml:"source"`
 	Target  string `yaml:"target"`
 	Replace bool   `yaml:"replace,omitempty"`
+}
+
+// SymlinkGroup describes symlinks that share source and target roots.
+type SymlinkGroup struct {
+	SourceRoot string   `yaml:"source_root"`
+	TargetRoot string   `yaml:"target_root"`
+	Replace    bool     `yaml:"replace,omitempty"`
+	Paths      []string `yaml:"paths"`
+}
+
+// ExpandedSymlinks returns explicit symlinks plus symlink_groups expanded into
+// ordinary symlink entries.
+func (cfg Config) ExpandedSymlinks() []Symlink {
+	count := len(cfg.Symlinks)
+	for _, group := range cfg.SymlinkGroups {
+		count += len(group.Paths)
+	}
+
+	symlinks := make([]Symlink, 0, count)
+	symlinks = append(symlinks, cfg.Symlinks...)
+	for _, group := range cfg.SymlinkGroups {
+		for _, path := range group.Paths {
+			symlinks = append(symlinks, Symlink{
+				Source:  joinSymlinkGroupPath(group.SourceRoot, path),
+				Target:  joinSymlinkGroupPath(group.TargetRoot, path),
+				Replace: group.Replace,
+			})
+		}
+	}
+
+	return symlinks
+}
+
+func joinSymlinkGroupPath(root, path string) string {
+	return filepath.Clean(filepath.Join(root, path))
 }
 
 // MacOSDefault describes one macOS defaults write target.

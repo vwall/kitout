@@ -23,6 +23,7 @@ func TestConfigUsesDocumentedYAMLFields(t *testing.T) {
 		{"Directories", "directories,omitempty"},
 		{"Repos", "repos,omitempty"},
 		{"Symlinks", "symlinks,omitempty"},
+		{"SymlinkGroups", "symlink_groups,omitempty"},
 		{"MacOSDefaults", "macos_defaults,omitempty"},
 		{"Shell", "shell,omitempty"},
 	}
@@ -55,6 +56,10 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		{"Symlink", reflect.TypeOf(Symlink{}), "Source", "source"},
 		{"Symlink", reflect.TypeOf(Symlink{}), "Target", "target"},
 		{"Symlink", reflect.TypeOf(Symlink{}), "Replace", "replace,omitempty"},
+		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "SourceRoot", "source_root"},
+		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "TargetRoot", "target_root"},
+		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "Replace", "replace,omitempty"},
+		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "Paths", "paths"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Domain", "domain"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Key", "key"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Type", "type"},
@@ -97,6 +102,9 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 		Symlinks: []Symlink{
 			{Source: "~/dotfiles/home/zshrc", Target: "~/.zshrc", Replace: false},
 		},
+		SymlinkGroups: []SymlinkGroup{
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", Replace: false, Paths: []string{".gitconfig"}},
+		},
 		MacOSDefaults: []MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
 		},
@@ -119,6 +127,33 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	}
 	if got, ok := cfg.MacOSDefaults[0].Value.(bool); !ok || !got {
 		t.Fatalf("macOS default value = %#v, want true bool", cfg.MacOSDefaults[0].Value)
+	}
+}
+
+func TestConfigExpandsSymlinkGroups(t *testing.T) {
+	cfg := Config{
+		Symlinks: []Symlink{
+			{Source: "/dotfiles/home/zshrc", Target: "/home/.zshrc", Replace: false},
+		},
+		SymlinkGroups: []SymlinkGroup{
+			{
+				SourceRoot: "/dotfiles/home",
+				TargetRoot: "/home",
+				Replace:    true,
+				Paths:      []string{".gitconfig", ".config/ghostty"},
+			},
+		},
+	}
+
+	got := cfg.ExpandedSymlinks()
+	want := []Symlink{
+		{Source: "/dotfiles/home/zshrc", Target: "/home/.zshrc", Replace: false},
+		{Source: "/dotfiles/home/.gitconfig", Target: "/home/.gitconfig", Replace: true},
+		{Source: "/dotfiles/home/.config/ghostty", Target: "/home/.config/ghostty", Replace: true},
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ExpandedSymlinks() = %#v, want %#v", got, want)
 	}
 }
 
