@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kitout Landing Concepts With Output Reference</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --board-bg: oklch(0.955 0.006 255);
+        --board-ink: oklch(0.18 0.018 250);
+        --board-muted: oklch(0.46 0.026 250);
+        --board-line: oklch(0.82 0.018 250);
+        --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+        --mono: "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--board-bg);
+      }
+
+      body {
+        margin: 0;
+        color: var(--board-ink);
+        font-family: var(--sans);
+        line-height: 1.5;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+      }
+
+      .board {
+        min-width: 3720px;
+        padding: 34px;
+      }
+
+      .board-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 32px;
+        margin-bottom: 24px;
+      }
+
+      .board-head h1 {
+        margin: 0 0 6px;
+        font-size: 34px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+
+      .board-head p {
+        max-width: 940px;
+        margin: 0;
+        color: var(--board-muted);
+        font-size: 15px;
+      }
+
+      .recommendation {
+        width: 650px;
+        padding: 14px 16px;
+        border: 1px solid var(--board-line);
+        border-radius: 12px;
+        background: oklch(1 0 0);
+        color: var(--board-muted);
+        font-size: 14px;
+      }
+
+      .recommendation strong {
+        color: var(--board-ink);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 26px;
+      }
+
+      .concept {
+        width: 1200px;
+        min-height: 1780px;
+        overflow: hidden;
+        border-radius: 16px;
+        background: oklch(1 0 0);
+      }
+
+      .label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 17px 22px;
+        border-bottom: 1px solid;
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .label span {
+        opacity: 0.68;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-weight: 830;
+        letter-spacing: -0.02em;
+      }
+
+      .mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 9px;
+        font-weight: 900;
+      }
+
+      .links,
+      .actions,
+      .cta-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .links {
+        font-size: 14px;
+        opacity: 0.78;
+      }
+
+      .btn {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 17px;
+        border-radius: 10px;
+        font-weight: 780;
+        text-decoration: none;
+      }
+
+      .hero-title {
+        margin: 0;
+        line-height: 1.03;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+
+      .hero-copy {
+        margin: 18px 0 0;
+        text-wrap: pretty;
+      }
+
+      .terminal {
+        overflow: hidden;
+        border-radius: 14px;
+        background:
+          radial-gradient(circle at 20% 0%, oklch(1 0 0 / 0.08), transparent 34%),
+          oklch(0.13 0.01 245);
+        color: oklch(0.94 0.006 245);
+        font-family: var(--mono);
+      }
+
+      .terminal-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid oklch(0.38 0.02 245 / 0.7);
+        color: oklch(0.73 0.02 245);
+        font-size: 12px;
+      }
+
+      .lights {
+        display: flex;
+        gap: 9px;
+      }
+
+      .light {
+        width: 13px;
+        height: 13px;
+        border-radius: 99px;
+      }
+
+      .red {
+        background: oklch(0.67 0.19 25);
+      }
+
+      .yellow {
+        background: oklch(0.78 0.16 80);
+      }
+
+      .green {
+        background: oklch(0.7 0.18 140);
+      }
+
+      .terminal-body {
+        padding: 20px 22px 22px;
+        font-size: 15px;
+        line-height: 1.68;
+      }
+
+      .prompt {
+        color: oklch(0.79 0.18 145);
+      }
+
+      .ok {
+        color: oklch(0.82 0.18 138);
+      }
+
+      .outdated,
+      .need,
+      .changes {
+        color: oklch(0.84 0.17 83);
+      }
+
+      .skip {
+        color: oklch(0.74 0.14 210);
+      }
+
+      .fail {
+        color: oklch(0.72 0.18 25);
+      }
+
+      .add {
+        color: oklch(0.72 0.16 225);
+      }
+
+      .mod {
+        color: oklch(0.82 0.15 78);
+      }
+
+      .code {
+        font-family: var(--mono);
+      }
+
+      .yaml .key {
+        color: oklch(0.73 0.13 225);
+      }
+
+      .yaml .value {
+        color: oklch(0.8 0.15 142);
+      }
+
+      .list {
+        display: grid;
+        gap: 10px;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .list li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        flex: 0 0 auto;
+        border-radius: 99px;
+      }
+
+      .section-title {
+        margin: 0;
+        letter-spacing: -0.025em;
+        line-height: 1.13;
+        text-wrap: balance;
+      }
+
+      .c1 {
+        --bg: oklch(0.12 0.022 252);
+        --surface: oklch(0.17 0.028 252);
+        --surface-alt: oklch(0.22 0.035 252);
+        --line: oklch(0.34 0.04 252);
+        --text: oklch(0.98 0.003 252);
+        --muted: oklch(0.69 0.035 252);
+        --accent: oklch(0.62 0.19 258);
+        color: var(--text);
+        background: var(--bg);
+      }
+
+      .c1 .label {
+        border-color: var(--line);
+        background: oklch(0.09 0.018 252);
+        color: var(--muted);
+      }
+
+      .c1 .inner {
+        min-height: 1780px;
+        padding: 30px 42px 46px;
+        background:
+          linear-gradient(90deg, oklch(0.27 0.025 252 / 0.35) 1px, transparent 1px),
+          linear-gradient(180deg, oklch(0.27 0.025 252 / 0.35) 1px, transparent 1px),
+          var(--bg);
+        background-size: 74px 74px;
+      }
+
+      .c1 .mark,
+      .c1 .btn.primary {
+        background: var(--accent);
+        color: oklch(1 0 0);
+      }
+
+      .c1 .btn.secondary {
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+
+      .c1 .hero {
+        display: grid;
+        grid-template-columns: 0.82fr 1.18fr;
+        gap: 36px;
+        align-items: center;
+        padding: 72px 0 34px;
+      }
+
+      .c1 .hero-title {
+        font-size: 54px;
+      }
+
+      .c1 .hero-copy {
+        max-width: 540px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.65;
+      }
+
+      .c1 .cta-row {
+        margin-top: 28px;
+      }
+
+      .c1 .terminal {
+        border: 1px solid var(--line);
+      }
+
+      .c1 .terminal-body.status {
+        font-size: 15px;
+      }
+
+      .status-grid {
+        display: grid;
+        grid-template-columns: 112px 1fr 1.1fr;
+        column-gap: 16px;
+      }
+
+      .status-grid span {
+        display: block;
+      }
+
+      .summary-line {
+        margin-top: 18px;
+      }
+
+      .tool-strip {
+        display: grid;
+        grid-template-columns: 0.92fr 1.08fr;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font: 12px var(--mono);
+      }
+
+      .panel-body {
+        padding: 17px;
+      }
+
+      .c1 .panel-body {
+        color: oklch(0.9 0.012 252);
+        font: 14px/1.6 var(--mono);
+      }
+
+      .proof {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-top: 44px;
+      }
+
+      .proof article {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: oklch(0.15 0.023 252);
+      }
+
+      .proof h3 {
+        margin: 0 0 7px;
+        font-size: 16px;
+      }
+
+      .proof p,
+      .c1 .story p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .story {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .story article {
+        min-height: 214px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: oklch(0.15 0.023 252 / 0.96);
+      }
+
+      .story h3 {
+        font-size: 25px;
+      }
+
+      .story .list {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .c1 .dot {
+        background: var(--accent);
+      }
+
+      .c1 .final {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-top: 18px;
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface-alt);
+      }
+
+      .c1 .final h3 {
+        margin: 0;
+        font-size: 32px;
+        letter-spacing: -0.025em;
+      }
+
+      .c2 {
+        --bg: oklch(0.995 0 0);
+        --surface: oklch(0.967 0.004 255);
+        --ink: oklch(0.17 0.02 255);
+        --muted: oklch(0.43 0.024 255);
+        --line: oklch(0.84 0.014 255);
+        --primary: oklch(0.61 0.17 258);
+        --rose: oklch(0.59 0.16 355);
+        color: var(--ink);
+        background: var(--bg);
+      }
+
+      .c2 .label {
+        border-color: var(--line);
+        color: var(--muted);
+      }
+
+      .c2 .inner {
+        min-height: 1780px;
+        padding: 30px 46px 48px;
+        background:
+          radial-gradient(circle at 58% 15%, oklch(0.92 0.035 355 / 0.68), transparent 31%),
+          linear-gradient(180deg, oklch(1 0 0), oklch(0.955 0.004 255));
+      }
+
+      .c2 .mark,
+      .c2 .btn.primary {
+        background: var(--ink);
+        color: oklch(1 0 0);
+      }
+
+      .c2 .btn {
+        border-radius: 999px;
+      }
+
+      .c2 .btn.secondary {
+        border: 1px solid var(--line);
+        background: oklch(1 0 0 / 0.74);
+      }
+
+      .c2 .hero {
+        padding: 58px 0 30px;
+        text-align: center;
+      }
+
+      .blend-pill {
+        display: inline-flex;
+        margin-bottom: 22px;
+        padding: 8px 13px;
+        border: 1px solid oklch(0.76 0.052 355);
+        border-radius: 999px;
+        background: oklch(1 0 0 / 0.78);
+        color: oklch(0.37 0.1 355);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .c2 .hero-title {
+        max-width: 780px;
+        margin: 0 auto;
+        font-family: var(--serif);
+        font-size: 54px;
+        font-weight: 720;
+        letter-spacing: -0.025em;
+      }
+
+      .c2 .hero-copy {
+        max-width: 710px;
+        margin-right: auto;
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 19px;
+        line-height: 1.72;
+      }
+
+      .c2 .cta-row {
+        justify-content: center;
+        margin-top: 28px;
+      }
+
+      .native-hero {
+        position: relative;
+        width: 930px;
+        height: 500px;
+        margin: 6px auto 72px;
+      }
+
+      .native-output {
+        position: absolute;
+        inset: 0 80px 54px 0;
+        overflow: hidden;
+        border-radius: 16px;
+        background: oklch(1 0 0);
+        box-shadow: 0 8px 8px oklch(0.18 0.02 255 / 0.13);
+      }
+
+      .native-output img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+
+      .native-card {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 370px;
+        padding: 18px;
+        border-radius: 16px;
+        background: oklch(1 0 0 / 0.86);
+        box-shadow: 0 8px 8px oklch(0.18 0.02 255 / 0.14);
+        backdrop-filter: blur(18px);
+      }
+
+      .native-card h3 {
+        margin: 0 0 13px;
+        font-size: 15px;
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .metric {
+        padding: 12px;
+        border-radius: 12px;
+        background: var(--surface);
+      }
+
+      .metric b {
+        display: block;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .native-card pre {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 12px;
+        background: oklch(0.13 0.01 255);
+        color: oklch(0.93 0.005 255);
+        font: 12px/1.55 var(--mono);
+      }
+
+      .c2 .content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 44px;
+      }
+
+      .c2 .content h3 {
+        font-family: var(--serif);
+        font-size: 36px;
+        font-weight: 720;
+      }
+
+      .c2 .list {
+        margin-top: 17px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .c2 .dot {
+        background: var(--rose);
+      }
+
+      .c2 .safety {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        margin-top: 56px;
+      }
+
+      .c2 .safety article {
+        min-height: 90px;
+        padding: 14px;
+        border-radius: 12px;
+        background: oklch(1 0 0 / 0.7);
+      }
+
+      .c2 .safety h3 {
+        margin: 0 0 5px;
+        font-size: 14px;
+      }
+
+      .c2 .safety p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .c2 .final {
+        margin-top: 62px;
+        padding: 44px 28px;
+        border-radius: 16px;
+        background: var(--ink);
+        color: oklch(1 0 0);
+        text-align: center;
+      }
+
+      .c2 .final h3 {
+        margin: 0;
+        font-family: var(--serif);
+        font-size: 38px;
+      }
+
+      .c2 .final .btn {
+        margin-top: 19px;
+        background: oklch(1 0 0);
+        color: var(--ink);
+      }
+
+      .c3 {
+        --bg: oklch(0.19 0.018 265);
+        --sidebar: oklch(0.145 0.016 265);
+        --pane: oklch(0.225 0.02 265);
+        --pane-dark: oklch(0.12 0.012 265);
+        --line: oklch(0.35 0.026 265);
+        --text: oklch(0.95 0.004 265);
+        --muted: oklch(0.71 0.02 265);
+        --orange: oklch(0.72 0.16 52);
+        --cyan: oklch(0.74 0.13 195);
+        color: var(--text);
+        background: var(--bg);
+      }
+
+      .c3 .label {
+        border-color: var(--line);
+        background: oklch(0.16 0.016 265);
+        color: var(--muted);
+      }
+
+      .c3 .inner {
+        display: grid;
+        grid-template-columns: 238px 1fr;
+        min-height: 1780px;
+      }
+
+      .sidebar {
+        padding: 28px 20px;
+        border-right: 1px solid var(--line);
+        background: var(--sidebar);
+      }
+
+      .c3 .mark,
+      .c3 .btn.primary {
+        background: var(--orange);
+        color: oklch(0.14 0.012 265);
+      }
+
+      .side-nav {
+        display: grid;
+        gap: 8px;
+        margin-top: 34px;
+      }
+
+      .side-nav a {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .side-nav a.active {
+        background: var(--pane);
+        color: var(--text);
+      }
+
+      .run-card {
+        margin-top: 44px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .run-card strong {
+        display: block;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .workspace {
+        padding: 28px 30px 34px;
+      }
+
+      .c3 .nav {
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .c3 .btn.secondary {
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+
+      .c3 .hero {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 24px;
+        padding: 42px 0 22px;
+      }
+
+      .c3 .hero-title {
+        font-size: 48px;
+      }
+
+      .c3 .hero-copy {
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.62;
+      }
+
+      .c3 .cta-row {
+        margin-top: 25px;
+      }
+
+      .workbench {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .work-pane {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--pane-dark);
+      }
+
+      .work-head {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font: 12px var(--mono);
+      }
+
+      .work-body {
+        padding: 14px;
+      }
+
+      .work-code {
+        min-height: 285px;
+        color: oklch(0.88 0.012 265);
+        font: 12px/1.55 var(--mono);
+      }
+
+      .rows {
+        display: grid;
+        gap: 9px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        background: var(--pane);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .row strong {
+        color: var(--text);
+      }
+
+      .row span:last-child {
+        grid-column: 2;
+        margin-top: -6px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .badge {
+        display: inline-flex;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 7px;
+        font: 11px var(--mono);
+      }
+
+      .badge.ok {
+        background: oklch(0.28 0.08 148);
+        color: oklch(0.91 0.05 148);
+      }
+
+      .badge.need {
+        background: oklch(0.31 0.09 83);
+        color: oklch(0.94 0.08 83);
+      }
+
+      .badge.fail {
+        background: oklch(0.29 0.08 25);
+        color: oklch(0.93 0.07 25);
+      }
+
+      .badge.skip {
+        background: oklch(0.27 0.07 205);
+        color: oklch(0.91 0.06 205);
+      }
+
+      .work-wide {
+        grid-column: 1 / -1;
+      }
+
+      .c3 .terminal {
+        border-radius: 8px;
+      }
+
+      .c3 .terminal-body {
+        font-size: 12px;
+      }
+
+      .ops {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .ops article {
+        min-height: 214px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--pane);
+      }
+
+      .ops h3 {
+        margin: 0 0 11px;
+        font-size: 17px;
+      }
+
+      .ops .list {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .c3 .dot {
+        background: var(--cyan);
+      }
+
+      .c3 .final {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 18px;
+        margin-top: 22px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--sidebar);
+      }
+
+      .c3 .final h3 {
+        margin: 0;
+        font-size: 29px;
+        letter-spacing: -0.025em;
+      }
+
+      .c3 .final p {
+        margin: 5px 0 0;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <header class="board-head">
+        <div>
+          <h1>Kitout landing page concepts</h1>
+          <p>Three separate desktop concepts using the real Kitout output screenshot as the product artifact: terminal status rows, config path, semantic statuses, and the summary line.</p>
+        </div>
+        <div class="recommendation"><strong>Recommendation:</strong> build from Trusted Infrastructure, then add the Apple-native restraint from concept 2. That blend makes system changes feel previewed, inspectable, and calm.</div>
+      </header>
+
+      <section class="grid" aria-label="Three Kitout landing concepts">
+        <article class="concept c1">
+          <div class="label">Concept 1 · Trusted Infrastructure <span>recommended blend direction</span></div>
+          <div class="inner">
+            <nav class="nav">
+              <div class="brand"><span class="mark">K</span>Kitout</div>
+              <div class="links"><a href="#">Docs</a><a href="#">Resources</a><a href="#">Safety</a><a href="#">GitHub</a></div>
+              <div class="actions"><a class="btn secondary" href="#">View Example Config</a><a class="btn primary" href="#">Get Started</a></div>
+            </nav>
+            <section class="hero">
+              <div>
+                <h2 class="hero-title">Declarative Mac setup, without the shell-script anxiety.</h2>
+                <p class="hero-copy">Describe your machine once. Preview changes. Apply safely. Kitout turns a simple YAML file into a repeatable Mac setup plan.</p>
+                <div class="cta-row"><a class="btn primary" href="#">Get Started</a><a class="btn secondary" href="#">View Example Config</a></div>
+              </div>
+              <div class="terminal">
+                <div class="terminal-top"><div class="lights"><span class="light red"></span><span class="light yellow"></span><span class="light green"></span></div><span>kitout status</span></div>
+                <div class="terminal-body status">
+                  <div><span class="prompt">$</span> kitout status</div>
+                  <div>Config: /Users/nix/.config/kitout/kitout.yaml</div>
+                  <br>
+                  <div class="status-grid">
+                    <span class="ok">ok</span><span>brew:git</span><span>formula is installed</span>
+                    <span class="outdated">outdated:</span><span>brew:go</span><span>formula is outdated</span>
+                    <span class="need">need</span><span>cask:ghostty</span><span>cask is missing</span>
+                    <span class="ok">ok</span><span>directory:/Users/nix/.config</span><span>directory exists</span>
+                    <span class="skip">skip</span><span>repo:/Users/nix/code/kitout</span><span>skipped by config</span>
+                    <span class="fail">fail</span><span>shell:setup</span><span>command failed</span>
+                  </div>
+                  <div class="summary-line">6 total, 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped</div>
+                  <div class="changes">3 changes needed</div>
+                </div>
+              </div>
+            </section>
+            <section class="tool-strip">
+              <div class="panel">
+                <div class="panel-head"><span>kitout.yaml</span><span>desired state</span></div>
+                <pre class="panel-body yaml"><span class="key">brew:</span>
+  - <span class="value">git</span>
+  - <span class="value">go</span>
+  - <span class="value">pnpm</span>
+<span class="key">apps:</span>
+  - <span class="value">raycast</span>
+  - <span class="value">visual-studio-code</span>
+  - <span class="value">docker</span>
+<span class="key">directories:</span>
+  - <span class="value">~/Code</span>
+  - <span class="value">~/Projects</span>
+<span class="key">git:</span>
+  <span class="key">name:</span> <span class="value">Vincent Waller</span>
+  <span class="key">email:</span> <span class="value">vincent@example.com</span></pre>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><span>kitout apply --dry-run</span><span>preview</span></div>
+                <pre class="panel-body">$ kitout apply --dry-run
+<span class="ok">✓ git already installed</span>
+<span class="ok">✓ go already installed</span>
+<span class="add">+ install raycast</span>
+<span class="add">+ create ~/Projects</span>
+<span class="mod">~ update git email</span></pre>
+              </div>
+            </section>
+            <section class="proof">
+              <article><h3>Status before action</h3><p>Kitout names satisfied, missing, changed, failed, and skipped resources before applying changes.</p></article>
+              <article><h3>Dry-run as default habit</h3><p>The plan view makes the next run inspectable, including paths and resource identifiers.</p></article>
+              <article><h3>Receipts for reruns</h3><p>Every check and apply result can be read in terminal logs without relying on color alone.</p></article>
+            </section>
+            <section class="story">
+              <article><h3 class="section-title">New machines drift when setup lives in memory.</h3><ul class="list"><li><span class="dot"></span>New Mac setup takes hours</li><li><span class="dot"></span>Shell scripts become fragile</li><li><span class="dot"></span>Dotfiles only solve part of the problem</li><li><span class="dot"></span>Team onboarding drifts over time</li></ul></article>
+              <article><h3 class="section-title">Kitout reconciles the machine with the file.</h3><ul class="list"><li><span class="dot"></span>Desired state in YAML</li><li><span class="dot"></span>Dry-run before changes</li><li><span class="dot"></span>Visible reconciliation plan</li><li><span class="dot"></span>Safe application of changes</li></ul></article>
+            </section>
+            <section class="story">
+              <article><h3 class="section-title">Safety is visible, not promised after the fact.</h3><ul class="list"><li><span class="dot"></span>Dry-run first</li><li><span class="dot"></span>Human-readable plans</li><li><span class="dot"></span>Helpful failures</li><li><span class="dot"></span>No hidden magic</li><li><span class="dot"></span>Predictable behavior</li></ul></article>
+              <article><h3 class="section-title">Why this direction works</h3><p>Infrastructure visual language plus native-window polish makes Kitout feel dependable enough to inspect a real developer machine.</p></article>
+            </section>
+            <section class="final"><h3>Make your next Mac setup boring.</h3><a class="btn primary" href="#">Get Started</a></section>
+          </div>
+        </article>
+
+        <article class="concept c2">
+          <div class="label">Concept 2 · Apple-Native Developer Tool <span>premium, quiet, native</span></div>
+          <div class="inner">
+            <nav class="nav">
+              <div class="brand"><span class="mark">K</span>Kitout</div>
+              <div class="links"><a href="#">Overview</a><a href="#">Config</a><a href="#">Safety</a></div>
+              <div class="actions"><a class="btn secondary" href="#">View Example Config</a><a class="btn primary" href="#">Get Started</a></div>
+            </nav>
+            <section class="hero">
+              <div class="blend-pill">Apple polish over inspectable infrastructure</div>
+              <h2 class="hero-title">Declarative Mac setup, without the shell-script anxiety.</h2>
+              <p class="hero-copy">Describe your machine once. Preview changes. Apply safely. Kitout turns a simple YAML file into a repeatable Mac setup plan.</p>
+              <div class="cta-row"><a class="btn primary" href="#">Get Started</a><a class="btn secondary" href="#">View Example Config</a></div>
+            </section>
+            <section class="native-hero">
+              <div class="native-output"><img src="../screenshots/example.png" alt="Kitout status output in a macOS terminal window"></div>
+              <div class="native-card">
+                <h3>Dry-run summary</h3>
+                <div class="metric-row">
+                  <div class="metric"><b>2</b><span>satisfied</span></div>
+                  <div class="metric"><b>1</b><span>missing</span></div>
+                  <div class="metric"><b>1</b><span>failed</span></div>
+                </div>
+                <pre>$ kitout apply --dry-run
+✓ git already installed
+✓ go already installed
++ install raycast
++ create ~/Projects
+~ update git email</pre>
+              </div>
+            </section>
+            <section class="content">
+              <article><h3 class="section-title">The fragile parts of setup are usually the invisible parts.</h3><ul class="list"><li><span class="dot"></span>New Mac setup takes hours</li><li><span class="dot"></span>Shell scripts become fragile</li><li><span class="dot"></span>Dotfiles only solve part of the problem</li><li><span class="dot"></span>Team onboarding drifts over time</li></ul></article>
+              <article><h3 class="section-title">Kitout makes the next machine readable before it changes.</h3><ul class="list"><li><span class="dot"></span>Desired state in YAML</li><li><span class="dot"></span>Dry-run before changes</li><li><span class="dot"></span>Visible reconciliation plan</li><li><span class="dot"></span>Safe application of changes</li></ul></article>
+            </section>
+            <section class="safety">
+              <article><h3>Dry-run first</h3><p>Preview changes before Kitout applies them.</p></article>
+              <article><h3>Readable plans</h3><p>Resources, targets, and actions stay visible.</p></article>
+              <article><h3>Helpful failures</h3><p>Errors explain the next action.</p></article>
+              <article><h3>No hidden magic</h3><p>Config names what Kitout may manage.</p></article>
+              <article><h3>Predictable behavior</h3><p>Idempotent checks make reruns boring.</p></article>
+            </section>
+            <section class="final"><h3>Make your next Mac setup boring.</h3><a class="btn" href="#">Get Started</a></section>
+          </div>
+        </article>
+
+        <article class="concept c3">
+          <div class="label">Concept 3 · Modern Workbench <span>operational visibility</span></div>
+          <div class="inner">
+            <aside class="sidebar">
+              <div class="brand"><span class="mark">K</span>Kitout</div>
+              <nav class="side-nav"><a class="active" href="#">Status <span>6</span></a><a href="#">Dry-run <span>5</span></a><a href="#">Config <span>YAML</span></a><a href="#">Doctor <span>1 fail</span></a><a href="#">History <span>3</span></a></nav>
+              <div class="run-card"><strong>Dry-run active</strong>No changes are applied until the plan is reviewed.</div>
+            </aside>
+            <div class="workspace">
+              <nav class="nav">
+                <div class="links"><a href="#">Docs</a><a href="#">Examples</a><a href="#">Safety</a></div>
+                <div class="actions"><a class="btn secondary" href="#">View Example Config</a><a class="btn primary" href="#">Get Started</a></div>
+              </nav>
+              <section class="hero">
+                <div>
+                  <h2 class="hero-title">Declarative Mac setup, without the shell-script anxiety.</h2>
+                  <p class="hero-copy">Describe your machine once. Preview changes. Apply safely. Kitout turns a simple YAML file into a repeatable Mac setup plan.</p>
+                  <div class="cta-row"><a class="btn primary" href="#">Get Started</a><a class="btn secondary" href="#">View Example Config</a></div>
+                </div>
+                <div class="workbench">
+                  <div class="work-pane">
+                    <div class="work-head"><span>kitout.yaml</span><span>desired</span></div>
+                    <pre class="work-body work-code">brew:
+  - git
+  - go
+  - pnpm
+apps:
+  - raycast
+  - visual-studio-code
+  - docker
+directories:
+  - ~/Code
+  - ~/Projects
+git:
+  name: Vincent Waller
+  email: vincent@example.com</pre>
+                  </div>
+                  <div class="work-pane">
+                    <div class="work-head"><span>status</span><span>current Mac</span></div>
+                    <div class="work-body rows">
+                      <div class="row"><span class="badge ok">ok</span><strong>brew:git</strong><span>installed</span></div>
+                      <div class="row"><span class="badge need">outdated</span><strong>brew:go</strong><span>outdated</span></div>
+                      <div class="row"><span class="badge need">need</span><strong>cask:ghostty</strong><span>missing</span></div>
+                      <div class="row"><span class="badge skip">skip</span><strong>repo:kitout</strong><span>skipped</span></div>
+                      <div class="row"><span class="badge fail">fail</span><strong>shell:setup</strong><span>failed</span></div>
+                    </div>
+                  </div>
+                  <div class="work-pane work-wide">
+                    <div class="work-head"><span>terminal</span><span>kitout apply --dry-run</span></div>
+                    <div class="work-body">
+                      <div class="terminal">
+                        <pre class="terminal-body"><span class="prompt">$</span> kitout apply --dry-run
+<span class="ok">✓ git already installed</span>
+<span class="ok">✓ go already installed</span>
+<span class="add">+ install raycast</span>
+<span class="add">+ create ~/Projects</span>
+<span class="mod">~ update git email</span></pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <section class="ops">
+                <article><h3>Setup friction</h3><ul class="list"><li><span class="dot"></span>New Mac setup takes hours</li><li><span class="dot"></span>Shell scripts become fragile</li><li><span class="dot"></span>Dotfiles only solve part of the problem</li><li><span class="dot"></span>Team onboarding drifts over time</li></ul></article>
+                <article><h3>Reconciliation flow</h3><ul class="list"><li><span class="dot"></span>Desired state in YAML</li><li><span class="dot"></span>Dry-run before changes</li><li><span class="dot"></span>Visible reconciliation plan</li><li><span class="dot"></span>Safe application of changes</li></ul></article>
+                <article><h3>Safety model</h3><ul class="list"><li><span class="dot"></span>Dry-run first</li><li><span class="dot"></span>Human-readable plans</li><li><span class="dot"></span>Helpful failures</li><li><span class="dot"></span>No hidden magic</li><li><span class="dot"></span>Predictable behavior</li></ul></article>
+              </section>
+              <section class="final"><div><h3>Make your next Mac setup boring.</h3><p>Review the plan, apply the changes, rerun with confidence.</p></div><a class="btn primary" href="#">Get Started</a></section>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
