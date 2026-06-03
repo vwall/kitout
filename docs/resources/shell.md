@@ -56,6 +56,10 @@ Rules:
 - capture exit code and output
 - do not hide failures
 
+Dogfood rule: keep shell resources as the escape hatch, not the default shape.
+Use a first-class resource when one exists, and keep shell commands named,
+specific, and idempotent so repeated `status` and `apply` runs stay predictable.
+
 ## Future direction
 
 Over time, repeated shell commands should become first-class resources.

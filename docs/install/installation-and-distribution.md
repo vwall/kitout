@@ -21,6 +21,16 @@ developer-local equivalent:
 go run ./cmd/kitout status
 ```
 
+For a real setup repo, keep the config path explicit while dogfooding:
+
+```sh
+kitout doctor --config ~/code/setup/kitout.yaml
+kitout status --config ~/code/setup/kitout.yaml
+kitout apply --config ~/code/setup/kitout.yaml --dry-run
+```
+
+See `docs/setup/first-real-run.md` for the full first-run checklist.
+
 To produce a local build artifact with embedded metadata:
 
 ```sh
@@ -149,3 +159,8 @@ README.md
 ```
 
 Kitout itself can be public or private. The user's setup repo should remain private if it contains personal paths, repo lists, or machine preferences.
+
+When the setup repo contains `kitout.yaml`, the current CLI still uses
+`~/.config/kitout/kitout.yaml` by default. Pass `--config ./kitout.yaml` from
+inside the setup repo, or copy the file to the default path when the setup is
+ready to become the normal machine config.
