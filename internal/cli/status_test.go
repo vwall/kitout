@@ -27,10 +27,10 @@ directories:
 	if !strings.Contains(stdout.String(), "Config: "+configPath) {
 		t.Fatalf("stdout = %q, want config path", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "directory:"+dir) {
+	if !strings.Contains(stdout.String(), "directory: "+dir) {
 		t.Fatalf("stdout = %q, want directory status", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "directory exists") {
+	if !strings.Contains(stdout.String(), "satisfied") {
 		t.Fatalf("stdout = %q, want satisfied directory message", stdout.String())
 	}
 }
@@ -50,7 +50,7 @@ directories:
 	if code != exitChanges {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitChanges, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "directory is missing") {
+	if !strings.Contains(stdout.String(), "directory: "+missingDir) || !strings.Contains(stdout.String(), "missing") {
 		t.Fatalf("stdout = %q, want missing directory status", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "1 resource needs attention") {

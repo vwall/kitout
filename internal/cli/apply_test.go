@@ -25,11 +25,14 @@ directories:
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "apply: directory:"+missingDir) {
+	if !strings.Contains(stdout.String(), "Would create directory "+missingDir) {
 		t.Fatalf("stdout = %q, want dry-run directory plan", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "No changes made because --dry-run was used.") {
 		t.Fatalf("stdout = %q, want dry-run no changes message", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "No shell commands will run without explicit approval.") {
+		t.Fatalf("stdout = %q, want dry-run safety message", stdout.String())
 	}
 	if _, err := os.Stat(missingDir); !os.IsNotExist(err) {
 		t.Fatalf("Stat(%q) error = %v, want directory to remain missing", missingDir, err)
