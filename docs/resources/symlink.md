@@ -13,13 +13,13 @@ symlinks:
     replace: false
 ```
 
-## Future grouped config
+## Grouped config
 
-Managing many dotfile links one-by-one can become repetitive. A future
-`symlink_groups` config section should allow shared source and target roots
-while still expanding to independent symlink resources internally.
+Managing many dotfile links one-by-one can become repetitive.
+`symlink_groups` allows shared source and target roots while still expanding to
+independent symlink resources internally.
 
-Proposed shape:
+Shape:
 
 ```yaml
 symlink_groups:
@@ -44,6 +44,9 @@ Each path would expand as if it had been written explicitly:
 
 Grouped symlinks should use the same status, apply, dry-run, duplicate-target,
 and replacement safety rules as explicit `symlinks` entries.
+
+`paths` entries must be relative paths below the group roots. Absolute paths,
+`.` entries, and paths that escape with `..` are rejected during validation.
 
 ## Status check
 
@@ -94,7 +97,10 @@ inspect links without following them, and apply only replaces an existing target
 when `replace: true` is configured. CLI apply confirmation is required for
 replacement unless `--yes` is passed.
 
-`symlink_groups` is not implemented yet.
+`symlink_groups` is implemented in the config layer and expands into ordinary
+`resources.SymlinkResource` entries during config-to-resource building. Grouped
+targets also participate in duplicate-target validation and doctor path
+permission checks.
 
 ## Shared expectations
 

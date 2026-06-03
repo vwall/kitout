@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 )
 
@@ -96,7 +97,20 @@ func Validate(cfg Config) error {
 		errs.requireString(fmt.Sprintf("symlinks[%d].source", i), symlink.Source)
 		errs.requireString(fmt.Sprintf("symlinks[%d].target", i), symlink.Target)
 	}
-	errs.detectDuplicates(symlinkTargetKeys(cfg.Symlinks))
+	for i, group := range cfg.SymlinkGroups {
+		errs.requireString(fmt.Sprintf("symlink_groups[%d].source_root", i), group.SourceRoot)
+		errs.requireString(fmt.Sprintf("symlink_groups[%d].target_root", i), group.TargetRoot)
+		if len(group.Paths) == 0 {
+			errs.add(fmt.Sprintf("symlink_groups[%d].paths", i), "is required")
+		}
+		errs.requireStrings(fmt.Sprintf("symlink_groups[%d].paths", i), group.Paths)
+		for j, path := range group.Paths {
+			if strings.TrimSpace(path) != "" && !isRelativeSubpath(path) {
+				errs.add(fmt.Sprintf("symlink_groups[%d].paths[%d]", i, j), "must be a relative path below the group roots")
+			}
+		}
+	}
+	errs.detectDuplicates(symlinkTargetKeys(cfg))
 
 	for i, item := range cfg.MacOSDefaults {
 		errs.requireString(fmt.Sprintf("macos_defaults[%d].domain", i), item.Domain)
@@ -215,15 +229,39 @@ func asdfToolVersionPathKeys(items []ASDFToolVersion) []duplicateKey {
 	return keys
 }
 
-func symlinkTargetKeys(symlinks []Symlink) []duplicateKey {
-	keys := make([]duplicateKey, 0, len(symlinks))
-	for i, symlink := range symlinks {
+func symlinkTargetKeys(cfg Config) []duplicateKey {
+	keys := make([]duplicateKey, 0, len(cfg.Symlinks))
+	for i, symlink := range cfg.Symlinks {
 		keys = append(keys, duplicateKey{
 			Field: fmt.Sprintf("symlinks[%d].target", i),
 			Value: symlink.Target,
 		})
 	}
+	for i, group := range cfg.SymlinkGroups {
+		for j, path := range group.Paths {
+			target := ""
+			display := ""
+			if strings.TrimSpace(group.TargetRoot) != "" && strings.TrimSpace(path) != "" {
+				target = joinSymlinkGroupPath(group.TargetRoot, path)
+				display = target
+			}
+			keys = append(keys, duplicateKey{
+				Field:   fmt.Sprintf("symlink_groups[%d].paths[%d]", i, j),
+				Value:   target,
+				Display: display,
+			})
+		}
+	}
 	return keys
+}
+
+func isRelativeSubpath(path string) bool {
+	if filepath.IsAbs(path) {
+		return false
+	}
+
+	clean := filepath.Clean(path)
+	return clean != "." && clean != ".." && !strings.HasPrefix(clean, ".."+string(filepath.Separator))
 }
 
 func macOSDefaultKeys(items []MacOSDefault) []duplicateKey {

@@ -45,6 +45,14 @@ symlinks:
     target: ~/.zshrc
     replace: false
 
+symlink_groups:
+  - source_root: ~/dotfiles/home
+    target_root: ~
+    replace: false
+    paths:
+      - .gitconfig
+      - .config/ghostty
+
 macos_defaults:
   # Show all filename extensions in Finder and standard file panels.
   - domain: NSGlobalDomain
