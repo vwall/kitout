@@ -7,6 +7,7 @@ const CurrentVersion = 1
 type Config struct {
 	Version       int            `yaml:"version"`
 	Brew          Brew           `yaml:"brew,omitempty"`
+	ASDF          ASDF           `yaml:"asdf,omitempty"`
 	Casks         []string       `yaml:"casks,omitempty"`
 	Directories   []string       `yaml:"directories,omitempty"`
 	Repos         []Repo         `yaml:"repos,omitempty"`
@@ -18,6 +19,25 @@ type Config struct {
 // Brew describes Homebrew packages managed by Kitout.
 type Brew struct {
 	Packages []string `yaml:"packages,omitempty"`
+}
+
+// ASDF describes runtimes managed by asdf.
+type ASDF struct {
+	Plugins      []ASDFPlugin      `yaml:"plugins,omitempty"`
+	ToolVersions []ASDFToolVersion `yaml:"tool_versions,omitempty"`
+}
+
+// ASDFPlugin describes one asdf plugin and exact tool versions.
+type ASDFPlugin struct {
+	Name     string   `yaml:"name"`
+	URL      string   `yaml:"url"`
+	Versions []string `yaml:"versions,omitempty"`
+}
+
+// ASDFToolVersion describes entries Kitout should manage in a .tool-versions file.
+type ASDFToolVersion struct {
+	Path  string            `yaml:"path"`
+	Tools map[string]string `yaml:"tools"`
 }
 
 // Repo describes a Git repository checkout.

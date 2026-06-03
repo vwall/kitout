@@ -97,6 +97,10 @@ func resolveResourcePaths(baseDir string, cfg Config) Config {
 		cfg.Directories[i] = resolveResourcePath(baseDir, path)
 	}
 
+	for i, item := range cfg.ASDF.ToolVersions {
+		cfg.ASDF.ToolVersions[i].Path = resolveResourcePath(baseDir, item.Path)
+	}
+
 	for i, repo := range cfg.Repos {
 		cfg.Repos[i].Path = resolveResourcePath(baseDir, repo.Path)
 	}

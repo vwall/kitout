@@ -62,6 +62,8 @@ Responsible for resource-specific logic.
 Examples:
 
 - brew package
+- asdf plugin
+- asdf tool versions
 - cask
 - directory
 - symlink

@@ -28,8 +28,14 @@ func TestValidateRejectsUnsupportedVersion(t *testing.T) {
 
 func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 	cfg := Config{
-		Version:       CurrentVersion,
-		Brew:          Brew{Packages: []string{""}},
+		Version: CurrentVersion,
+		Brew:    Brew{Packages: []string{""}},
+		ASDF: ASDF{
+			Plugins: []ASDFPlugin{{Versions: []string{""}}},
+			ToolVersions: []ASDFToolVersion{
+				{},
+			},
+		},
 		Casks:         []string{""},
 		Directories:   []string{""},
 		Repos:         []Repo{{}},
@@ -42,6 +48,11 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 
 	for _, field := range []string{
 		"brew.packages[0]",
+		"asdf.plugins[0].name",
+		"asdf.plugins[0].url",
+		"asdf.plugins[0].versions[0]",
+		"asdf.tool_versions[0].path",
+		"asdf.tool_versions[0].tools",
 		"casks[0]",
 		"directories[0]",
 		"repos[0].path",
@@ -61,8 +72,18 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 
 func TestValidateRejectsDuplicateResources(t *testing.T) {
 	cfg := Config{
-		Version:     CurrentVersion,
-		Brew:        Brew{Packages: []string{"git", "git"}},
+		Version: CurrentVersion,
+		Brew:    Brew{Packages: []string{"git", "git"}},
+		ASDF: ASDF{
+			Plugins: []ASDFPlugin{
+				{Name: "ruby", URL: "https://github.com/asdf-vm/asdf-ruby.git", Versions: []string{"3.3.6", "3.3.6"}},
+				{Name: "ruby", URL: "https://github.com/asdf-vm/asdf-ruby.git"},
+			},
+			ToolVersions: []ASDFToolVersion{
+				{Path: "~/.tool-versions", Tools: map[string]string{"ruby": "3.3.6"}},
+				{Path: "~/.tool-versions", Tools: map[string]string{"nodejs": "22.12.0"}},
+			},
+		},
 		Casks:       []string{"ghostty", "ghostty"},
 		Directories: []string{"~/code", "~/code"},
 		Repos: []Repo{
@@ -87,6 +108,9 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 
 	for _, field := range []string{
 		"brew.packages[1]",
+		"asdf.plugins[0].versions[1]",
+		"asdf.plugins[1].name",
+		"asdf.tool_versions[1].path",
 		"casks[1]",
 		"directories[1]",
 		"repos[1].path",
@@ -96,6 +120,25 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 	} {
 		assertValidationErrorContains(t, err, field, "duplicates")
 	}
+}
+
+func TestValidateRejectsASDFLatestVersions(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		ASDF: ASDF{
+			Plugins: []ASDFPlugin{
+				{Name: "ruby", URL: "https://github.com/asdf-vm/asdf-ruby.git", Versions: []string{"latest"}},
+			},
+			ToolVersions: []ASDFToolVersion{
+				{Path: "~/.tool-versions", Tools: map[string]string{"ruby": "latest"}},
+			},
+		},
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "asdf.plugins[0].versions[0]", "must be an exact version, not latest")
+	assertValidationError(t, err, "asdf.tool_versions[0].tools[ruby]", "must be an exact version, not latest")
 }
 
 func TestValidateRejectsUnsupportedMacOSDefaultType(t *testing.T) {
