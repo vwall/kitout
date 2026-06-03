@@ -87,4 +87,4 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Test `kitout doctor` on the dogfood machine.
 - [x] Test against a fresh macOS user account or clean VM.
 - [x] Refine docs based on real setup friction.
-- [ ] Decide what must be fixed before distribution work begins.
+- [x] Decide what must be fixed before distribution work begins.

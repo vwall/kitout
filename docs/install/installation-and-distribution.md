@@ -53,6 +53,33 @@ brew tap vrwaller/tap
 brew install kitout
 ```
 
+## Distribution readiness gate
+
+Before starting distribution work, fix or verify these items:
+
+- release builds produce darwin arm64 and amd64 binaries with embedded version,
+  commit, and build date metadata
+- release artifacts include checksums generated from the exact binaries that will
+  be published
+- `go test ./...` passes from a clean checkout
+- the manual release checklist in `docs/testing/test-strategy.md` passes,
+  including `doctor`, `init`, `status`, and `apply --dry-run`
+- `README.md`, `docs/config/config-spec.md`, `docs/cli/cli-spec.md`, and
+  `examples/kitout.yaml` match the current command behavior and config schema
+- `kitout init` writes a starter config that validates without manual edits
+- risky apply actions still require confirmation unless `--yes` is passed
+- fresh-machine prerequisite friction is documented in
+  `docs/setup/first-real-run.md`
+
+These are not blockers for the first distribution:
+
+- automatic Homebrew installation
+- automatic repo-local config selection
+- Linux or Windows builds
+- config includes, templates, secrets, or plugins
+- a larger macOS defaults library
+- shell profile mutation helpers
+
 ## Homebrew tap
 
 A Homebrew tap is the natural distribution method for a developer-focused macOS CLI.
