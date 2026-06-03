@@ -10,10 +10,11 @@ import (
 )
 
 func TestStatusLoadsValidConfig(t *testing.T) {
+	dir := t.TempDir()
 	configPath := writeCLIConfigFile(t, `version: 1
 
 directories:
-  - ~/code
+  - `+dir+`
 `)
 
 	var stdout bytes.Buffer
@@ -23,11 +24,37 @@ directories:
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "Config valid: "+configPath) {
-		t.Fatalf("stdout = %q, want valid config path", stdout.String())
+	if !strings.Contains(stdout.String(), "Config: "+configPath) {
+		t.Fatalf("stdout = %q, want config path", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "Status checks are not implemented yet.") {
-		t.Fatalf("stdout = %q, want status stub message", stdout.String())
+	if !strings.Contains(stdout.String(), "directory:"+dir) {
+		t.Fatalf("stdout = %q, want directory status", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "directory exists") {
+		t.Fatalf("stdout = %q, want satisfied directory message", stdout.String())
+	}
+}
+
+func TestStatusReturnsChangesWhenResourceIsMissing(t *testing.T) {
+	missingDir := filepath.Join(t.TempDir(), "missing")
+	configPath := writeCLIConfigFile(t, `version: 1
+
+directories:
+  - `+missingDir+`
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath}, nil, &stdout, &stderr)
+	if code != exitChanges {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitChanges, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "directory is missing") {
+		t.Fatalf("stdout = %q, want missing directory status", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "1 changes needed") {
+		t.Fatalf("stdout = %q, want changes summary", stdout.String())
 	}
 }
 
@@ -142,8 +169,11 @@ func TestStatusJSONReportsValidConfig(t *testing.T) {
 	if response.Config == nil || response.Config.Path != configPath || !response.Config.Valid {
 		t.Fatalf("config = %+v, want valid config path %q", response.Config, configPath)
 	}
-	if response.Status == nil || response.Status.Implemented {
-		t.Fatalf("status = %+v, want unimplemented status state", response.Status)
+	if response.Plan == nil {
+		t.Fatalf("plan = nil, want empty plan")
+	}
+	if response.Plan.Summary.Total != 0 {
+		t.Fatalf("total = %d, want 0", response.Plan.Summary.Total)
 	}
 	if response.Error != nil {
 		t.Fatalf("error = %+v, want nil", response.Error)
@@ -258,7 +288,7 @@ type statusJSONResponse struct {
 	Command string            `json:"command"`
 	OK      bool              `json:"ok"`
 	Config  *statusJSONConfig `json:"config"`
-	Status  *statusJSONState  `json:"status"`
+	Plan    *statusJSONPlan   `json:"plan"`
 	Error   *statusJSONError  `json:"error"`
 }
 
@@ -267,9 +297,30 @@ type statusJSONConfig struct {
 	Valid bool   `json:"valid"`
 }
 
-type statusJSONState struct {
-	Implemented bool   `json:"implemented"`
-	Message     string `json:"message"`
+type statusJSONPlan struct {
+	Summary statusJSONPlanSummary `json:"summary"`
+	Items   []statusJSONPlanItem  `json:"items"`
+	DryRun  bool                  `json:"dry_run"`
+}
+
+type statusJSONPlanSummary struct {
+	Total     int `json:"total"`
+	Satisfied int `json:"satisfied"`
+	Missing   int `json:"missing"`
+	Changed   int `json:"changed"`
+	Failed    int `json:"failed"`
+	Skipped   int `json:"skipped"`
+	Unknown   int `json:"unknown"`
+	ToApply   int `json:"to_apply"`
+}
+
+type statusJSONPlanItem struct {
+	ResourceID string `json:"resource_id"`
+	Type       string `json:"type"`
+	State      string `json:"state"`
+	Action     string `json:"action"`
+	Message    string `json:"message"`
+	Error      string `json:"error"`
 }
 
 type statusJSONError struct {
