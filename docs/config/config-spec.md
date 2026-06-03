@@ -44,6 +44,8 @@ Scalar resource lists remain scalar in Go:
 
 Resources with named fields use typed structs:
 
+- `asdf.plugins`
+- `asdf.tool_versions`
 - `repos`
 - `symlinks`
 - `macos_defaults`
@@ -51,8 +53,9 @@ Resources with named fields use typed structs:
 
 Current resource implementation coverage:
 
-- implemented resource packages: `brew.packages`, `casks`, `directories`,
-  `repos`, `symlinks`, and `shell`
+- implemented resource packages: `brew.packages`, `asdf.plugins`,
+  `asdf.tool_versions`, `casks`, `directories`, `repos`, `symlinks`, and
+  `shell`
 - parsed and validated but not yet implemented as a resource package:
   `macos_defaults`
 
@@ -68,6 +71,10 @@ Scalar resource entries must not be empty:
 
 Named resources require the fields needed to identify and apply the resource:
 
+- `asdf.plugins[].name`
+- `asdf.plugins[].url`
+- `asdf.tool_versions[].path`
+- `asdf.tool_versions[].tools`
 - `repos[].path`
 - `repos[].url`
 - `symlinks[].source`
@@ -88,6 +95,9 @@ float
 string
 ```
 
+`asdf.plugins[].versions[]` and `asdf.tool_versions[].tools` values must be
+exact versions. `latest` is rejected because it makes status mutable over time.
+
 `shell[].when` is optional. When omitted, the shell command resource treats the
 command as always needed. Supported conditions are:
 
@@ -106,10 +116,25 @@ version: 1
 brew:
   packages:
     - git
-    - ruby
-    - node
+    - asdf
     - pnpm
     - gh
+
+asdf:
+  plugins:
+    - name: ruby
+      url: https://github.com/asdf-vm/asdf-ruby.git
+      versions:
+        - 3.3.6
+    - name: nodejs
+      url: https://github.com/asdf-vm/asdf-nodejs.git
+      versions:
+        - 22.12.0
+  tool_versions:
+    - path: ~/.tool-versions
+      tools:
+        ruby: 3.3.6
+        nodejs: 22.12.0
 
 casks:
   - ghostty
@@ -164,6 +189,7 @@ absolute paths
 The implemented path-bearing resource fields are:
 
 - `directories[]`
+- `asdf.tool_versions[].path`
 - `repos[].path`
 - `symlinks[].source`
 - `symlinks[].target`
@@ -195,6 +221,9 @@ The validator should reject duplicate resources.
 Examples:
 
 - same brew package twice
+- same asdf plugin name twice
+- same asdf version twice within a plugin
+- same asdf tool-versions path twice
 - same cask twice
 - same directory twice
 - same target symlink twice

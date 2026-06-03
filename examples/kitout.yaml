@@ -6,10 +6,25 @@ version: 1
 brew:
   packages:
     - git
-    - ruby
-    - node
+    - asdf
     - pnpm
     - gh
+
+asdf:
+  plugins:
+    - name: ruby
+      url: https://github.com/asdf-vm/asdf-ruby.git
+      versions:
+        - 3.3.6
+    - name: nodejs
+      url: https://github.com/asdf-vm/asdf-nodejs.git
+      versions:
+        - 22.12.0
+  tool_versions:
+    - path: ~/.tool-versions
+      tools:
+        ruby: 3.3.6
+        nodejs: 22.12.0
 
 casks:
   - ghostty

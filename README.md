@@ -25,10 +25,20 @@ version: 1
 brew:
   packages:
     - git
-    - ruby
-    - node
+    - asdf
     - pnpm
     - gh
+
+asdf:
+  plugins:
+    - name: ruby
+      url: https://github.com/asdf-vm/asdf-ruby.git
+      versions:
+        - 3.3.6
+  tool_versions:
+    - path: ~/.tool-versions
+      tools:
+        ruby: 3.3.6
 
 casks:
   - ghostty
@@ -50,7 +60,7 @@ symlinks:
 
 ## Initial scope
 
-The first version should focus on macOS, Apple Silicon, Homebrew, Git repositories, directories, symlinks, shell commands, and a safe dry-run mode.
+The first version should focus on macOS, Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, symlinks, shell commands, and a safe dry-run mode.
 
 Do not start with Linux support, secrets, templates, plugins, or a package manager abstraction. Those can come later.
 

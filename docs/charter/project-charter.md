@@ -78,6 +78,8 @@ The MVP is complete when Kitout can:
 - check status for resources
 - dry-run an apply
 - apply Homebrew packages
+- install asdf plugins and exact runtime versions
+- update explicit `.tool-versions` entries
 - apply Homebrew casks
 - create directories
 - create symlinks

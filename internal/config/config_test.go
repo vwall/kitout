@@ -18,6 +18,7 @@ func TestConfigUsesDocumentedYAMLFields(t *testing.T) {
 	}{
 		{"Version", "version"},
 		{"Brew", "brew,omitempty"},
+		{"ASDF", "asdf,omitempty"},
 		{"Casks", "casks,omitempty"},
 		{"Directories", "directories,omitempty"},
 		{"Repos", "repos,omitempty"},
@@ -41,6 +42,13 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		tag   string
 	}{
 		{"Brew", reflect.TypeOf(Brew{}), "Packages", "packages,omitempty"},
+		{"ASDF", reflect.TypeOf(ASDF{}), "Plugins", "plugins,omitempty"},
+		{"ASDF", reflect.TypeOf(ASDF{}), "ToolVersions", "tool_versions,omitempty"},
+		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "Name", "name"},
+		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "URL", "url"},
+		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "Versions", "versions,omitempty"},
+		{"ASDFToolVersion", reflect.TypeOf(ASDFToolVersion{}), "Path", "path"},
+		{"ASDFToolVersion", reflect.TypeOf(ASDFToolVersion{}), "Tools", "tools"},
 		{"Repo", reflect.TypeOf(Repo{}), "Path", "path"},
 		{"Repo", reflect.TypeOf(Repo{}), "URL", "url"},
 		{"Repo", reflect.TypeOf(Repo{}), "Branch", "branch,omitempty"},
@@ -69,6 +77,18 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 		Brew: Brew{
 			Packages: []string{"git", "ruby", "node", "pnpm", "gh"},
 		},
+		ASDF: ASDF{
+			Plugins: []ASDFPlugin{
+				{
+					Name:     "ruby",
+					URL:      "https://github.com/asdf-vm/asdf-ruby.git",
+					Versions: []string{"3.3.6"},
+				},
+			},
+			ToolVersions: []ASDFToolVersion{
+				{Path: "~/.tool-versions", Tools: map[string]string{"ruby": "3.3.6"}},
+			},
+		},
 		Casks:       []string{"ghostty", "visual-studio-code", "1password"},
 		Directories: []string{"~/code", "~/.config"},
 		Repos: []Repo{
@@ -93,6 +113,9 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	}
 	if got := cfg.Repos[0].Branch; got != "main" {
 		t.Fatalf("repo branch = %q, want main", got)
+	}
+	if got := cfg.ASDF.Plugins[0].Versions[0]; got != "3.3.6" {
+		t.Fatalf("asdf ruby version = %q, want 3.3.6", got)
 	}
 	if got, ok := cfg.MacOSDefaults[0].Value.(bool); !ok || !got {
 		t.Fatalf("macOS default value = %#v, want true bool", cfg.MacOSDefaults[0].Value)

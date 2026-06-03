@@ -31,6 +31,8 @@
 ## Phase 3: MVP resources
 
 - brew packages
+- asdf plugins and versions
+- asdf `.tool-versions` entries
 - casks
 - directories
 - symlinks

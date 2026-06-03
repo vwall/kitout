@@ -101,6 +101,28 @@ directories:
 	}
 }
 
+func TestLoadFileResolvesRelativeASDFToolVersionsPathsFromConfigDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := writeConfigFileInDir(t, configDir, `version: 1
+
+asdf:
+  tool_versions:
+    - path: home/.tool-versions
+      tools:
+        ruby: 3.3.6
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	want := filepath.Join(configDir, "home", ".tool-versions")
+	if got := loaded.Config.ASDF.ToolVersions[0].Path; got != want {
+		t.Fatalf("asdf tool_versions path = %q, want %q", got, want)
+	}
+}
+
 func TestLoadFileResolvesRelativeRepoPathsFromConfigDirectory(t *testing.T) {
 	configDir := t.TempDir()
 	configPath := writeConfigFileInDir(t, configDir, `version: 1

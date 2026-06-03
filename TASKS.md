@@ -38,6 +38,7 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Add directory resource with status, apply, and dry-run tests.
 - [x] Add symlink resource with safety checks before overwrite support.
 - [x] Add brew package resource using the command runner interface.
+- [x] Add asdf plugin and `.tool-versions` resources using the command runner interface.
 - [x] Add cask resource using the command runner interface.
 - [x] Add Git repo resource using the command runner interface.
 - [x] Add shell command resource with explicit config opt-in.

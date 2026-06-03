@@ -18,6 +18,7 @@ A developer's Mac setup is usually spread across:
 
 - dotfiles
 - Homebrew packages
+- developer runtimes
 - casks
 - shell setup
 - app preferences
@@ -65,7 +66,7 @@ As a developer, I want to run `kitout status` on my Mac and see what parts of my
 
 ### Adding a new tool
 
-1. Add package or cask to config.
+1. Add package, runtime, or cask to config.
 2. Run `kitout status`.
 3. Confirm it is missing.
 4. Run `kitout apply`.

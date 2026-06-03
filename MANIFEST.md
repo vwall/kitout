@@ -18,6 +18,7 @@ Generated Kitout starter documentation.
 - `docs/product/naming-positioning.md`
 - `docs/product/product-brief.md`
 - `docs/references/references.md`
+- `docs/resources/asdf.md`
 - `docs/resources/brew.md`
 - `docs/resources/cask.md`
 - `docs/resources/directory.md`

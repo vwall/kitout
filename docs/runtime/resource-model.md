@@ -7,6 +7,8 @@ A resource represents one desired piece of machine state.
 Examples:
 
 - `brew:git`
+- `asdf_plugin:ruby`
+- `asdf_tool_versions:~/.tool-versions`
 - `cask:ghostty`
 - `directory:~/code`
 - `symlink:~/.zshrc`
@@ -87,6 +89,8 @@ Examples:
 
 ```txt
 brew:git
+asdf_plugin:ruby
+asdf_tool_versions:/Users/vincent/.tool-versions
 cask:visual-studio-code
 directory:/Users/vincent/code
 symlink:/Users/vincent/.zshrc
@@ -122,12 +126,14 @@ Use fixed execution order:
 
 1. doctor prerequisites
 2. Homebrew packages
-3. casks
-4. directories
-5. repositories
-6. symlinks
-7. macOS defaults
-8. shell commands
+3. asdf plugins and versions
+4. asdf `.tool-versions` entries
+5. casks
+6. directories
+7. repositories
+8. symlinks
+9. macOS defaults
+10. shell commands
 
 This is enough for a first version.
 
