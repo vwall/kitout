@@ -58,3 +58,13 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Update `docs/cli/cli-spec.md` when command behavior changes.
 - [x] Keep `examples/kitout.yaml` aligned with loader validation.
 - [x] Add short notes to resource docs as each resource becomes implemented.
+
+## Next: Phase 4 safety and doctor
+
+- [x] Add `kitout doctor` command with non-mutating prerequisite checks.
+- [x] Check macOS, CPU architecture, Xcode Command Line Tools, Homebrew, Git, and config validity.
+- [x] Add human-readable and JSON doctor output.
+- [ ] Add path permission checks for configured write targets.
+- [ ] Add Homebrew path checks for Apple Silicon.
+- [ ] Add shell environment checks.
+- [ ] Add confirmation flow for risky apply actions.

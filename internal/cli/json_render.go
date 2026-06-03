@@ -19,6 +19,7 @@ type jsonStatusResponse struct {
 	Config  *jsonConfigStatus `json:"config,omitempty"`
 	Plan    *jsonPlan         `json:"plan,omitempty"`
 	Apply   *jsonApplyReport  `json:"apply,omitempty"`
+	Doctor  *jsonDoctorReport `json:"doctor,omitempty"`
 	Error   *jsonError        `json:"error,omitempty"`
 }
 
@@ -58,6 +59,19 @@ type jsonApplyItem struct {
 	Details    map[string]string `json:"details,omitempty"`
 }
 
+type jsonDoctorReport struct {
+	Summary doctorSummary    `json:"summary"`
+	Items   []jsonDoctorItem `json:"items"`
+}
+
+type jsonDoctorItem struct {
+	Name    string            `json:"name"`
+	State   string            `json:"state"`
+	Message string            `json:"message"`
+	Fix     string            `json:"fix,omitempty"`
+	Details map[string]string `json:"details,omitempty"`
+}
+
 type jsonError struct {
 	Type    string            `json:"type"`
 	Message string            `json:"message"`
@@ -94,6 +108,18 @@ func (r jsonRenderer) renderApplyReport(path string, report engine.ApplyReport) 
 			Valid: true,
 		},
 		Apply: jsonApplyReportFromEngine(report),
+	})
+}
+
+func (r jsonRenderer) renderDoctorReport(report doctorReport) error {
+	return r.write(jsonStatusResponse{
+		Command: "doctor",
+		OK:      !report.HasFailures(),
+		Config: &jsonConfigStatus{
+			Path:  report.ConfigPath,
+			Valid: report.configIsValid(),
+		},
+		Doctor: jsonDoctorReportFromCLI(report),
 	})
 }
 
@@ -191,4 +217,31 @@ func jsonApplyReportFromEngine(report engine.ApplyReport) *jsonApplyReport {
 		Summary: report.Summary,
 		Items:   items,
 	}
+}
+
+func jsonDoctorReportFromCLI(report doctorReport) *jsonDoctorReport {
+	items := make([]jsonDoctorItem, 0, len(report.Items))
+	for _, item := range report.Items {
+		items = append(items, jsonDoctorItem{
+			Name:    item.Name,
+			State:   string(item.State),
+			Message: item.Message,
+			Fix:     item.Fix,
+			Details: item.Details,
+		})
+	}
+
+	return &jsonDoctorReport{
+		Summary: report.Summary,
+		Items:   items,
+	}
+}
+
+func (report doctorReport) configIsValid() bool {
+	for _, item := range report.Items {
+		if item.Name == "Config" {
+			return item.State == doctorOK
+		}
+	}
+	return false
 }

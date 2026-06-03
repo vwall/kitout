@@ -1,0 +1,262 @@
+package cli
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/vwall/kitout/internal/platform"
+)
+
+func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
+		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
+		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
+		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
+	}}
+	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	if report.Summary != (doctorSummary{Total: 6, OK: 6}) {
+		t.Fatalf("summary = %+v, want six ok checks", report.Summary)
+	}
+	expectDoctorCalls(t, runner.calls, []doctorCommandCall{
+		{name: "xcode-select", args: []string{"-p"}},
+		{name: "brew", args: []string{"--version"}},
+		{name: "git", args: []string{"--version"}},
+	})
+	assertDoctorItem(t, report, "Homebrew", doctorOK, "Homebrew 4.0.0")
+	assertDoctorItem(t, report, "Config", doctorOK, "config is valid")
+}
+
+func TestDoctorCheckerReportsPrerequisiteFailures(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
+		{err: doctorCommandError("xcode-select", []string{"-p"})},
+		{err: doctorCommandError("brew", []string{"--version"})},
+		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
+	}}
+	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "linux", Arch: "amd64"})
+
+	report := checker.Check(context.Background(), configPath)
+
+	if !report.HasFailures() {
+		t.Fatalf("HasFailures() = false, want true")
+	}
+	if report.Summary.Fail != 3 {
+		t.Fatalf("failures = %d, want 3", report.Summary.Fail)
+	}
+	if report.Summary.Warn != 1 {
+		t.Fatalf("warnings = %d, want 1", report.Summary.Warn)
+	}
+	assertDoctorItem(t, report, "macOS", doctorFail, "unsupported OS")
+	assertDoctorItem(t, report, "CPU architecture", doctorWarn, "Intel architecture")
+	assertDoctorItem(t, report, "Homebrew", doctorFail, "Homebrew is not available")
+}
+
+func TestDoctorCheckerReportsInvalidConfig(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+
+repos:
+  - path: ~/code/kitout
+`)
+	runner := &fakeDoctorRunner{}
+	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+
+	report := checker.Check(context.Background(), configPath)
+
+	if !report.HasFailures() {
+		t.Fatalf("HasFailures() = false, want true")
+	}
+	assertDoctorItem(t, report, "Config", doctorFail, "config is not valid")
+	configItem := doctorItemByName(t, report, "Config")
+	if !strings.Contains(configItem.Details["error"], "repos[0].url is required") {
+		t.Fatalf("config error = %q, want validation detail", configItem.Details["error"])
+	}
+}
+
+func TestDoctorExitCodeAllowsWarnings(t *testing.T) {
+	report := doctorReport{
+		Summary: doctorSummary{Total: 1, Warn: 1},
+	}
+
+	if got := doctorExitCode(report); got != exitOK {
+		t.Fatalf("exit code = %d, want %d", got, exitOK)
+	}
+}
+
+func TestHumanRendererDoctorOutput(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	renderer.renderDoctorReport(doctorReport{
+		ConfigPath: "/tmp/kitout.yaml",
+		Items: []doctorItem{
+			{Name: "macOS", State: doctorOK, Message: "running on macOS"},
+			{Name: "Homebrew", State: doctorFail, Message: "Homebrew is not available", Fix: "Install Homebrew."},
+		},
+		Summary: doctorSummary{Total: 2, OK: 1, Fail: 1},
+	})
+
+	for _, fragment := range []string{
+		"Config: /tmp/kitout.yaml",
+		"Doctor:",
+		"ok   macOS",
+		"fail Homebrew",
+		"fix: Install Homebrew.",
+		"2 total, 1 ok, 0 warnings, 1 failed",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestJSONRendererDoctorOutput(t *testing.T) {
+	var stdout bytes.Buffer
+	renderer := newJSONRenderer(&stdout)
+
+	err := renderer.renderDoctorReport(doctorReport{
+		ConfigPath: "/tmp/kitout.yaml",
+		Items: []doctorItem{
+			{Name: "Config", State: doctorOK, Message: "config is valid", Details: map[string]string{"path": "/tmp/kitout.yaml"}},
+		},
+		Summary: doctorSummary{Total: 1, OK: 1},
+	})
+	if err != nil {
+		t.Fatalf("renderDoctorReport returned error: %v", err)
+	}
+
+	var response doctorJSONResponse
+	if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+		t.Fatalf("decode JSON output %q: %v", stdout.String(), err)
+	}
+	if response.Command != "doctor" || !response.OK {
+		t.Fatalf("response = %+v, want ok doctor response", response)
+	}
+	if response.Config == nil || response.Config.Path != "/tmp/kitout.yaml" || !response.Config.Valid {
+		t.Fatalf("config = %+v, want valid config path", response.Config)
+	}
+	if response.Doctor == nil || response.Doctor.Summary.OK != 1 {
+		t.Fatalf("doctor = %+v, want one ok check", response.Doctor)
+	}
+}
+
+func assertDoctorItem(t *testing.T, report doctorReport, name string, state doctorState, messageFragment string) {
+	t.Helper()
+
+	item := doctorItemByName(t, report, name)
+	if item.State != state {
+		t.Fatalf("%s state = %q, want %q", name, item.State, state)
+	}
+	if !strings.Contains(item.Message, messageFragment) {
+		t.Fatalf("%s message = %q, want fragment %q", name, item.Message, messageFragment)
+	}
+}
+
+func doctorItemByName(t *testing.T, report doctorReport, name string) doctorItem {
+	t.Helper()
+
+	for _, item := range report.Items {
+		if item.Name == name {
+			return item
+		}
+	}
+	t.Fatalf("doctor item %q was not found in %+v", name, report.Items)
+	return doctorItem{}
+}
+
+type fakeDoctorRunner struct {
+	calls     []doctorCommandCall
+	responses []fakeDoctorResponse
+}
+
+type doctorCommandCall struct {
+	name string
+	args []string
+}
+
+type fakeDoctorResponse struct {
+	result platform.CommandResult
+	err    error
+}
+
+func (runner *fakeDoctorRunner) Run(ctx context.Context, name string, args ...string) (platform.CommandResult, error) {
+	runner.calls = append(runner.calls, doctorCommandCall{
+		name: name,
+		args: append([]string(nil), args...),
+	})
+
+	if len(runner.responses) == 0 {
+		return doctorCommandResult(name, args, ""), nil
+	}
+
+	response := runner.responses[0]
+	runner.responses = runner.responses[1:]
+	if response.result.Name == "" {
+		response.result = doctorCommandResult(name, args, "")
+	}
+	return response.result, response.err
+}
+
+func expectDoctorCalls(t *testing.T, got, want []doctorCommandCall) {
+	t.Helper()
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("calls = %#v, want %#v", got, want)
+	}
+}
+
+func doctorCommandResult(name string, args []string, stdout string) platform.CommandResult {
+	return platform.CommandResult{
+		Name:     name,
+		Args:     append([]string(nil), args...),
+		Stdout:   stdout,
+		ExitCode: 0,
+	}
+}
+
+func doctorCommandError(name string, args []string) platform.CommandError {
+	return platform.CommandError{
+		Result: platform.CommandResult{
+			Name:     name,
+			Args:     append([]string(nil), args...),
+			ExitCode: 1,
+		},
+		Err: errors.New("command failed"),
+	}
+}
+
+type doctorJSONResponse struct {
+	Command string            `json:"command"`
+	OK      bool              `json:"ok"`
+	Config  *statusJSONConfig `json:"config"`
+	Doctor  *doctorJSONReport `json:"doctor"`
+	Error   *statusJSONError  `json:"error"`
+}
+
+type doctorJSONReport struct {
+	Summary doctorSummary    `json:"summary"`
+	Items   []doctorJSONItem `json:"items"`
+}
+
+type doctorJSONItem struct {
+	Name    string            `json:"name"`
+	State   string            `json:"state"`
+	Message string            `json:"message"`
+	Fix     string            `json:"fix"`
+	Details map[string]string `json:"details"`
+}
