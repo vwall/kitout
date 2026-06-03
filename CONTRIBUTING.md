@@ -6,6 +6,7 @@
 go mod download
 go test ./...
 go run ./cmd/kitout version
+make build
 ```
 
 ## Before opening a pull request

@@ -4,12 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
-)
 
-var (
-	version = "0.1.0"
-	commit  = "unknown"
-	built   = "unknown"
+	"github.com/vwall/kitout/internal/buildinfo"
 )
 
 func runVersion(args []string, opts globalOptions, stdout, stderr io.Writer) int {
@@ -21,6 +17,7 @@ func runVersion(args []string, opts globalOptions, stdout, stderr io.Writer) int
 		return exitValidation
 	}
 
-	fmt.Fprintf(stdout, "kitout %s\ncommit %s\nbuilt %s\n", version, commit, built)
+	info := buildinfo.Current()
+	fmt.Fprintf(stdout, "kitout %s\ncommit %s\nbuilt %s\n", info.Version, info.Commit, info.BuildDate)
 	return exitOK
 }

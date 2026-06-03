@@ -21,6 +21,13 @@ developer-local equivalent:
 go run ./cmd/kitout status
 ```
 
+To produce a local build artifact with embedded metadata:
+
+```sh
+make build
+bin/kitout version
+```
+
 ## Release goals
 
 Kitout should eventually support:
@@ -92,6 +99,29 @@ Example:
 
 ```sh
 kitout version
+```
+
+Local and release builds should set metadata with Go linker flags. The stable
+linker variables are:
+
+```txt
+github.com/vwall/kitout/internal/buildinfo.Version
+github.com/vwall/kitout/internal/buildinfo.Commit
+github.com/vwall/kitout/internal/buildinfo.BuildDate
+```
+
+The local build target injects these values automatically:
+
+```sh
+make build VERSION=0.1.0
+```
+
+Release tooling should use the same variables:
+
+```sh
+go build -trimpath \
+  -ldflags "-s -w -X github.com/vwall/kitout/internal/buildinfo.Version=0.1.0 -X github.com/vwall/kitout/internal/buildinfo.Commit=$(git rev-parse --short HEAD) -X github.com/vwall/kitout/internal/buildinfo.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -o dist/kitout ./cmd/kitout
 ```
 
 ## First install docs
