@@ -53,8 +53,8 @@ directories:
 	if !strings.Contains(stdout.String(), "directory is missing") {
 		t.Fatalf("stdout = %q, want missing directory status", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "1 changes needed") {
-		t.Fatalf("stdout = %q, want changes summary", stdout.String())
+	if !strings.Contains(stdout.String(), "1 resource needs attention") {
+		t.Fatalf("stdout = %q, want attention summary", stdout.String())
 	}
 }
 

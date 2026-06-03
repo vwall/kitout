@@ -95,12 +95,12 @@ It should not feel:
 Use readable status lines:
 
 ```txt
-✓ brew package git installed
-✓ directory ~/code exists
-✗ cask ghostty missing
-! symlink ~/.zshrc points somewhere else
+ok      brew:git             formula is installed
+ok      directory:~/code     directory exists
+missing cask:ghostty         cask is missing
+changed symlink:~/.zshrc     symlink points elsewhere
 
-2 changes needed
+2 resources need attention
 Run: kitout apply --dry-run
 ```
 

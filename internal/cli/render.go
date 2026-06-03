@@ -34,7 +34,7 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 	for _, item := range plan.Items {
 		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.statusMarker(item), resourceWidth, item.ResourceID, item.Message)
 		if item.Error != "" {
-			fmt.Fprintf(r.stdout, "    error: %s\n", item.Error)
+			fmt.Fprintf(r.stdout, "%-*s error: %s\n", statusMarkerWidth, "", item.Error)
 		}
 	}
 	fmt.Fprintf(r.stdout, "\n%d total, %d satisfied, %d missing, %d changed, %d failed, %d skipped\n",
@@ -45,8 +45,8 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 		plan.Summary.Failed+plan.Summary.Unknown,
 		plan.Summary.Skipped,
 	)
-	if plan.Summary.ToApply > 0 {
-		fmt.Fprintf(r.stdout, "%d changes needed\n", plan.Summary.ToApply)
+	if attention := statusAttentionCount(plan.Summary); attention > 0 {
+		fmt.Fprintf(r.stdout, "%s\n", statusAttentionMessage(attention))
 	}
 }
 
@@ -134,7 +134,7 @@ func (r humanRenderer) renderConfigLoadFailure(err error) {
 
 const (
 	minResourceIDWidth = 18
-	statusMarkerWidth  = len("outdated:")
+	statusMarkerWidth  = len("missing")
 	actionMarkerWidth  = len("apply:")
 	shortMarkerWidth   = len("done:")
 
@@ -205,22 +205,31 @@ func applyResourceIDWidth(items []engine.ApplyItem) int {
 }
 
 func statusMarker(item engine.PlanItem) string {
-	if item.Type == "brew" && item.State == engine.StateChanged {
-		return "outdated:"
-	}
-
 	switch item.State {
 	case engine.StateSatisfied:
-		return "ok:"
-	case engine.StateMissing, engine.StateChanged:
-		return "need:"
+		return "ok"
+	case engine.StateMissing:
+		return "missing"
+	case engine.StateChanged:
+		return "changed"
 	case engine.StateSkipped:
-		return "skip:"
+		return "skip"
 	case engine.StateFailed, engine.StateUnknown:
-		return "fail:"
+		return "fail"
 	default:
-		return "fail:"
+		return "fail"
 	}
+}
+
+func statusAttentionCount(summary engine.PlanSummary) int {
+	return summary.Missing + summary.Changed + summary.Failed + summary.Unknown
+}
+
+func statusAttentionMessage(count int) string {
+	if count == 1 {
+		return "1 resource needs attention"
+	}
+	return fmt.Sprintf("%d resources need attention", count)
 }
 
 func statusMarkerColor(item engine.PlanItem) string {
