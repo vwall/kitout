@@ -109,6 +109,13 @@ Run tests with:
 go test ./...
 ```
 
+Build a local binary with embedded version metadata:
+
+```sh
+make build
+bin/kitout version
+```
+
 ## Working principles
 
 1. Desired state over imperative scripting.
