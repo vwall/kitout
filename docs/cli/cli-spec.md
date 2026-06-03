@@ -97,6 +97,7 @@ Behavior:
 - load and validate config
 - run status checks
 - build plan
+- require confirmation before risky actions, including shell commands and symlink replacements, unless `--yes` is passed
 - apply missing or changed resources in stable order
 - render summary
 - return `0` when apply completed successfully
@@ -133,7 +134,9 @@ Checks:
 - CPU architecture
 - Xcode Command Line Tools
 - Homebrew installation
+- Homebrew install path for the current CPU architecture
 - Git installation
+- shell environment
 - config file validity
 - write permissions for configured filesystem targets
 
@@ -146,17 +149,14 @@ ok   macOS                      running on macOS
 ok   CPU architecture           running on Apple Silicon
 ok   Xcode Command Line Tools   /Library/Developer/CommandLineTools
 ok   Homebrew                   Homebrew 4.0.0
+ok   Homebrew path              Homebrew prefix is /opt/homebrew
 ok   Git                        git version 2.45.0
+ok   Shell environment          SHELL and PATH look usable
 ok   Config                     config is valid
 ok   Path permissions           no configured filesystem write targets
 
-7 total, 7 ok, 0 warnings, 0 failed
+9 total, 9 ok, 0 warnings, 0 failed
 ```
-
-Planned follow-up checks:
-
-- Homebrew path
-- shell environment
 
 ### `kitout list`
 
@@ -232,16 +232,15 @@ Example:
 
 ## Confirmation rules
 
-Interactive confirmation is planned for risky changes unless `--yes` is passed.
+Interactive confirmation is required for risky changes unless `--yes` is passed.
 
 Risky changes include:
 
 - replacing symlink targets
-- modifying macOS defaults
 - running shell commands
+- modifying macOS defaults, once that resource is implemented
 
-Once confirmation prompts are implemented, safe changes may apply without
-confirmation:
+Safe changes may apply without confirmation:
 
 - installing a missing package
 - creating a missing directory

@@ -65,6 +65,6 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Check macOS, CPU architecture, Xcode Command Line Tools, Homebrew, Git, and config validity.
 - [x] Add human-readable and JSON doctor output.
 - [x] Add path permission checks for configured write targets.
-- [ ] Add Homebrew path checks for Apple Silicon.
-- [ ] Add shell environment checks.
-- [ ] Add confirmation flow for risky apply actions.
+- [x] Add Homebrew path checks for Apple Silicon.
+- [x] Add shell environment checks.
+- [x] Add confirmation flow for risky apply actions.
