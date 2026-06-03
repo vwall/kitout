@@ -227,8 +227,8 @@ func TestHumanRendererDoctorOutput(t *testing.T) {
 	for _, fragment := range []string{
 		"Config: /tmp/kitout.yaml",
 		"Doctor:",
-		"ok   macOS",
-		"fail Homebrew",
+		"ok:   macOS",
+		"fail: Homebrew",
 		"fix: Install Homebrew.",
 		"2 total, 1 ok, 0 warnings, 1 failed",
 	} {

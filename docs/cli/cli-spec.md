@@ -67,12 +67,15 @@ Example human output:
 
 ```txt
 Config: /Users/example/.config/kitout/kitout.yaml
-ok        brew:git                      formula is installed
-outdated: brew:go                       formula is outdated
-need      cask:ghostty                  cask is missing
-ok        directory:/Users/example/code directory exists
-need      symlink:/Users/example/.zshrc symlink points elsewhere
 
+ok:       brew:git                      formula is installed
+outdated: brew:go                       formula is outdated
+need:     cask:ghostty                  cask is missing
+ok:       directory:/Users/example/code directory exists
+skip:     repo:/Users/example/code/app  skipped by config
+fail:     shell:setup                   command failed
+
+6 total, 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
 3 changes needed
 ```
 
@@ -116,9 +119,10 @@ Example output:
 
 ```txt
 Config: /Users/example/.config/kitout/kitout.yaml
+
 Plan:
-  apply cask:ghostty                  cask is missing
-  apply symlink:/Users/example/.zshrc symlink points elsewhere
+  apply: cask:ghostty                  cask is missing
+  apply: symlink:/Users/example/.zshrc symlink points elsewhere
 
 No changes made because --dry-run was used.
 ```
@@ -147,16 +151,17 @@ Current output:
 
 ```txt
 Config: /Users/me/.config/kitout/kitout.yaml
+
 Doctor:
-ok   macOS                      running on macOS
-ok   CPU architecture           running on Apple Silicon
-ok   Xcode Command Line Tools   /Library/Developer/CommandLineTools
-ok   Homebrew                   Homebrew 4.0.0
-ok   Homebrew path              Homebrew prefix is /opt/homebrew
-ok   Git                        git version 2.45.0
-ok   Shell environment          SHELL and PATH look usable
-ok   Config                     config is valid
-ok   Path permissions           no configured filesystem write targets
+ok:   macOS                      running on macOS
+ok:   CPU architecture           running on Apple Silicon
+ok:   Xcode Command Line Tools   /Library/Developer/CommandLineTools
+ok:   Homebrew                   Homebrew 4.0.0
+ok:   Homebrew path              Homebrew prefix is /opt/homebrew
+ok:   Git                        git version 2.45.0
+ok:   Shell environment          SHELL and PATH look usable
+ok:   Config                     config is valid
+ok:   Path permissions           no configured filesystem write targets
 
 9 total, 9 ok, 0 warnings, 0 failed
 ```

@@ -31,9 +31,9 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 	})
 
 	for _, fragment := range []string{
-		"Config: /tmp/kitout.yaml",
+		"Config: /tmp/kitout.yaml\n\n",
 		"directory:/tmp/code directory exists",
-		"need      brew:git",
+		"need:     brew:git",
 		"outdated: brew:go",
 		"3 total, 1 satisfied, 1 missing, 1 changed",
 		"2 changes needed",
@@ -50,14 +50,17 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 	if len(lines) < 4 {
 		t.Fatalf("stdout = %q, want status lines", stdout.String())
 	}
-	resourceColumn := strings.Index(lines[1], "directory:/tmp/code")
-	for _, line := range lines[2:4] {
+	directoryLine := findLineContaining(t, lines, "directory:/tmp/code")
+	missingBrewLine := findLineContaining(t, lines, "brew:git")
+	outdatedBrewLine := findLineContaining(t, lines, "brew:go")
+	resourceColumn := strings.Index(directoryLine, "directory:/tmp/code")
+	for _, line := range []string{missingBrewLine, outdatedBrewLine} {
 		if got := strings.Index(line, "brew:"); got != resourceColumn {
 			t.Fatalf("resource column = %d in %q, want %d", got, line, resourceColumn)
 		}
 	}
-	messageColumn := strings.Index(lines[1], "directory exists")
-	for _, line := range []string{lines[2], lines[3]} {
+	messageColumn := strings.Index(directoryLine, "directory exists")
+	for _, line := range []string{missingBrewLine, outdatedBrewLine} {
 		if got := strings.Index(line, "formula"); got != messageColumn {
 			t.Fatalf("message column = %d in %q, want %d", got, line, messageColumn)
 		}
@@ -81,9 +84,11 @@ func TestHumanRendererAlignsMessageColumnsAcrossLongResourceIDs(t *testing.T) {
 		t.Fatalf("stdout = %q, want status lines", stdout.String())
 	}
 
-	want := strings.Index(lines[1], "formula is outdated")
-	if got := strings.Index(lines[2], "directory exists"); got != want {
-		t.Fatalf("message column = %d in %q, want %d from %q", got, lines[2], want, lines[1])
+	outdatedLine := findLineContaining(t, lines, "formula is outdated")
+	directoryLine := findLineContaining(t, lines, "directory exists")
+	want := strings.Index(outdatedLine, "formula is outdated")
+	if got := strings.Index(directoryLine, "directory exists"); got != want {
+		t.Fatalf("message column = %d in %q, want %d from %q", got, directoryLine, want, outdatedLine)
 	}
 	if !strings.Contains(stdout.String(), "outdated: brew:git                     formula is outdated") {
 		t.Fatalf("stdout = %q, want brew row padded to message column", stdout.String())
@@ -107,6 +112,9 @@ func TestHumanRendererAlignsDryRunAndApplyMessageColumns(t *testing.T) {
 			{ResourceID: "directory:/Users/nix/.config", Action: "noop", Message: "directory exists"},
 		},
 	})
+	if !strings.Contains(stdout.String(), "Config: /tmp/kitout.yaml\n\nPlan:") {
+		t.Fatalf("stdout = %q, want blank line before dry-run plan", stdout.String())
+	}
 
 	lines := strings.Split(stdout.String(), "\n")
 	dryRunShort := findLineContaining(t, lines, "cask:ghostty")
@@ -177,14 +185,14 @@ func TestHumanRendererColorsHumanMarkersWhenEnabled(t *testing.T) {
 	})
 
 	for _, fragment := range []string{
-		ansiGreen + "ok       " + ansiReset,
-		ansiYellow + "need     " + ansiReset,
+		ansiGreen + "ok:      " + ansiReset,
+		ansiYellow + "need:    " + ansiReset,
 		ansiYellow + "outdated:" + ansiReset,
-		ansiRed + "fail     " + ansiReset,
-		ansiCyan + "skip     " + ansiReset,
-		ansiYellow + "apply" + ansiReset,
-		ansiGreen + "done" + ansiReset,
-		ansiYellow + "warn" + ansiReset,
+		ansiRed + "fail:    " + ansiReset,
+		ansiCyan + "skip:    " + ansiReset,
+		ansiYellow + "apply:" + ansiReset,
+		ansiGreen + "done:" + ansiReset,
+		ansiYellow + "warn:" + ansiReset,
 	} {
 		if !strings.Contains(stdout.String(), fragment) {
 			t.Fatalf("stdout = %q, want color fragment %q", stdout.String(), fragment)
