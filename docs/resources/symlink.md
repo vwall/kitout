@@ -45,6 +45,10 @@ Default to `replace: false`.
 
 Do not overwrite a real file unless the config explicitly allows it.
 
+`kitout apply` also asks for confirmation before replacing an existing symlink
+target unless `--yes` is passed. Creating a missing symlink does not require
+confirmation.
+
 A future backup option may support:
 
 ```yaml
@@ -55,7 +59,8 @@ backup: true
 
 Implemented as `resources.SymlinkResource`. Status uses `os.Lstat` so it can
 inspect links without following them, and apply only replaces an existing target
-when `replace: true` is configured.
+when `replace: true` is configured. CLI apply confirmation is required for
+replacement unless `--yes` is passed.
 
 ## Shared expectations
 

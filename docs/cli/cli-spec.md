@@ -14,7 +14,7 @@ kitout
 --quiet             Reduce output
 --no-color          Disable colored output
 --json              Print machine-readable JSON output
---yes               Skip interactive confirmations when allowed
+--yes               Bypass apply confirmations for shell commands and symlink replacements
 ```
 
 These flags are currently parsed by the root command and by implemented
@@ -97,7 +97,7 @@ Behavior:
 - load and validate config
 - run status checks
 - build plan
-- require confirmation before risky actions, including shell commands and symlink replacements, unless `--yes` is passed
+- require confirmation before implemented risky actions, currently shell commands and symlink replacements, unless `--yes` is passed
 - apply missing or changed resources in stable order
 - render summary
 - return `0` when apply completed successfully
@@ -232,19 +232,21 @@ Example:
 
 ## Confirmation rules
 
-Interactive confirmation is required for risky changes unless `--yes` is passed.
+Interactive confirmation is required for implemented risky changes unless
+`--yes` is passed.
 
-Risky changes include:
+Risky changes currently include:
 
 - replacing symlink targets
 - running shell commands
-- modifying macOS defaults
 
 Safe changes may apply without confirmation:
 
 - installing a missing package
 - creating a missing directory
 - cloning a missing repo
+
+Dry-run only renders the plan, so it does not ask for confirmation.
 
 ## Help text principle
 
