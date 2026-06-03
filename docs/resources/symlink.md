@@ -48,6 +48,11 @@ and replacement safety rules as explicit `symlinks` entries.
 `paths` entries must be relative paths below the group roots. Absolute paths,
 `.` entries, and paths that escape with `..` are rejected during validation.
 
+For a setup repo, prefer repo-relative roots such as `source_root: ./home`.
+Relative path-bearing fields resolve from the directory containing the selected
+config file. Home-relative roots such as `~/dotfiles/home` are valid only when
+that directory exists on the target machine.
+
 ## Status check
 
 Satisfied when:
@@ -83,6 +88,11 @@ Do not overwrite a real file unless the config explicitly allows it.
 `kitout apply` also asks for confirmation before replacing an existing symlink
 target unless `--yes` is passed. Creating a missing symlink does not require
 confirmation.
+
+When dogfooding on an existing Mac, expect dotfile targets such as `~/.zshrc`,
+`~/.gitconfig`, or app config directories to already exist. First run
+`kitout apply --dry-run`, move or back up files you want Kitout to own, and set
+`replace: true` only for targets where replacement is intentional.
 
 A future backup option may support:
 

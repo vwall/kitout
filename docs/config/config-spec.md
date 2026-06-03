@@ -18,6 +18,17 @@ Repo-local path:
 
 Use `--config` to select a specific config file.
 
+The current CLI does not auto-select `./kitout.yaml`. When running from a
+private setup repo, pass the repo config explicitly:
+
+```sh
+kitout status --config ./kitout.yaml
+kitout apply --config ./kitout.yaml --dry-run
+```
+
+This is intentionally boring: users should be able to tell which file is being
+checked before Kitout reports or applies changes.
+
 The loader and validator for this schema are implemented in `internal/config`.
 `internal/resources.Build` converts validated config into ordered resources for
 `kitout status`, `kitout apply --dry-run`, and `kitout apply`.
@@ -197,6 +208,10 @@ relative paths from the config file directory
 absolute paths
 ```
 
+This matters for dotfile repos. If the selected config is
+`~/code/setup/kitout.yaml`, then `./home/.zshrc` resolves to
+`~/code/setup/home/.zshrc`, not the process working directory.
+
 The implemented path-bearing resource fields are:
 
 - `directories[]`
@@ -210,6 +225,34 @@ The implemented path-bearing resource fields are:
 `symlink_groups[].paths[]` entries are relative path fragments below their
 group roots. They are cleaned internally, but they do not resolve relative to
 the config file directory on their own.
+
+Example setup repo layout:
+
+```txt
+setup/
+  kitout.yaml
+  home/
+    .zshrc
+    .gitconfig
+```
+
+Config:
+
+```yaml
+symlink_groups:
+  - source_root: ./home
+    target_root: ~
+    paths:
+      - .zshrc
+      - .gitconfig
+```
+
+Expanded targets:
+
+```txt
+~/code/setup/home/.zshrc    -> ~/.zshrc
+~/code/setup/home/.gitconfig -> ~/.gitconfig
+```
 
 Behavior:
 

@@ -1,5 +1,7 @@
 # This file is an example only.
 # Do not commit real secrets.
+# Run it explicitly while dogfooding:
+#   kitout status --config examples/kitout.private.yaml.example
 
 version: 1
 
