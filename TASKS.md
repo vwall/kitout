@@ -43,6 +43,15 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Add Git repo resource using the command runner interface.
 - [x] Add shell command resource with explicit config opt-in.
 
+## Then: CLI resource execution
+
+- [x] Add config-to-resource builder with stable execution order.
+- [x] Wire `kitout status` to resource checks and plan rendering.
+- [x] Add sequential executor for planned apply actions.
+- [x] Add `kitout apply --dry-run`.
+- [x] Add `kitout apply`.
+- [x] Add JSON plan output for status and dry-run.
+
 ## Documentation follow-up
 
 - [x] Update `docs/config/config-spec.md` when config structs become executable.

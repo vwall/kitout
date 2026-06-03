@@ -11,6 +11,7 @@ const (
 	exitChanges      = 1
 	exitValidation   = 2
 	exitRuntimeError = 3
+	exitApplyFailure = 4
 )
 
 type globalOptions struct {
@@ -45,6 +46,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitOK
 	case "init":
 		return runInit(remainingArgs[1:], opts, stdout, stderr)
+	case "apply":
+		return runApply(remainingArgs[1:], opts, stdout, stderr)
 	case "status":
 		return runStatus(remainingArgs[1:], opts, stdout, stderr)
 	case "version":
@@ -72,18 +75,19 @@ Usage:
   kitout <command> [flags]
 
 Commands:
+  apply    Apply missing or incorrect resources
   init      Create a starter config file
   status    Check configured resources
   version   Print version metadata
 
 Planned commands:
-  apply     Apply missing or incorrect resources
   doctor    Check local prerequisites and common problems
 
 Examples:
   kitout init
   kitout init --config ./kitout.yaml
   kitout status --config ./kitout.yaml
+  kitout apply --config ./kitout.yaml --dry-run
   kitout version
 
 Global flags:

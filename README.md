@@ -87,6 +87,8 @@ Run the CLI locally with:
 ```sh
 go run ./cmd/kitout version
 go run ./cmd/kitout init --config ./kitout.yaml
+go run ./cmd/kitout status --config ./kitout.yaml
+go run ./cmd/kitout apply --config ./kitout.yaml --dry-run
 ```
 
 Run tests with:

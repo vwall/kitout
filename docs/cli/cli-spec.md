@@ -18,8 +18,8 @@ kitout
 ```
 
 These flags are currently parsed by the root command and by implemented
-subcommands. `--config` is used by `init` and `status`; `--json` and `--quiet`
-currently affect `status`.
+subcommands. `--config` is used by `init`, `status`, and `apply`; `--json` and
+`--quiet` currently affect `status` and `apply`.
 
 ## Commands
 
@@ -51,31 +51,28 @@ kitout status --json
 Current behavior:
 
 - load and validate the selected config file
+- build resources from config in stable execution order
+- check resource status through the engine planner
+- render resource details and summary counts
+- return `0` when all resources are satisfied or skipped
+- return `1` when changes are needed
 - return `2` for config validation, parse, or unknown-field errors
-- return `3` for config read failures
-- do not check resource status until the CLI is wired to the engine resources
-- when `--json` is passed, print a small machine-readable response for config load, validation, and the current unimplemented status state
+- return `3` for config read failures or failed/unknown resources
+- when `--json` is passed, print machine-readable plan output
 
-Current human output for a valid config:
-
-```txt
-Config valid: /Users/example/.config/kitout/kitout.yaml
-Status checks are not implemented yet.
-```
-
-Target output after resource checks are wired:
+Example human output:
 
 ```txt
-✓ brew package git installed
-✓ cask visual-studio-code installed
-✗ cask ghostty missing
-✓ directory ~/code exists
-! symlink ~/.zshrc points to a different source
+Config: /Users/example/.config/kitout/kitout.yaml
+ok   brew:git           formula is installed
+need cask:ghostty       cask is missing
+ok   directory:/Users/example/code directory exists
+need symlink:/Users/example/.zshrc symlink points elsewhere
 
 2 changes needed
 ```
 
-Target exit behavior:
+Exit behavior:
 
 ```txt
 0 all resources satisfied
@@ -84,17 +81,7 @@ Target exit behavior:
 3 runtime error
 ```
 
-Current exit behavior:
-
-```txt
-0 config is valid
-2 validation, parse, unknown-field, or flag error
-3 config read or runtime render error
-```
-
 ### `kitout apply`
-
-Planned command.
 
 Applies needed changes.
 
@@ -109,22 +96,24 @@ Behavior:
 - load and validate config
 - run status checks
 - build plan
-- ask for confirmation if needed
-- apply changes in stable order
+- apply missing or changed resources in stable order
 - render summary
+- return `0` when apply completed successfully
+- return `2` for validation, parse, unknown-field, or flag errors
+- return `3` for config read failures or pre-apply plan failures
+- return `4` for partial apply failures
 
 ### `kitout apply --dry-run`
 
-Planned command.
-
 Shows intended changes without making changes.
 
-Expected output:
+Example output:
 
 ```txt
-Plan
-  install cask ghostty
-  replace symlink ~/.zshrc with ~/dotfiles/home/zshrc
+Config: /Users/example/.config/kitout/kitout.yaml
+Plan:
+  apply cask:ghostty       cask is missing
+  apply symlink:/Users/example/.zshrc symlink points elsewhere
 
 No changes made because --dry-run was used.
 ```
@@ -189,10 +178,6 @@ Default output should be concise and readable.
 
 JSON output should be stable enough for tests and automation.
 
-Current `status --json` output only reports config validity and whether resource
-status checks are implemented. It does not include resource status summaries
-until the CLI is wired to the engine resources.
-
 Example:
 
 ```json
@@ -203,16 +188,33 @@ Example:
     "path": "/Users/example/.config/kitout/kitout.yaml",
     "valid": true
   },
-  "status": {
-    "implemented": false,
-    "message": "Status checks are not implemented yet."
+  "plan": {
+    "summary": {
+      "total": 1,
+      "satisfied": 0,
+      "missing": 1,
+      "changed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "unknown": 0,
+      "to_apply": 1
+    },
+    "items": [
+      {
+        "resource_id": "directory:/Users/example/code",
+        "type": "directory",
+        "state": "missing",
+        "action": "apply",
+        "message": "directory is missing"
+      }
+    ]
   }
 }
 ```
 
 ## Confirmation rules
 
-Interactive confirmation should be required for risky changes unless `--yes` is passed.
+Interactive confirmation is planned for risky changes unless `--yes` is passed.
 
 Risky changes include:
 
@@ -220,7 +222,8 @@ Risky changes include:
 - modifying macOS defaults
 - running shell commands
 
-Safe changes may apply without confirmation:
+Once confirmation prompts are implemented, safe changes may apply without
+confirmation:
 
 - installing a missing package
 - creating a missing directory
