@@ -60,6 +60,13 @@ Rules:
 
 Over time, repeated shell commands should become first-class resources.
 
+## Implementation status
+
+Implemented as `resources.ShellCommandResource`. The MVP supports `always`,
+`missing-command:<name>`, `exists:<path>`, and `missing:<path>` conditions.
+Configured commands run through `sh -c` using the shared command runner
+interface.
+
 ## Shared expectations
 
 Every resource must support:
