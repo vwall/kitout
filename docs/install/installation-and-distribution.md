@@ -8,7 +8,14 @@ During development:
 go install ./cmd/kitout
 ```
 
-or:
+After installing it onto your `PATH`, run:
+
+```sh
+kitout status
+```
+
+When working from source without installing, use `go run` as the
+developer-local equivalent:
 
 ```sh
 go run ./cmd/kitout status
