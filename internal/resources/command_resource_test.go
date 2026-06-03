@@ -12,7 +12,10 @@ import (
 )
 
 func TestBrewPackageStatusSatisfiedWhenFormulaIsInstalled(t *testing.T) {
-	runner := &fakeRunner{responses: []fakeResponse{{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)}}}
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet", "git"}, 0)},
+	}}
 	resource := NewBrewPackage("git", runner)
 
 	result, err := resource.Status(context.Background())
@@ -21,7 +24,51 @@ func TestBrewPackageStatusSatisfiedWhenFormulaIsInstalled(t *testing.T) {
 	}
 
 	expectStatus(t, result, resource.ID(), brewType, engine.StateSatisfied, "formula is installed")
-	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"list", "--formula", "git"}}})
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
+	})
+}
+
+func TestBrewPackageStatusSatisfiedWhenOutdatedCheckExitsOneWithNoOutput(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{
+			result: commandResult("brew", []string{"outdated", "--formula", "--quiet", "git"}, 1),
+			err:    commandError("brew", []string{"outdated", "--formula", "--quiet", "git"}, 1),
+		},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+
+	expectStatus(t, result, resource.ID(), brewType, engine.StateSatisfied, "formula is installed")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
+	})
+}
+
+func TestBrewPackageStatusChangedWhenFormulaIsOutdated(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "git"}, "git\n")},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+
+	expectStatus(t, result, resource.ID(), brewType, engine.StateChanged, "formula is outdated")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
+	})
 }
 
 func TestBrewPackageStatusMissingWhenFormulaIsNotInstalled(t *testing.T) {
@@ -34,6 +81,25 @@ func TestBrewPackageStatusMissingWhenFormulaIsNotInstalled(t *testing.T) {
 	}
 
 	expectStatus(t, result, resource.ID(), brewType, engine.StateMissing, "formula is missing")
+}
+
+func TestBrewPackageStatusFailsWhenOutdatedCheckFails(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{err: commandError("brew", []string{"outdated", "--formula", "--quiet", "git"}, 2)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Status(context.Background())
+	if err == nil {
+		t.Fatal("Status returned nil error, want outdated check failure")
+	}
+
+	expectStatus(t, result, resource.ID(), brewType, engine.StateFailed, "could not inspect formula updates")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
+	})
 }
 
 func TestBrewPackageApplyInstallsMissingFormula(t *testing.T) {
@@ -56,7 +122,13 @@ func TestBrewPackageApplyInstallsMissingFormula(t *testing.T) {
 }
 
 func TestBrewPackageApplyIsIdempotentWhenInstalled(t *testing.T) {
-	runner := &fakeRunner{responses: []fakeResponse{{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)}}}
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{
+			result: commandResult("brew", []string{"outdated", "--formula", "--quiet", "git"}, 1),
+			err:    commandError("brew", []string{"outdated", "--formula", "--quiet", "git"}, 1),
+		},
+	}}
 	resource := NewBrewPackage("git", runner)
 
 	result, err := resource.Apply(context.Background())
@@ -65,7 +137,47 @@ func TestBrewPackageApplyIsIdempotentWhenInstalled(t *testing.T) {
 	}
 
 	expectApply(t, result, resource.ID(), brewType, "noop", false, "formula already installed")
-	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"list", "--formula", "git"}}})
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
+	})
+}
+
+func TestBrewPackageApplyUpgradesOutdatedFormula(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "git"}, "git\n")},
+		{result: commandResult("brew", []string{"upgrade", "git"}, 0)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err != nil {
+		t.Fatalf("Apply returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), brewType, "upgrade", true, "upgraded formula")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
+		{name: "brew", args: []string{"upgrade", "git"}},
+	})
+}
+
+func TestBrewPackageApplyReportsUpgradeFailure(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "git"}, "git\n")},
+		{err: commandError("brew", []string{"upgrade", "git"}, 2)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err == nil {
+		t.Fatal("Apply returned nil error, want upgrade failure")
+	}
+
+	expectApply(t, result, resource.ID(), brewType, "upgrade", false, "could not upgrade formula")
 }
 
 func TestBrewPackageApplyReportsInstallFailure(t *testing.T) {
@@ -93,6 +205,27 @@ func TestBrewPackageDryRunPlanDoesNotInstall(t *testing.T) {
 		t.Fatalf("Action = %q, want %q", plan.Items[0].Action, engine.ActionApply)
 	}
 	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"list", "--formula", "git"}}})
+}
+
+func TestBrewPackageDryRunPlanDoesNotUpgrade(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "git"}, "git\n")},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), []engine.Resource{resource})
+
+	if plan.Items[0].State != engine.StateChanged {
+		t.Fatalf("State = %q, want %q", plan.Items[0].State, engine.StateChanged)
+	}
+	if plan.Items[0].Action != engine.ActionApply {
+		t.Fatalf("Action = %q, want %q", plan.Items[0].Action, engine.ActionApply)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
+	})
 }
 
 func TestCaskStatusSatisfiedWhenInstalled(t *testing.T) {

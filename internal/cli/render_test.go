@@ -18,12 +18,14 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 		Items: []engine.PlanItem{
 			{ResourceID: "directory:/tmp/code", Type: "directory", State: engine.StateSatisfied, Action: engine.ActionNoop, Message: "directory exists"},
 			{ResourceID: "brew:git", Type: "brew", State: engine.StateMissing, Action: engine.ActionApply, Message: "formula is missing"},
+			{ResourceID: "brew:go", Type: "brew", State: engine.StateChanged, Action: engine.ActionApply, Message: "formula is outdated"},
 		},
 		Summary: engine.PlanSummary{
-			Total:     2,
+			Total:     3,
 			Satisfied: 1,
 			Missing:   1,
-			ToApply:   1,
+			Changed:   1,
+			ToApply:   2,
 		},
 	})
 
@@ -31,8 +33,9 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 		"Config: /tmp/kitout.yaml",
 		"directory:/tmp/code directory exists",
 		"need brew:git",
-		"2 total, 1 satisfied, 1 missing",
-		"1 changes needed",
+		"outdated: brew:go",
+		"3 total, 1 satisfied, 1 missing, 1 changed",
+		"2 changes needed",
 	} {
 		if !bytes.Contains(stdout.Bytes(), []byte(fragment)) {
 			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
