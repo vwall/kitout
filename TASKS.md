@@ -34,7 +34,7 @@ as the phase-level map; use this file for near-term implementation tasks.
 
 ## Then: MVP resource scaffolding
 
-- [ ] Add command runner interface in `internal/platform`.
+- [x] Add command runner interface in `internal/platform`.
 - [ ] Add directory resource with status, apply, and dry-run tests.
 - [ ] Add symlink resource with safety checks before overwrite support.
 - [ ] Add brew package resource using the command runner interface.
