@@ -85,14 +85,14 @@ Commands:
 
 Examples:
   kitout init
-  kitout init --config ./kitout.yaml
-  kitout doctor --config ./kitout.yaml
+  kitout status
+  kitout apply --dry-run
+  kitout doctor
   kitout status --config ./kitout.yaml
-  kitout apply --config ./kitout.yaml --dry-run
   kitout version
 
 Global flags:
-  --config PATH       Path to config file
+  --config PATH       Path to config file (default: ~/.config/kitout/kitout.yaml)
   --verbose           Show detailed command output
   --quiet             Reduce output
   --no-color          Disable colored output
