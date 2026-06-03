@@ -165,7 +165,7 @@ Recommended exit codes:
 
 ```txt
 0 all satisfied or apply completed successfully
-1 changes needed when running status
+1 status found resources needing attention
 2 validation error
 3 runtime error
 4 partial apply failure

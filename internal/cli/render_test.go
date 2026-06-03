@@ -33,10 +33,10 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 	for _, fragment := range []string{
 		"Config: /tmp/kitout.yaml\n\n",
 		"directory:/tmp/code directory exists",
-		"need:     brew:git",
-		"outdated: brew:go",
+		"missing brew:git",
+		"changed brew:go",
 		"3 total, 1 satisfied, 1 missing, 1 changed",
-		"2 changes needed",
+		"2 resources need attention",
 	} {
 		if !bytes.Contains(stdout.Bytes(), []byte(fragment)) {
 			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
@@ -52,15 +52,15 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 	}
 	directoryLine := findLineContaining(t, lines, "directory:/tmp/code")
 	missingBrewLine := findLineContaining(t, lines, "brew:git")
-	outdatedBrewLine := findLineContaining(t, lines, "brew:go")
+	changedBrewLine := findLineContaining(t, lines, "brew:go")
 	resourceColumn := strings.Index(directoryLine, "directory:/tmp/code")
-	for _, line := range []string{missingBrewLine, outdatedBrewLine} {
+	for _, line := range []string{missingBrewLine, changedBrewLine} {
 		if got := strings.Index(line, "brew:"); got != resourceColumn {
 			t.Fatalf("resource column = %d in %q, want %d", got, line, resourceColumn)
 		}
 	}
 	messageColumn := strings.Index(directoryLine, "directory exists")
-	for _, line := range []string{missingBrewLine, outdatedBrewLine} {
+	for _, line := range []string{missingBrewLine, changedBrewLine} {
 		if got := strings.Index(line, "formula"); got != messageColumn {
 			t.Fatalf("message column = %d in %q, want %d", got, line, messageColumn)
 		}
@@ -84,13 +84,13 @@ func TestHumanRendererAlignsMessageColumnsAcrossLongResourceIDs(t *testing.T) {
 		t.Fatalf("stdout = %q, want status lines", stdout.String())
 	}
 
-	outdatedLine := findLineContaining(t, lines, "formula is outdated")
+	changedLine := findLineContaining(t, lines, "formula is outdated")
 	directoryLine := findLineContaining(t, lines, "directory exists")
-	want := strings.Index(outdatedLine, "formula is outdated")
+	want := strings.Index(changedLine, "formula is outdated")
 	if got := strings.Index(directoryLine, "directory exists"); got != want {
-		t.Fatalf("message column = %d in %q, want %d from %q", got, directoryLine, want, outdatedLine)
+		t.Fatalf("message column = %d in %q, want %d from %q", got, directoryLine, want, changedLine)
 	}
-	if !strings.Contains(stdout.String(), "outdated: brew:git                     formula is outdated") {
+	if !strings.Contains(stdout.String(), "changed brew:git                     formula is outdated") {
 		t.Fatalf("stdout = %q, want brew row padded to message column", stdout.String())
 	}
 }
@@ -185,11 +185,11 @@ func TestHumanRendererColorsHumanMarkersWhenEnabled(t *testing.T) {
 	})
 
 	for _, fragment := range []string{
-		ansiGreen + "ok:      " + ansiReset,
-		ansiYellow + "need:    " + ansiReset,
-		ansiYellow + "outdated:" + ansiReset,
-		ansiRed + "fail:    " + ansiReset,
-		ansiCyan + "skip:    " + ansiReset,
+		ansiGreen + "ok     " + ansiReset,
+		ansiYellow + "missing" + ansiReset,
+		ansiYellow + "changed" + ansiReset,
+		ansiRed + "fail   " + ansiReset,
+		ansiCyan + "skip   " + ansiReset,
 		ansiYellow + "apply:" + ansiReset,
 		ansiGreen + "done:" + ansiReset,
 		ansiYellow + "warn:" + ansiReset,
