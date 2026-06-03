@@ -10,9 +10,12 @@ Kitout is inspired by Bork's assertion-based approach, but it is not a strict po
 
 ## Primary command flow
 
+After installing Kitout, run:
+
 ```sh
 kitout init
 kitout status
+kitout apply --dry-run
 kitout apply
 kitout doctor
 ```
@@ -82,7 +85,16 @@ Do not start with Linux support, secrets, templates, plugins, or a package manag
 
 ## Development
 
-Run the CLI locally with:
+Run the installed CLI with:
+
+```sh
+kitout version
+kitout init
+kitout status
+kitout apply --dry-run
+```
+
+When working from source, use `go run` as the developer-local equivalent:
 
 ```sh
 go run ./cmd/kitout version
