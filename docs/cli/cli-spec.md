@@ -22,7 +22,9 @@ subcommands. `init`, `doctor`, `status`, and `apply` use
 `~/.config/kitout/kitout.yaml` by default; pass `--config` only to override that
 path. Human output colors status markers when stdout is an interactive terminal;
 redirected output remains plain text, and `--no-color` disables ANSI color
-markers. `--json` and `--quiet` currently affect `status` and `apply`.
+markers. Human output includes both symbols and text labels so status remains
+readable without color. `--json` and `--quiet` currently affect `status` and
+`apply`.
 
 ## Commands
 
@@ -68,14 +70,14 @@ Example human output:
 ```txt
 Config: /Users/example/.config/kitout/kitout.yaml
 
-ok      brew:git                      formula is installed
-changed brew:go                       formula is outdated
-missing cask:ghostty                  cask is missing
-ok      directory:/Users/example/code directory exists
-skip    repo:/Users/example/code/app  skipped by config
-fail    shell:setup                   command failed
+✓ satisfied brew: git                    satisfied
+! changed   brew: go                     formula is outdated
+! missing   cask: ghostty                missing
+✓ satisfied directory: /Users/example/code satisfied
+- skip      repo: /Users/example/code/app skipped by config
+× fail      shell: setup                 failed: command failed
 
-6 total, 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
+Summary: 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
 3 resources need attention
 ```
 
@@ -120,11 +122,11 @@ Example output:
 ```txt
 Config: /Users/example/.config/kitout/kitout.yaml
 
-Plan:
-  apply: cask:ghostty                  cask is missing
-  apply: symlink:/Users/example/.zshrc symlink points elsewhere
+i Would install cask ghostty
+i Would replace symlink /Users/example/.zshrc
 
 No changes made because --dry-run was used.
+No shell commands will run without explicit approval.
 ```
 
 ### `kitout doctor`

@@ -32,10 +32,10 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 
 	for _, fragment := range []string{
 		"Config: /tmp/kitout.yaml\n\n",
-		"directory:/tmp/code directory exists",
-		"missing brew:git",
-		"changed brew:go",
-		"3 total, 1 satisfied, 1 missing, 1 changed",
+		"✓ satisfied directory: /tmp/code satisfied",
+		"! missing   brew: git",
+		"! changed   brew: go",
+		"Summary: 1 satisfied, 1 missing, 1 changed",
 		"2 resources need attention",
 	} {
 		if !bytes.Contains(stdout.Bytes(), []byte(fragment)) {
@@ -50,18 +50,24 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 	if len(lines) < 4 {
 		t.Fatalf("stdout = %q, want status lines", stdout.String())
 	}
-	directoryLine := findLineContaining(t, lines, "directory:/tmp/code")
-	missingBrewLine := findLineContaining(t, lines, "brew:git")
-	changedBrewLine := findLineContaining(t, lines, "brew:go")
-	resourceColumn := strings.Index(directoryLine, "directory:/tmp/code")
+	directoryLine := findLineContaining(t, lines, "directory: /tmp/code")
+	missingBrewLine := findLineContaining(t, lines, "brew: git")
+	changedBrewLine := findLineContaining(t, lines, "brew: go")
+	resourceColumn := visualColumn(directoryLine, "directory:")
 	for _, line := range []string{missingBrewLine, changedBrewLine} {
-		if got := strings.Index(line, "brew:"); got != resourceColumn {
+		if got := visualColumn(line, "brew:"); got != resourceColumn {
 			t.Fatalf("resource column = %d in %q, want %d", got, line, resourceColumn)
 		}
 	}
-	messageColumn := strings.Index(directoryLine, "directory exists")
+	messageColumn := visualLastColumn(directoryLine, "satisfied")
 	for _, line := range []string{missingBrewLine, changedBrewLine} {
-		if got := strings.Index(line, "formula"); got != messageColumn {
+		var got int
+		if strings.Contains(line, "missing") {
+			got = visualLastColumn(line, "missing")
+		} else {
+			got = visualColumn(line, "formula")
+		}
+		if got != messageColumn {
 			t.Fatalf("message column = %d in %q, want %d", got, line, messageColumn)
 		}
 	}
@@ -75,7 +81,7 @@ func TestHumanRendererAlignsMessageColumnsAcrossLongResourceIDs(t *testing.T) {
 	renderer.renderStatusPlan("/tmp/kitout.yaml", engine.Plan{
 		Items: []engine.PlanItem{
 			{ResourceID: "brew:git", Type: "brew", State: engine.StateChanged, Message: "formula is outdated"},
-			{ResourceID: "directory:/Users/example/.config", Type: "directory", State: engine.StateSatisfied, Message: "directory exists"},
+			{ResourceID: "directory:/tmp/kitout-long/.config", Type: "directory", State: engine.StateSatisfied, Message: "directory exists"},
 		},
 	})
 
@@ -85,12 +91,12 @@ func TestHumanRendererAlignsMessageColumnsAcrossLongResourceIDs(t *testing.T) {
 	}
 
 	changedLine := findLineContaining(t, lines, "formula is outdated")
-	directoryLine := findLineContaining(t, lines, "directory exists")
-	want := strings.Index(changedLine, "formula is outdated")
-	if got := strings.Index(directoryLine, "directory exists"); got != want {
+	directoryLine := findLineContaining(t, lines, "directory: /tmp/kitout-long/.config")
+	want := visualColumn(changedLine, "formula is outdated")
+	if got := visualLastColumn(directoryLine, "satisfied"); got != want {
 		t.Fatalf("message column = %d in %q, want %d from %q", got, directoryLine, want, changedLine)
 	}
-	if !strings.Contains(stdout.String(), "changed brew:git                     formula is outdated") {
+	if !strings.Contains(stdout.String(), "! changed   brew: git") {
 		t.Fatalf("stdout = %q, want brew row padded to message column", stdout.String())
 	}
 }
@@ -105,27 +111,29 @@ func TestHumanRendererAlignsDryRunAndApplyMessageColumns(t *testing.T) {
 			{ResourceID: "cask:ghostty", Action: engine.ActionApply, Message: "cask is missing"},
 			{ResourceID: "symlink:/Users/example/.zshrc", Action: engine.ActionApply, Message: "symlink points elsewhere"},
 		},
+		Summary: engine.PlanSummary{Total: 2, Missing: 2, ToApply: 2},
 	})
 	renderer.renderApplyReport("/tmp/kitout.yaml", engine.ApplyReport{
 		Items: []engine.ApplyItem{
 			{ResourceID: "brew:git", Changed: true, Message: "installed formula"},
 			{ResourceID: "directory:/Users/example/.config", Action: "noop", Message: "directory exists"},
 		},
+		Summary: engine.ApplySummary{Total: 2, Changed: 1, Noop: 1},
 	})
-	if !strings.Contains(stdout.String(), "Config: /tmp/kitout.yaml\n\nPlan:") {
-		t.Fatalf("stdout = %q, want blank line before dry-run plan", stdout.String())
+	if !strings.Contains(stdout.String(), "Config: /tmp/kitout.yaml\n\ni Would install cask ghostty") {
+		t.Fatalf("stdout = %q, want compact dry-run plan", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "i Would link ~/.zshrc") {
+		t.Fatalf("stdout = %q, want symlink dry-run sentence", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "No shell commands will run without explicit approval.") {
+		t.Fatalf("stdout = %q, want dry-run safety message", stdout.String())
 	}
 
 	lines := strings.Split(stdout.String(), "\n")
-	dryRunShort := findLineContaining(t, lines, "cask:ghostty")
-	dryRunLong := findLineContaining(t, lines, "symlink:/Users/example/.zshrc")
-	if want := strings.Index(dryRunShort, "cask is missing"); strings.Index(dryRunLong, "symlink points elsewhere") != want {
-		t.Fatalf("dry-run lines are not message-aligned:\n%q\n%q", dryRunShort, dryRunLong)
-	}
-
-	applyShort := findLineContaining(t, lines, "brew:git")
-	applyLong := findLineContaining(t, lines, "directory:/Users/example/.config")
-	if want := strings.Index(applyShort, "installed formula"); strings.Index(applyLong, "directory exists") != want {
+	applyShort := findLineContaining(t, lines, "brew: git")
+	applyLong := findLineContaining(t, lines, "directory: ~/.config")
+	if want := visualColumn(applyShort, "installed formula"); visualColumn(applyLong, "directory exists") != want {
 		t.Fatalf("apply lines are not message-aligned:\n%q\n%q", applyShort, applyLong)
 	}
 }
@@ -185,13 +193,13 @@ func TestHumanRendererColorsHumanMarkersWhenEnabled(t *testing.T) {
 	})
 
 	for _, fragment := range []string{
-		ansiGreen + "ok     " + ansiReset,
-		ansiYellow + "missing" + ansiReset,
-		ansiYellow + "changed" + ansiReset,
-		ansiRed + "fail   " + ansiReset,
-		ansiCyan + "skip   " + ansiReset,
-		ansiYellow + "apply:" + ansiReset,
-		ansiGreen + "done:" + ansiReset,
+		ansiGreen + "✓ satisfied" + ansiReset,
+		ansiYellow + "! missing  " + ansiReset,
+		ansiYellow + "! changed  " + ansiReset,
+		ansiRed + "× fail     " + ansiReset,
+		ansiCyan + "- skip     " + ansiReset,
+		ansiBlue + "i" + ansiReset,
+		ansiGreen + "✓ done " + ansiReset,
 		ansiYellow + "warn:" + ansiReset,
 	} {
 		if !strings.Contains(stdout.String(), fragment) {
@@ -232,4 +240,20 @@ func findLineContaining(t *testing.T, lines []string, fragment string) string {
 	}
 	t.Fatalf("line containing %q was not found in %#v", fragment, lines)
 	return ""
+}
+
+func visualColumn(line, fragment string) int {
+	index := strings.Index(line, fragment)
+	if index < 0 {
+		return -1
+	}
+	return displayWidth(line[:index])
+}
+
+func visualLastColumn(line, fragment string) int {
+	index := strings.LastIndex(line, fragment)
+	if index < 0 {
+		return -1
+	}
+	return displayWidth(line[:index])
 }

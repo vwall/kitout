@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/vwall/kitout/internal/engine"
 )
@@ -30,21 +32,15 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 	}
 
 	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
-	resourceWidth := planResourceIDWidth(plan.Items)
+	resourceWidth := planStatusLabelWidth(plan.Items)
 	for _, item := range plan.Items {
-		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.statusMarker(item), resourceWidth, item.ResourceID, item.Message)
+		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
+		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.statusMarker(item), paddedWidth(resourceWidth, label), label, statusMessage(item))
 		if item.Error != "" {
-			fmt.Fprintf(r.stdout, "%-*s error: %s\n", statusMarkerWidth, "", item.Error)
+			fmt.Fprintf(r.stdout, "%-*s error: %s\n", statusLeftWidth, "", item.Error)
 		}
 	}
-	fmt.Fprintf(r.stdout, "\n%d total, %d satisfied, %d missing, %d changed, %d failed, %d skipped\n",
-		plan.Summary.Total,
-		plan.Summary.Satisfied,
-		plan.Summary.Missing,
-		plan.Summary.Changed,
-		plan.Summary.Failed+plan.Summary.Unknown,
-		plan.Summary.Skipped,
-	)
+	fmt.Fprintf(r.stdout, "\nSummary: %s\n", statusSummary(plan.Summary))
 	if attention := statusAttentionCount(plan.Summary); attention > 0 {
 		fmt.Fprintf(r.stdout, "%s\n", statusAttentionMessage(attention))
 	}
@@ -56,25 +52,24 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 	}
 
 	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
-	fmt.Fprintln(r.stdout, "Plan:")
-	resourceWidth := planResourceIDWidth(plan.Items)
 	for _, item := range plan.Items {
 		switch item.Action {
 		case engine.ActionApply:
-			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("apply:", ansiYellow, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
+			fmt.Fprintf(r.stdout, "%s %s\n", r.dryRunMarker(), dryRunMessage(item))
 		case engine.ActionFail:
-			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("fail:", ansiRed, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
+			fmt.Fprintf(r.stdout, "%s Cannot apply %s: %s\n", r.failSymbol(), displayResourceLabel(item.Type, item.ResourceID, item.Details), item.Message)
 			if item.Error != "" {
-				fmt.Fprintf(r.stdout, "        error: %s\n", item.Error)
+				fmt.Fprintf(r.stdout, "    error: %s\n", item.Error)
 			}
 		case engine.ActionSkip:
-			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("skip:", ansiCyan, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
+			fmt.Fprintf(r.stdout, "%s Skipping %s: %s\n", r.skipSymbol(), displayResourceLabel(item.Type, item.ResourceID, item.Details), item.Message)
 		}
 	}
 	if plan.Summary.ToApply == 0 {
-		fmt.Fprintln(r.stdout, "  no changes")
+		fmt.Fprintln(r.stdout, "No changes.")
 	}
 	fmt.Fprintln(r.stdout, "\nNo changes made because --dry-run was used.")
+	fmt.Fprintln(r.stdout, "No shell commands will run without explicit approval.")
 }
 
 func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport) {
@@ -83,20 +78,15 @@ func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport)
 	}
 
 	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
-	resourceWidth := applyResourceIDWidth(report.Items)
+	resourceWidth := applyLabelWidth(report.Items)
 	for _, item := range report.Items {
-		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.applyMarker(item), resourceWidth, item.ResourceID, item.Message)
+		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
+		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.applyMarker(item), paddedWidth(resourceWidth, label), label, item.Message)
 		if item.Error != "" {
 			fmt.Fprintf(r.stdout, "    error: %s\n", item.Error)
 		}
 	}
-	fmt.Fprintf(r.stdout, "\n%d total, %d changed, %d unchanged, %d failed, %d skipped\n",
-		report.Summary.Total,
-		report.Summary.Changed,
-		report.Summary.Noop,
-		report.Summary.Failed,
-		report.Summary.Skipped,
-	)
+	fmt.Fprintf(r.stdout, "\nSummary: %s\n", applySummary(report.Summary))
 }
 
 func (r humanRenderer) renderDoctorReport(report doctorReport) {
@@ -133,14 +123,15 @@ func (r humanRenderer) renderConfigLoadFailure(err error) {
 }
 
 const (
-	minResourceIDWidth = 18
-	statusMarkerWidth  = len("missing")
-	actionMarkerWidth  = len("apply:")
-	shortMarkerWidth   = len("done:")
+	minResourceLabelWidth = 18
+	statusMarkerWidth     = len("satisfied")
+	statusLeftWidth       = 12
+	shortMarkerWidth      = len("done:")
 
 	ansiRed    = "\x1b[31m"
 	ansiGreen  = "\x1b[32m"
 	ansiYellow = "\x1b[33m"
+	ansiBlue   = "\x1b[34m"
 	ansiCyan   = "\x1b[36m"
 	ansiReset  = "\x1b[0m"
 )
@@ -169,11 +160,11 @@ func (r humanRenderer) colorize(text, color string) string {
 }
 
 func (r humanRenderer) statusMarker(item engine.PlanItem) string {
-	return r.marker(statusMarker(item), statusMarkerColor(item), statusMarkerWidth)
+	return r.colorize(fmt.Sprintf("%s %-*s", statusSymbol(item), statusMarkerWidth, statusMarker(item)), statusMarkerColor(item))
 }
 
 func (r humanRenderer) applyMarker(item engine.ApplyItem) string {
-	return r.marker(applyMarker(item), applyMarkerColor(item), shortMarkerWidth)
+	return r.colorize(fmt.Sprintf("%s %-*s", applySymbol(item), shortMarkerWidth, applyMarker(item)), applyMarkerColor(item))
 }
 
 func (r humanRenderer) doctorMarker(item doctorItem) string {
@@ -184,21 +175,35 @@ func (r humanRenderer) marker(text, color string, width int) string {
 	return r.colorize(fmt.Sprintf("%-*s", width, text), color)
 }
 
-func planResourceIDWidth(items []engine.PlanItem) int {
-	width := minResourceIDWidth
+func (r humanRenderer) dryRunMarker() string {
+	return r.colorize("i", ansiBlue)
+}
+
+func (r humanRenderer) failSymbol() string {
+	return r.colorize("×", ansiRed)
+}
+
+func (r humanRenderer) skipSymbol() string {
+	return r.colorize("-", ansiCyan)
+}
+
+func planStatusLabelWidth(items []engine.PlanItem) int {
+	width := minResourceLabelWidth
 	for _, item := range items {
-		if len(item.ResourceID) > width {
-			width = len(item.ResourceID)
+		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
+		if displayWidth(label) > width {
+			width = displayWidth(label)
 		}
 	}
 	return width
 }
 
-func applyResourceIDWidth(items []engine.ApplyItem) int {
-	width := minResourceIDWidth
+func applyLabelWidth(items []engine.ApplyItem) int {
+	width := minResourceLabelWidth
 	for _, item := range items {
-		if len(item.ResourceID) > width {
-			width = len(item.ResourceID)
+		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
+		if displayWidth(label) > width {
+			width = displayWidth(label)
 		}
 	}
 	return width
@@ -207,7 +212,7 @@ func applyResourceIDWidth(items []engine.ApplyItem) int {
 func statusMarker(item engine.PlanItem) string {
 	switch item.State {
 	case engine.StateSatisfied:
-		return "ok"
+		return "satisfied"
 	case engine.StateMissing:
 		return "missing"
 	case engine.StateChanged:
@@ -218,6 +223,50 @@ func statusMarker(item engine.PlanItem) string {
 		return "fail"
 	default:
 		return "fail"
+	}
+}
+
+func statusSymbol(item engine.PlanItem) string {
+	switch item.State {
+	case engine.StateSatisfied:
+		return "✓"
+	case engine.StateMissing, engine.StateChanged:
+		return "!"
+	case engine.StateSkipped:
+		return "-"
+	case engine.StateFailed, engine.StateUnknown:
+		return "×"
+	default:
+		return "×"
+	}
+}
+
+func statusMessage(item engine.PlanItem) string {
+	switch item.State {
+	case engine.StateSatisfied:
+		return "satisfied"
+	case engine.StateMissing:
+		return "missing"
+	case engine.StateChanged:
+		if item.Message == "" {
+			return "changed"
+		}
+		return item.Message
+	case engine.StateSkipped:
+		if item.Message == "" {
+			return "skipped"
+		}
+		return item.Message
+	case engine.StateFailed, engine.StateUnknown:
+		if item.Message == "" {
+			return "failed"
+		}
+		return "failed: " + item.Message
+	default:
+		if item.Message == "" {
+			return "failed"
+		}
+		return "failed: " + item.Message
 	}
 }
 
@@ -249,18 +298,30 @@ func statusMarkerColor(item engine.PlanItem) string {
 
 func applyMarker(item engine.ApplyItem) string {
 	if item.Error != "" {
-		return "fail:"
+		return "fail"
 	}
 	switch item.Action {
 	case "noop":
-		return "ok:"
+		return "ok"
 	case "skip":
-		return "skip:"
+		return "skip"
 	default:
 		if item.Changed {
-			return "done:"
+			return "done"
 		}
-		return "ok:"
+		return "ok"
+	}
+}
+
+func applySymbol(item engine.ApplyItem) string {
+	if item.Error != "" {
+		return "×"
+	}
+	switch item.Action {
+	case "skip":
+		return "-"
+	default:
+		return "✓"
 	}
 }
 
@@ -279,6 +340,162 @@ func applyMarkerColor(item engine.ApplyItem) string {
 		}
 		return ansiGreen
 	}
+}
+
+func displayResourceLabel(typ, id string, details map[string]string) string {
+	if typ == "" {
+		typ, _ = splitResourceID(id)
+	}
+	target := displayResourceTarget(typ, id, details)
+	if typ == "" || target == "" {
+		return id
+	}
+	return typ + ": " + target
+}
+
+func displayResourceTarget(typ, id string, details map[string]string) string {
+	switch typ {
+	case "brew", "cask", "shell", "asdf_plugin":
+		if value := details["name"]; value != "" {
+			return value
+		}
+	case "directory", "repo", "asdf_tool_versions":
+		if value := details["path"]; value != "" {
+			return compactPath(value)
+		}
+	case "symlink":
+		if value := details["target"]; value != "" {
+			return compactPath(value)
+		}
+	case "macos_default":
+		domain := details["domain"]
+		key := details["key"]
+		if domain != "" && key != "" {
+			return domain + "/" + key
+		}
+	}
+
+	_, target := splitResourceID(id)
+	return compactPath(target)
+}
+
+func splitResourceID(id string) (string, string) {
+	typ, target, ok := strings.Cut(id, ":")
+	if !ok {
+		return "", id
+	}
+	return typ, target
+}
+
+func compactPath(path string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return path
+	}
+	if path == home {
+		return "~"
+	}
+	if strings.HasPrefix(path, home+"/") {
+		return "~" + strings.TrimPrefix(path, home)
+	}
+	return path
+}
+
+func statusSummary(summary engine.PlanSummary) string {
+	parts := make([]string, 0, 5)
+	if summary.Satisfied > 0 {
+		parts = append(parts, fmt.Sprintf("%d satisfied", summary.Satisfied))
+	}
+	if summary.Missing > 0 {
+		parts = append(parts, fmt.Sprintf("%d missing", summary.Missing))
+	}
+	if summary.Changed > 0 {
+		parts = append(parts, fmt.Sprintf("%d changed", summary.Changed))
+	}
+	if failed := summary.Failed + summary.Unknown; failed > 0 {
+		parts = append(parts, fmt.Sprintf("%d failed", failed))
+	}
+	if summary.Skipped > 0 {
+		parts = append(parts, fmt.Sprintf("%d skipped", summary.Skipped))
+	}
+	if len(parts) == 0 {
+		return fmt.Sprintf("%d total", summary.Total)
+	}
+	return strings.Join(parts, ", ")
+}
+
+func applySummary(summary engine.ApplySummary) string {
+	parts := make([]string, 0, 4)
+	if summary.Changed > 0 {
+		parts = append(parts, fmt.Sprintf("%d changed", summary.Changed))
+	}
+	if summary.Noop > 0 {
+		parts = append(parts, fmt.Sprintf("%d unchanged", summary.Noop))
+	}
+	if summary.Failed > 0 {
+		parts = append(parts, fmt.Sprintf("%d failed", summary.Failed))
+	}
+	if summary.Skipped > 0 {
+		parts = append(parts, fmt.Sprintf("%d skipped", summary.Skipped))
+	}
+	if len(parts) == 0 {
+		return fmt.Sprintf("%d total", summary.Total)
+	}
+	return strings.Join(parts, ", ")
+}
+
+func dryRunMessage(item engine.PlanItem) string {
+	typ := item.Type
+	if typ == "" {
+		typ, _ = splitResourceID(item.ResourceID)
+	}
+	target := displayResourceTarget(typ, item.ResourceID, item.Details)
+	switch typ {
+	case "brew":
+		if item.State == engine.StateChanged {
+			return "Would upgrade formula " + target
+		}
+		return "Would install formula " + target
+	case "cask":
+		return "Would install cask " + target
+	case "directory":
+		return "Would create directory " + target
+	case "symlink":
+		if item.State == engine.StateChanged {
+			return "Would replace symlink " + target
+		}
+		return "Would link " + target
+	case "repo":
+		return "Would clone repository " + target
+	case "macos_default":
+		return "Would set macOS default " + target
+	case "shell":
+		if command := item.Details["command"]; command != "" {
+			name := item.Details["name"]
+			if name == "" {
+				return "Would run shell command " + command
+			}
+			return "Would run shell command " + name + ": " + command
+		}
+		return "Would run shell command " + target
+	case "asdf_plugin":
+		if item.State == engine.StateChanged {
+			return "Would update asdf plugin " + target
+		}
+		return "Would install asdf plugin " + target
+	case "asdf_tool_versions":
+		return "Would update .tool-versions " + target
+	default:
+		return "Would apply " + displayResourceLabel(item.Type, item.ResourceID, item.Details)
+	}
+}
+
+func paddedWidth(width int, label string) int {
+	return width + len(label) - displayWidth(label)
+}
+
+func displayWidth(text string) int {
+	return utf8.RuneCountInString(text)
 }
 
 func doctorMarker(item doctorItem) string {
