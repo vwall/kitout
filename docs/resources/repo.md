@@ -39,6 +39,11 @@ If branch is set:
 git clone --branch <branch> <url> <path>
 ```
 
+For private repositories, make sure Git can authenticate before the first apply.
+SSH URLs need a usable key and host trust; HTTPS URLs may need an existing
+credential helper session. Kitout reports Git failures, but it does not
+configure authentication in the MVP.
+
 ## Non-goals
 
 Do not auto-pull repositories in the MVP.

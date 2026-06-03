@@ -13,6 +13,14 @@ brew:
     - asdf
 ```
 
+Because Kitout checks all resources before applying any of them, a first dry-run
+on a fresh machine can report asdf plugin resources as failed until `asdf` is
+available on `PATH`. Install or apply the prerequisite first, then rerun
+`kitout status` or `kitout apply --dry-run`. If the full config contains failed
+asdf plugin resources, `kitout apply` stops before changing anything; use a
+small bootstrap config or temporarily leave dependent asdf sections out until
+`asdf` is installed.
+
 ## Config
 
 ```yaml

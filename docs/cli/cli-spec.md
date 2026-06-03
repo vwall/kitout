@@ -26,6 +26,9 @@ markers. Human output includes both symbols and text labels so status remains
 readable without color. `--json` and `--quiet` currently affect `status` and
 `apply`.
 
+When running from a private setup repo, pass `--config ./kitout.yaml`
+explicitly. The current CLI does not auto-select a repo-local config file.
+
 ## Commands
 
 ### `kitout init`
@@ -105,6 +108,7 @@ Behavior:
 - load and validate config
 - run status checks
 - build plan
+- stop before applying if the plan contains failed or unknown resources
 - require confirmation before implemented risky actions, currently shell commands and symlink replacements, unless `--yes` is passed
 - apply missing or changed resources in stable order
 - render summary

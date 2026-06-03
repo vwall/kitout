@@ -20,6 +20,18 @@ kitout apply
 kitout doctor
 ```
 
+When using a cloned setup repo before installing a config to the default path,
+pass the config explicitly:
+
+```sh
+kitout doctor --config ~/code/setup/kitout.yaml
+kitout status --config ~/code/setup/kitout.yaml
+kitout apply --config ~/code/setup/kitout.yaml --dry-run
+```
+
+See `docs/setup/first-real-run.md` for the practical first-run loop and common
+fresh-machine friction.
+
 ## Example config
 
 ```yaml
@@ -83,6 +95,7 @@ Do not start with Linux support, secrets, templates, plugins, or a package manag
 - `docs/runtime/resource-model.md`
 - `docs/cli/cli-spec.md`
 - `docs/config/config-spec.md`
+- `docs/setup/first-real-run.md`
 - `docs/resources/*.md`
 - `docs/install/installation-and-distribution.md`
 - `docs/testing/test-strategy.md`
