@@ -25,14 +25,14 @@ type PlanItem struct {
 
 // PlanSummary aggregates resource states and planned actions.
 type PlanSummary struct {
-	Total     int
-	Satisfied int
-	Missing   int
-	Changed   int
-	Failed    int
-	Skipped   int
-	Unknown   int
-	ToApply   int
+	Total     int `json:"total"`
+	Satisfied int `json:"satisfied"`
+	Missing   int `json:"missing"`
+	Changed   int `json:"changed"`
+	Failed    int `json:"failed"`
+	Skipped   int `json:"skipped"`
+	Unknown   int `json:"unknown"`
+	ToApply   int `json:"to_apply"`
 }
 
 // Plan is the result of checking resources and mapping their states to actions.

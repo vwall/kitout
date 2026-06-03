@@ -19,8 +19,8 @@ Repo-local path:
 Use `--config` to select a specific config file.
 
 The loader and validator for this schema are implemented in `internal/config`.
-Resource packages consume these structs, but the CLI status command is still in
-its config-validation scaffold and does not yet execute resource checks.
+`internal/resources.Build` converts validated config into ordered resources for
+`kitout status`, `kitout apply --dry-run`, and `kitout apply`.
 
 ## Version
 

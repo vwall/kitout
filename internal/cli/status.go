@@ -1,12 +1,15 @@
 package cli
 
 import (
-	"errors"
+	"context"
 	"flag"
 	"fmt"
 	"io"
 
 	"github.com/vwall/kitout/internal/config"
+	"github.com/vwall/kitout/internal/engine"
+	"github.com/vwall/kitout/internal/platform"
+	"github.com/vwall/kitout/internal/resources"
 )
 
 func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int {
@@ -27,54 +30,30 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 
 	loaded, err := config.LoadFile(configPath)
 	if err != nil {
-		var validationErrors config.ValidationErrors
-		var parseError config.ParseError
-		if errors.As(err, &validationErrors) {
-			if opts.json {
-				if err := jsonRenderer.renderValidationErrors(validationErrors); err != nil {
-					fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
-					return exitRuntimeError
-				}
-				return exitValidation
-			}
-
-			renderer.renderInvalidConfigDetails(validationErrors)
-			return exitValidation
-		}
-		if errors.As(err, &parseError) {
-			if opts.json {
-				if err := jsonRenderer.renderParseError(parseError); err != nil {
-					fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
-					return exitRuntimeError
-				}
-				return exitValidation
-			}
-
-			renderer.renderInvalidConfig(parseError)
-			return exitValidation
-		}
-
-		if opts.json {
-			if err := jsonRenderer.renderConfigLoadFailure(err); err != nil {
-				fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
-				return exitRuntimeError
-			}
-			return exitRuntimeError
-		}
-
-		renderer.renderConfigLoadFailure(err)
-		return exitRuntimeError
+		return renderConfigError("status", err, opts, renderer, jsonRenderer, stderr)
 	}
 
+	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
+	plan := engine.NewPlanner().Build(context.Background(), resourceList)
+
 	if opts.json {
-		if err := jsonRenderer.renderStatusNotImplemented(loaded.Path); err != nil {
+		if err := jsonRenderer.renderPlan("status", loaded.Path, plan, false); err != nil {
 			fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
 			return exitRuntimeError
 		}
-		return exitOK
+		return statusExitCode(plan)
 	}
 
-	renderer.renderStatusConfigValid(loaded.Path)
-	renderer.renderStatusChecksNotImplemented()
+	renderer.renderStatusPlan(loaded.Path, plan)
+	return statusExitCode(plan)
+}
+
+func statusExitCode(plan engine.Plan) int {
+	if plan.HasFailures() {
+		return exitRuntimeError
+	}
+	if plan.HasChanges() {
+		return exitChanges
+	}
 	return exitOK
 }
