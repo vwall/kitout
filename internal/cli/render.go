@@ -127,6 +127,10 @@ func (r humanRenderer) renderConfigLoadFailure(err error) {
 }
 
 func statusMarker(item engine.PlanItem) string {
+	if item.Type == "brew" && item.State == engine.StateChanged {
+		return "outdated:"
+	}
+
 	switch item.State {
 	case engine.StateSatisfied:
 		return "ok  "
