@@ -29,7 +29,7 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n", path)
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
 	resourceWidth := planResourceIDWidth(plan.Items)
 	for _, item := range plan.Items {
 		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.statusMarker(item), resourceWidth, item.ResourceID, item.Message)
@@ -55,20 +55,20 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n", path)
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
 	fmt.Fprintln(r.stdout, "Plan:")
 	resourceWidth := planResourceIDWidth(plan.Items)
 	for _, item := range plan.Items {
 		switch item.Action {
 		case engine.ActionApply:
-			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("apply", ansiYellow, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
+			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("apply:", ansiYellow, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
 		case engine.ActionFail:
-			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("fail", ansiRed, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
+			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("fail:", ansiRed, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
 			if item.Error != "" {
 				fmt.Fprintf(r.stdout, "        error: %s\n", item.Error)
 			}
 		case engine.ActionSkip:
-			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("skip", ansiCyan, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
+			fmt.Fprintf(r.stdout, "  %s %-*s %s\n", r.marker("skip:", ansiCyan, actionMarkerWidth), resourceWidth, item.ResourceID, item.Message)
 		}
 	}
 	if plan.Summary.ToApply == 0 {
@@ -82,7 +82,7 @@ func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport)
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n", path)
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
 	resourceWidth := applyResourceIDWidth(report.Items)
 	for _, item := range report.Items {
 		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.applyMarker(item), resourceWidth, item.ResourceID, item.Message)
@@ -104,7 +104,7 @@ func (r humanRenderer) renderDoctorReport(report doctorReport) {
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n", report.ConfigPath)
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", report.ConfigPath)
 	fmt.Fprintln(r.stdout, "Doctor:")
 	for _, item := range report.Items {
 		fmt.Fprintf(r.stdout, "%s %-26s %s\n", r.doctorMarker(item), item.Name, item.Message)
@@ -135,8 +135,8 @@ func (r humanRenderer) renderConfigLoadFailure(err error) {
 const (
 	minResourceIDWidth = 18
 	statusMarkerWidth  = len("outdated:")
-	actionMarkerWidth  = len("apply")
-	shortMarkerWidth   = len("done")
+	actionMarkerWidth  = len("apply:")
+	shortMarkerWidth   = len("done:")
 
 	ansiRed    = "\x1b[31m"
 	ansiGreen  = "\x1b[32m"
@@ -211,15 +211,15 @@ func statusMarker(item engine.PlanItem) string {
 
 	switch item.State {
 	case engine.StateSatisfied:
-		return "ok"
+		return "ok:"
 	case engine.StateMissing, engine.StateChanged:
-		return "need"
+		return "need:"
 	case engine.StateSkipped:
-		return "skip"
+		return "skip:"
 	case engine.StateFailed, engine.StateUnknown:
-		return "fail"
+		return "fail:"
 	default:
-		return "fail"
+		return "fail:"
 	}
 }
 
@@ -240,18 +240,18 @@ func statusMarkerColor(item engine.PlanItem) string {
 
 func applyMarker(item engine.ApplyItem) string {
 	if item.Error != "" {
-		return "fail"
+		return "fail:"
 	}
 	switch item.Action {
 	case "noop":
-		return "ok"
+		return "ok:"
 	case "skip":
-		return "skip"
+		return "skip:"
 	default:
 		if item.Changed {
-			return "done"
+			return "done:"
 		}
-		return "ok"
+		return "ok:"
 	}
 }
 
@@ -275,13 +275,13 @@ func applyMarkerColor(item engine.ApplyItem) string {
 func doctorMarker(item doctorItem) string {
 	switch item.State {
 	case doctorOK:
-		return "ok"
+		return "ok:"
 	case doctorWarn:
-		return "warn"
+		return "warn:"
 	case doctorFail:
-		return "fail"
+		return "fail:"
 	default:
-		return "fail"
+		return "fail:"
 	}
 }
 

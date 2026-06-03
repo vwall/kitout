@@ -25,7 +25,7 @@ directories:
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "apply directory:"+missingDir) {
+	if !strings.Contains(stdout.String(), "apply: directory:"+missingDir) {
 		t.Fatalf("stdout = %q, want dry-run directory plan", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "No changes made because --dry-run was used.") {
