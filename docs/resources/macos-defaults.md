@@ -27,23 +27,35 @@ string
 
 ## Status check
 
-Use:
+Implemented as `resources.MacOSDefaultResource`. Status uses the shared command
+runner to call:
 
 ```sh
 defaults read <domain> <key>
 ```
 
-Compare the actual value to the expected value.
+The resource compares the actual value to the expected typed value. Missing
+keys are reported as `missing`; existing keys with different values are reported
+as `changed`.
 
 ## Apply
 
-Use:
+Apply first checks status, then uses the shared command runner to call:
 
 ```sh
 defaults write <domain> <key> -bool true
 ```
 
-or the appropriate type flag.
+or the appropriate type flag:
+
+```txt
+-bool
+-int
+-float
+-string
+```
+
+Apply is idempotent. If the value is already set, no write command runs.
 
 ## Safety
 
@@ -57,7 +69,8 @@ Each example default should have a comment explaining what it changes.
 
 Some defaults require restarting apps, Finder, Dock, or SystemUIServer.
 
-For the MVP, report a note rather than killing processes automatically.
+Kitout does not restart processes automatically. Users should restart affected
+apps or services when a default requires it.
 
 Future config may support:
 

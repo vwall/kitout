@@ -13,6 +13,7 @@ Examples:
 - `directory:~/code`
 - `symlink:~/.zshrc`
 - `repo:~/code/aubs`
+- `macos_default:NSGlobalDomain/AppleShowAllExtensions`
 
 Every resource can be checked. Some resources can be applied.
 
@@ -95,6 +96,7 @@ cask:visual-studio-code
 directory:/Users/vincent/code
 symlink:/Users/vincent/.zshrc
 repo:/Users/vincent/code/aubs
+macos_default:NSGlobalDomain/AppleShowAllExtensions
 ```
 
 ## Planner

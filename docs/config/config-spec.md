@@ -54,10 +54,8 @@ Resources with named fields use typed structs:
 Current resource implementation coverage:
 
 - implemented resource packages: `brew.packages`, `asdf.plugins`,
-  `asdf.tool_versions`, `casks`, `directories`, `repos`, `symlinks`, and
-  `shell`
-- parsed and validated but not yet implemented as a resource package:
-  `macos_defaults`
+  `asdf.tool_versions`, `casks`, `directories`, `repos`, `symlinks`,
+  `macos_defaults`, and `shell`
 
 ## Required fields
 
