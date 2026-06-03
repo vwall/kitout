@@ -20,7 +20,9 @@ kitout
 These flags are currently parsed by the root command and by implemented
 subcommands. `init`, `doctor`, `status`, and `apply` use
 `~/.config/kitout/kitout.yaml` by default; pass `--config` only to override that
-path. `--json` and `--quiet` currently affect `status` and `apply`.
+path. Human output colors status markers when stdout is an interactive terminal;
+redirected output remains plain text, and `--no-color` disables ANSI color
+markers. `--json` and `--quiet` currently affect `status` and `apply`.
 
 ## Commands
 
@@ -65,12 +67,13 @@ Example human output:
 
 ```txt
 Config: /Users/example/.config/kitout/kitout.yaml
-ok   brew:git           formula is installed
-need cask:ghostty       cask is missing
-ok   directory:/Users/example/code directory exists
-need symlink:/Users/example/.zshrc symlink points elsewhere
+ok        brew:git                      formula is installed
+outdated: brew:go                       formula is outdated
+need      cask:ghostty                  cask is missing
+ok        directory:/Users/example/code directory exists
+need      symlink:/Users/example/.zshrc symlink points elsewhere
 
-2 changes needed
+3 changes needed
 ```
 
 Exit behavior:
@@ -114,7 +117,7 @@ Example output:
 ```txt
 Config: /Users/example/.config/kitout/kitout.yaml
 Plan:
-  apply cask:ghostty       cask is missing
+  apply cask:ghostty                  cask is missing
   apply symlink:/Users/example/.zshrc symlink points elsewhere
 
 No changes made because --dry-run was used.
