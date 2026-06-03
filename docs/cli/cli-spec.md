@@ -120,8 +120,6 @@ No changes made because --dry-run was used.
 
 ### `kitout doctor`
 
-Planned command.
-
 Checks local prerequisites and common problems.
 
 ```sh
@@ -136,6 +134,24 @@ Checks:
 - Homebrew installation
 - Git installation
 - config file validity
+
+Current output:
+
+```txt
+Config: /Users/me/.config/kitout/kitout.yaml
+Doctor:
+ok   macOS                      running on macOS
+ok   CPU architecture           running on Apple Silicon
+ok   Xcode Command Line Tools   /Library/Developer/CommandLineTools
+ok   Homebrew                   Homebrew 4.0.0
+ok   Git                        git version 2.45.0
+ok   Config                     config is valid
+
+6 total, 6 ok, 0 warnings, 0 failed
+```
+
+Planned follow-up checks:
+
 - write permissions for target paths
 - Homebrew path
 - shell environment
