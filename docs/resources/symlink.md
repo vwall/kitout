@@ -13,6 +13,38 @@ symlinks:
     replace: false
 ```
 
+## Future grouped config
+
+Managing many dotfile links one-by-one can become repetitive. A future
+`symlink_groups` config section should allow shared source and target roots
+while still expanding to independent symlink resources internally.
+
+Proposed shape:
+
+```yaml
+symlink_groups:
+  - source_root: ./home
+    target_root: ~
+    replace: false
+    paths:
+      - .zshrc
+      - .gitconfig
+      - .config/ghostty
+      - .config/nvim
+```
+
+Each path would expand as if it had been written explicitly:
+
+```txt
+./home/.zshrc          -> ~/.zshrc
+./home/.gitconfig      -> ~/.gitconfig
+./home/.config/ghostty -> ~/.config/ghostty
+./home/.config/nvim    -> ~/.config/nvim
+```
+
+Grouped symlinks should use the same status, apply, dry-run, duplicate-target,
+and replacement safety rules as explicit `symlinks` entries.
+
 ## Status check
 
 Satisfied when:
@@ -61,6 +93,8 @@ Implemented as `resources.SymlinkResource`. Status uses `os.Lstat` so it can
 inspect links without following them, and apply only replaces an existing target
 when `replace: true` is configured. CLI apply confirmation is required for
 replacement unless `--yes` is passed.
+
+`symlink_groups` is not implemented yet.
 
 ## Shared expectations
 
