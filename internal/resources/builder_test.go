@@ -61,4 +61,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 			t.Fatalf("resource[%d] = %q, want %q; all = %#v", i, got[i], want[i], got)
 		}
 	}
+	if _, ok := resources[7].(MacOSDefaultResource); !ok {
+		t.Fatalf("resource[7] = %T, want MacOSDefaultResource", resources[7])
+	}
 }

@@ -46,7 +46,7 @@ symlinks:
     replace: false
 
 macos_defaults:
-  # Parsed and validated today; resource execution is planned.
+  # Show all filename extensions in Finder and standard file panels.
   - domain: NSGlobalDomain
     key: AppleShowAllExtensions
     type: bool
