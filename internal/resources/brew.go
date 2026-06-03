@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/vwall/kitout/internal/engine"
 	"github.com/vwall/kitout/internal/platform"
@@ -39,6 +40,16 @@ func (resource BrewPackageResource) Status(ctx context.Context) (engine.StatusRe
 
 	_, err := resource.runner.Run(ctx, "brew", "list", "--formula", resource.name)
 	if err == nil {
+		outdated, err := resource.runner.Run(ctx, "brew", "outdated", "--formula", "--quiet", resource.name)
+		if containsLine(outdated.Stdout, resource.name) {
+			return resource.status(engine.StateChanged, "formula is outdated"), nil
+		}
+		if err != nil {
+			if isExitCode(err, 1) {
+				return resource.status(engine.StateSatisfied, "formula is installed"), nil
+			}
+			return resource.status(engine.StateFailed, "could not inspect formula updates"), err
+		}
 		return resource.status(engine.StateSatisfied, "formula is installed"), nil
 	}
 	if isExitCode(err, 1) {
@@ -62,6 +73,11 @@ func (resource BrewPackageResource) Apply(ctx context.Context) (engine.ApplyResu
 			return resource.applyResult("install", false, "could not install formula"), err
 		}
 		return resource.applyResult("install", true, "installed formula"), nil
+	case engine.StateChanged:
+		if _, err := resource.runner.Run(ctx, "brew", "upgrade", resource.name); err != nil {
+			return resource.applyResult("upgrade", false, "could not upgrade formula"), err
+		}
+		return resource.applyResult("upgrade", true, "upgraded formula"), nil
 	default:
 		err := fmt.Errorf("cannot apply formula %s from state %s", resource.name, status.State)
 		return resource.applyResult("fail", false, err.Error()), err
@@ -93,4 +109,13 @@ func (resource BrewPackageResource) details() map[string]string {
 func isExitCode(err error, code int) bool {
 	var commandError platform.CommandError
 	return errors.As(err, &commandError) && commandError.Result.ExitCode == code
+}
+
+func containsLine(output, want string) bool {
+	for _, line := range strings.Fields(output) {
+		if line == want {
+			return true
+		}
+	}
+	return false
 }
