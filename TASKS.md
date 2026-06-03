@@ -75,3 +75,16 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Expand grouped symlink entries into normal symlink resources during config-to-resource building.
 - [x] Validate grouped symlink roots, paths, and duplicate expanded targets.
 - [x] Document grouped symlink examples in README and examples when implemented.
+
+## Next: Phase 5 real Mac dogfood
+
+- [ ] Create a private Kitout config repo for personal machine setup.
+- [ ] Add a representative real-world `kitout.yaml`.
+- [ ] Run `kitout status` against the private config on an existing Mac.
+- [ ] Run `kitout apply --dry-run` and review planned changes for safety and noise.
+- [ ] Apply a small subset of low-risk resources.
+- [ ] Capture gaps in config schema, output clarity, and resource behavior.
+- [ ] Test `kitout doctor` on the dogfood machine.
+- [ ] Test against a fresh macOS user account or clean VM.
+- [ ] Refine docs based on real setup friction.
+- [ ] Decide what must be fixed before distribution work begins.
