@@ -17,6 +17,10 @@ kitout
 --yes               Skip interactive confirmations when allowed
 ```
 
+These flags are currently parsed by the root command and by implemented
+subcommands. `--config` is used by `init` and `status`; `--json` and `--quiet`
+currently affect `status`.
+
 ## Commands
 
 ### `kitout init`
@@ -44,15 +48,22 @@ kitout status --config ./kitout.yaml
 kitout status --json
 ```
 
-Phase 1 behavior:
+Current behavior:
 
 - load and validate the selected config file
 - return `2` for config validation, parse, or unknown-field errors
 - return `3` for config read failures
-- do not check resource status until the engine is implemented
+- do not check resource status until the CLI is wired to the engine resources
 - when `--json` is passed, print a small machine-readable response for config load, validation, and the current unimplemented status state
 
-Expected output:
+Current human output for a valid config:
+
+```txt
+Config valid: /Users/example/.config/kitout/kitout.yaml
+Status checks are not implemented yet.
+```
+
+Target output after resource checks are wired:
 
 ```txt
 ✓ brew package git installed
@@ -64,7 +75,7 @@ Expected output:
 2 changes needed
 ```
 
-Exit behavior:
+Target exit behavior:
 
 ```txt
 0 all resources satisfied
@@ -73,7 +84,17 @@ Exit behavior:
 3 runtime error
 ```
 
+Current exit behavior:
+
+```txt
+0 config is valid
+2 validation, parse, unknown-field, or flag error
+3 config read or runtime render error
+```
+
 ### `kitout apply`
+
+Planned command.
 
 Applies needed changes.
 
@@ -94,6 +115,8 @@ Behavior:
 
 ### `kitout apply --dry-run`
 
+Planned command.
+
 Shows intended changes without making changes.
 
 Expected output:
@@ -107,6 +130,8 @@ No changes made because --dry-run was used.
 ```
 
 ### `kitout doctor`
+
+Planned command.
 
 Checks local prerequisites and common problems.
 
@@ -144,13 +169,15 @@ Prints version metadata.
 kitout version
 ```
 
-Recommended output:
+Current output:
 
 ```txt
 kitout 0.1.0
-commit abc1234
-built 2026-06-02
+commit unknown
+built unknown
 ```
+
+Release builds may set `commit` and `built` metadata at build time.
 
 ## Output modes
 
@@ -162,9 +189,9 @@ Default output should be concise and readable.
 
 JSON output should be stable enough for tests and automation.
 
-Phase 1 `status --json` output only reports config validity and whether resource
+Current `status --json` output only reports config validity and whether resource
 status checks are implemented. It does not include resource status summaries
-until the engine exists.
+until the CLI is wired to the engine resources.
 
 Example:
 
