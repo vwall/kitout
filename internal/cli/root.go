@@ -48,6 +48,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runInit(remainingArgs[1:], opts, stdout, stderr)
 	case "apply":
 		return runApply(remainingArgs[1:], opts, stdout, stderr)
+	case "doctor":
+		return runDoctor(remainingArgs[1:], opts, stdout, stderr)
 	case "status":
 		return runStatus(remainingArgs[1:], opts, stdout, stderr)
 	case "version":
@@ -76,16 +78,15 @@ Usage:
 
 Commands:
   apply    Apply missing or incorrect resources
+  doctor   Check local prerequisites and common problems
   init      Create a starter config file
   status    Check configured resources
   version   Print version metadata
 
-Planned commands:
-  doctor    Check local prerequisites and common problems
-
 Examples:
   kitout init
   kitout init --config ./kitout.yaml
+  kitout doctor --config ./kitout.yaml
   kitout status --config ./kitout.yaml
   kitout apply --config ./kitout.yaml --dry-run
   kitout version

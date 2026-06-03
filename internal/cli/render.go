@@ -93,6 +93,27 @@ func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport)
 	)
 }
 
+func (r humanRenderer) renderDoctorReport(report doctorReport) {
+	if r.quiet {
+		return
+	}
+
+	fmt.Fprintf(r.stdout, "Config: %s\n", report.ConfigPath)
+	fmt.Fprintln(r.stdout, "Doctor:")
+	for _, item := range report.Items {
+		fmt.Fprintf(r.stdout, "%s %-26s %s\n", doctorMarker(item), item.Name, item.Message)
+		if item.Fix != "" {
+			fmt.Fprintf(r.stdout, "    fix: %s\n", item.Fix)
+		}
+	}
+	fmt.Fprintf(r.stdout, "\n%d total, %d ok, %d warnings, %d failed\n",
+		report.Summary.Total,
+		report.Summary.OK,
+		report.Summary.Warn,
+		report.Summary.Fail,
+	)
+}
+
 func (r humanRenderer) renderInvalidConfigDetails(err error) {
 	fmt.Fprintln(r.stderr, err.Error())
 }
@@ -134,5 +155,18 @@ func applyMarker(item engine.ApplyItem) string {
 			return "done"
 		}
 		return "ok  "
+	}
+}
+
+func doctorMarker(item doctorItem) string {
+	switch item.State {
+	case doctorOK:
+		return "ok  "
+	case doctorWarn:
+		return "warn"
+	case doctorFail:
+		return "fail"
+	default:
+		return "fail"
 	}
 }
