@@ -44,7 +44,7 @@ as the phase-level map; use this file for near-term implementation tasks.
 
 ## Documentation follow-up
 
-- [ ] Update `docs/config/config-spec.md` when config structs become executable.
-- [ ] Update `docs/cli/cli-spec.md` when command behavior changes.
-- [ ] Keep `examples/kitout.yaml` aligned with loader validation.
+- [x] Update `docs/config/config-spec.md` when config structs become executable.
+- [x] Update `docs/cli/cli-spec.md` when command behavior changes.
+- [x] Keep `examples/kitout.yaml` aligned with loader validation.
 - [x] Add short notes to resource docs as each resource becomes implemented.
