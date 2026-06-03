@@ -135,6 +135,7 @@ Checks:
 - Homebrew installation
 - Git installation
 - config file validity
+- write permissions for configured filesystem targets
 
 Current output:
 
@@ -147,13 +148,13 @@ ok   Xcode Command Line Tools   /Library/Developer/CommandLineTools
 ok   Homebrew                   Homebrew 4.0.0
 ok   Git                        git version 2.45.0
 ok   Config                     config is valid
+ok   Path permissions           no configured filesystem write targets
 
-6 total, 6 ok, 0 warnings, 0 failed
+7 total, 7 ok, 0 warnings, 0 failed
 ```
 
 Planned follow-up checks:
 
-- write permissions for target paths
 - Homebrew path
 - shell environment
 
