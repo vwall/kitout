@@ -38,6 +38,10 @@ Equivalent behavior:
 mkdir -p ~/code
 ```
 
+The current Go implementation uses `os.MkdirAll` with mode `0755` for newly
+created directories. Mode customization is deferred until the expanded config
+form exists.
+
 ## Safety
 
 If the path exists and is a file, do not replace it.
