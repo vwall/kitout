@@ -56,6 +56,11 @@ A future flag may support:
 kitout apply --brew-update
 ```
 
+## Implementation status
+
+Implemented as `resources.BrewPackageResource`. Status and apply both use the
+shared command runner interface so tests do not call real Homebrew.
+
 ## Shared expectations
 
 Every resource must support:

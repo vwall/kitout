@@ -36,15 +36,15 @@ as the phase-level map; use this file for near-term implementation tasks.
 
 - [x] Add command runner interface in `internal/platform`.
 - [x] Add directory resource with status, apply, and dry-run tests.
-- [ ] Add symlink resource with safety checks before overwrite support.
-- [ ] Add brew package resource using the command runner interface.
-- [ ] Add cask resource using the command runner interface.
-- [ ] Add Git repo resource using the command runner interface.
-- [ ] Add shell command resource with explicit config opt-in.
+- [x] Add symlink resource with safety checks before overwrite support.
+- [x] Add brew package resource using the command runner interface.
+- [x] Add cask resource using the command runner interface.
+- [x] Add Git repo resource using the command runner interface.
+- [x] Add shell command resource with explicit config opt-in.
 
 ## Documentation follow-up
 
 - [ ] Update `docs/config/config-spec.md` when config structs become executable.
 - [ ] Update `docs/cli/cli-spec.md` when command behavior changes.
 - [ ] Keep `examples/kitout.yaml` aligned with loader validation.
-- [ ] Add short notes to resource docs as each resource becomes implemented.
+- [x] Add short notes to resource docs as each resource becomes implemented.

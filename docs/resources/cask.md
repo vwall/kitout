@@ -47,6 +47,11 @@ brew install --cask <name>
 
 Cask installs may open macOS permission prompts or require app-specific post-install setup. Kitout should report success when Homebrew reports success, but it should not try to automate app login or private app configuration in the MVP.
 
+## Implementation status
+
+Implemented as `resources.CaskResource`. Status and apply both use the shared
+command runner interface so tests do not call real Homebrew.
+
 ## Shared expectations
 
 Every resource must support:

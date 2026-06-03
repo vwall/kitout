@@ -51,6 +51,12 @@ A future backup option may support:
 backup: true
 ```
 
+## Implementation status
+
+Implemented as `resources.SymlinkResource`. Status uses `os.Lstat` so it can
+inspect links without following them, and apply only replaces an existing target
+when `replace: true` is configured.
+
 ## Shared expectations
 
 Every resource must support:

@@ -47,6 +47,12 @@ Do not overwrite local changes.
 
 Do not switch branches automatically if the repo already exists.
 
+## Implementation status
+
+Implemented as `resources.RepoResource`. Status checks the local path, verifies
+that Git sees a work tree, and compares `origin` to the configured URL through
+the shared command runner interface.
+
 ## Future options
 
 ```yaml
