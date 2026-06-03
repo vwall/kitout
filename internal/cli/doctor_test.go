@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -26,8 +28,8 @@ func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
 	if report.HasFailures() {
 		t.Fatalf("HasFailures() = true, want false: %+v", report)
 	}
-	if report.Summary != (doctorSummary{Total: 6, OK: 6}) {
-		t.Fatalf("summary = %+v, want six ok checks", report.Summary)
+	if report.Summary != (doctorSummary{Total: 7, OK: 7}) {
+		t.Fatalf("summary = %+v, want seven ok checks", report.Summary)
 	}
 	expectDoctorCalls(t, runner.calls, []doctorCommandCall{
 		{name: "xcode-select", args: []string{"-p"}},
@@ -36,6 +38,7 @@ func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
 	})
 	assertDoctorItem(t, report, "Homebrew", doctorOK, "Homebrew 4.0.0")
 	assertDoctorItem(t, report, "Config", doctorOK, "config is valid")
+	assertDoctorItem(t, report, "Path permissions", doctorOK, "no configured filesystem write targets")
 }
 
 func TestDoctorCheckerReportsPrerequisiteFailures(t *testing.T) {
@@ -81,6 +84,66 @@ repos:
 	configItem := doctorItemByName(t, report, "Config")
 	if !strings.Contains(configItem.Details["error"], "repos[0].url is required") {
 		t.Fatalf("config error = %q, want validation detail", configItem.Details["error"])
+	}
+}
+
+func TestDoctorCheckerReportsWritableConfiguredPaths(t *testing.T) {
+	dir := t.TempDir()
+	toolVersionsPath := filepath.Join(dir, ".tool-versions")
+	if err := os.WriteFile(toolVersionsPath, []byte("ruby 3.3.6\n"), 0o644); err != nil {
+		t.Fatalf("write .tool-versions: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, "version: 1\n"+
+		"asdf:\n"+
+		"  tool_versions:\n"+
+		"    - path: "+toolVersionsPath+"\n"+
+		"      tools:\n"+
+		"        ruby: 3.3.6\n"+
+		"directories:\n"+
+		"  - "+filepath.Join(dir, "code")+"\n"+
+		"repos:\n"+
+		"  - path: "+filepath.Join(dir, "repo")+"\n"+
+		"    url: git@example.com:me/repo.git\n"+
+		"symlinks:\n"+
+		"  - source: "+filepath.Join(dir, "dotfile")+"\n"+
+		"    target: "+filepath.Join(dir, "link")+"\n")
+	runner := &fakeDoctorRunner{}
+	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	assertDoctorItem(t, report, "Path permissions", doctorOK, "4 configured write target(s) look writable")
+}
+
+func TestDoctorCheckerReportsUnwritableConfiguredPaths(t *testing.T) {
+	dir := t.TempDir()
+	locked := filepath.Join(dir, "locked")
+	if err := os.Mkdir(locked, 0o555); err != nil {
+		t.Fatalf("create locked dir: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chmod(locked, 0o755); err != nil {
+			t.Fatalf("restore locked dir permissions: %v", err)
+		}
+	})
+	configPath := writeCLIConfigFile(t, "version: 1\n"+
+		"directories:\n"+
+		"  - "+filepath.Join(locked, "code")+"\n")
+	runner := &fakeDoctorRunner{}
+	checker := newDoctorChecker(runner, doctorSystemInfo{OS: "darwin", Arch: "arm64"})
+
+	report := checker.Check(context.Background(), configPath)
+
+	if !report.HasFailures() {
+		t.Fatalf("HasFailures() = false, want true")
+	}
+	assertDoctorItem(t, report, "Path permissions", doctorFail, "1 configured write target(s) may not be writable")
+	item := doctorItemByName(t, report, "Path permissions")
+	if !strings.Contains(item.Details["failures"], locked+" is not writable") {
+		t.Fatalf("failures = %q, want locked parent detail", item.Details["failures"])
 	}
 }
 
