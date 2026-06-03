@@ -38,7 +38,7 @@ Satisfied when the formula is installed.
 Missing when Homebrew is available but the formula is not installed.
 
 Changed when the formula is installed and Homebrew reports that it is outdated.
-Human status output marks this as `outdated:`.
+Human status output marks this as `changed`.
 
 Some Homebrew versions return exit code 1 from `brew outdated` when the named
 formula has no available update. Treat that as satisfied when the command output

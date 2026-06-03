@@ -68,22 +68,22 @@ Example human output:
 ```txt
 Config: /Users/example/.config/kitout/kitout.yaml
 
-ok:       brew:git                      formula is installed
-outdated: brew:go                       formula is outdated
-need:     cask:ghostty                  cask is missing
-ok:       directory:/Users/example/code directory exists
-skip:     repo:/Users/example/code/app  skipped by config
-fail:     shell:setup                   command failed
+ok      brew:git                      formula is installed
+changed brew:go                       formula is outdated
+missing cask:ghostty                  cask is missing
+ok      directory:/Users/example/code directory exists
+skip    repo:/Users/example/code/app  skipped by config
+fail    shell:setup                   command failed
 
 6 total, 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
-3 changes needed
+3 resources need attention
 ```
 
 Exit behavior:
 
 ```txt
 0 all resources satisfied
-1 changes needed
+1 status found resources needing attention
 2 validation error
 3 runtime error
 ```
