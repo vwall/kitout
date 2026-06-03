@@ -111,8 +111,6 @@ func riskyApplyItems(plan engine.Plan) []engine.PlanItem {
 			continue
 		}
 		switch item.Type {
-		case "macos_default":
-			items = append(items, item)
 		case "shell":
 			items = append(items, item)
 		case "symlink":
