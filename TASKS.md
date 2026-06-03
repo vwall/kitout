@@ -68,3 +68,10 @@ as the phase-level map; use this file for near-term implementation tasks.
 - [x] Add Homebrew path checks for Apple Silicon.
 - [x] Add shell environment checks.
 - [x] Add confirmation flow for risky apply actions.
+
+## Next: dogfood ergonomics
+
+- [ ] Add `symlink_groups` config support for dotfile-style bulk symlinks.
+- [ ] Expand grouped symlink entries into normal symlink resources during config-to-resource building.
+- [ ] Validate grouped symlink roots, paths, and duplicate expanded targets.
+- [ ] Document grouped symlink examples in README and examples when implemented.

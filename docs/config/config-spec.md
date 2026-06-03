@@ -48,6 +48,7 @@ Resources with named fields use typed structs:
 - `asdf.tool_versions`
 - `repos`
 - `symlinks`
+- `symlink_groups` (planned, not implemented)
 - `macos_defaults`
 - `shell`
 
@@ -56,6 +57,7 @@ Current resource implementation coverage:
 - implemented resource packages: `brew.packages`, `asdf.plugins`,
   `asdf.tool_versions`, `casks`, `directories`, `repos`, `symlinks`,
   `macos_defaults`, and `shell`
+- planned config ergonomics: grouped symlink expansion via `symlink_groups`
 
 ## Required fields
 
@@ -153,6 +155,17 @@ symlinks:
     target: ~/.zshrc
     replace: false
 
+# Planned, not implemented yet. This would expand to independent symlink
+# resources with the same safety behavior as explicit symlinks.
+symlink_groups:
+  - source_root: ./home
+    target_root: ~
+    replace: false
+    paths:
+      - .zshrc
+      - .gitconfig
+      - .config/ghostty
+
 macos_defaults:
   - domain: NSGlobalDomain
     key: AppleShowAllExtensions
@@ -192,6 +205,12 @@ The implemented path-bearing resource fields are:
 - `symlinks[].source`
 - `symlinks[].target`
 
+Planned path-bearing fields:
+
+- `symlink_groups[].source_root`
+- `symlink_groups[].target_root`
+- `symlink_groups[].paths[]`
+
 Behavior:
 
 - normalize paths internally
@@ -225,6 +244,8 @@ Examples:
 - same cask twice
 - same directory twice
 - same target symlink twice
+- same expanded symlink target twice, including conflicts between `symlinks`
+  and planned `symlink_groups`
 - same repository path twice
 - same macOS default domain/key twice
 - same shell command name twice
