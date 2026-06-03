@@ -55,6 +55,37 @@ func Validate(cfg Config) error {
 	errs.detectDuplicateStrings("casks", cfg.Casks)
 	errs.detectDuplicateStrings("directories", cfg.Directories)
 
+	for i, plugin := range cfg.ASDF.Plugins {
+		errs.requireString(fmt.Sprintf("asdf.plugins[%d].name", i), plugin.Name)
+		errs.requireString(fmt.Sprintf("asdf.plugins[%d].url", i), plugin.URL)
+		errs.requireStrings(fmt.Sprintf("asdf.plugins[%d].versions", i), plugin.Versions)
+		for j, version := range plugin.Versions {
+			if strings.TrimSpace(version) == "latest" {
+				errs.add(fmt.Sprintf("asdf.plugins[%d].versions[%d]", i, j), "must be an exact version, not latest")
+			}
+		}
+		errs.detectDuplicateStrings(fmt.Sprintf("asdf.plugins[%d].versions", i), plugin.Versions)
+	}
+	errs.detectDuplicates(asdfPluginKeys(cfg.ASDF.Plugins))
+
+	for i, item := range cfg.ASDF.ToolVersions {
+		errs.requireString(fmt.Sprintf("asdf.tool_versions[%d].path", i), item.Path)
+		if len(item.Tools) == 0 {
+			errs.add(fmt.Sprintf("asdf.tool_versions[%d].tools", i), "is required")
+		}
+		for tool, version := range item.Tools {
+			field := fmt.Sprintf("asdf.tool_versions[%d].tools[%s]", i, tool)
+			errs.requireString(field, version)
+			if strings.TrimSpace(tool) == "" {
+				errs.add(fmt.Sprintf("asdf.tool_versions[%d].tools", i), "must not include an empty tool name")
+			}
+			if strings.TrimSpace(version) == "latest" {
+				errs.add(field, "must be an exact version, not latest")
+			}
+		}
+	}
+	errs.detectDuplicates(asdfToolVersionPathKeys(cfg.ASDF.ToolVersions))
+
 	for i, repo := range cfg.Repos {
 		errs.requireString(fmt.Sprintf("repos[%d].path", i), repo.Path)
 		errs.requireString(fmt.Sprintf("repos[%d].url", i), repo.URL)
@@ -157,6 +188,28 @@ func repoPathKeys(repos []Repo) []duplicateKey {
 		keys = append(keys, duplicateKey{
 			Field: fmt.Sprintf("repos[%d].path", i),
 			Value: repo.Path,
+		})
+	}
+	return keys
+}
+
+func asdfPluginKeys(plugins []ASDFPlugin) []duplicateKey {
+	keys := make([]duplicateKey, 0, len(plugins))
+	for i, plugin := range plugins {
+		keys = append(keys, duplicateKey{
+			Field: fmt.Sprintf("asdf.plugins[%d].name", i),
+			Value: plugin.Name,
+		})
+	}
+	return keys
+}
+
+func asdfToolVersionPathKeys(items []ASDFToolVersion) []duplicateKey {
+	keys := make([]duplicateKey, 0, len(items))
+	for i, item := range items {
+		keys = append(keys, duplicateKey{
+			Field: fmt.Sprintf("asdf.tool_versions[%d].path", i),
+			Value: item.Path,
 		})
 	}
 	return keys
