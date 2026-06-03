@@ -67,7 +67,7 @@ func addGlobalFlags(fs *flag.FlagSet, opts *globalOptions) {
 	fs.BoolVar(&opts.quiet, "quiet", opts.quiet, "Reduce output")
 	fs.BoolVar(&opts.noColor, "no-color", opts.noColor, "Disable colored output")
 	fs.BoolVar(&opts.json, "json", opts.json, "Print machine-readable JSON output")
-	fs.BoolVar(&opts.yes, "yes", opts.yes, "Skip interactive confirmations when allowed")
+	fs.BoolVar(&opts.yes, "yes", opts.yes, "Bypass apply confirmations for shell commands and symlink replacements")
 }
 
 func printRootHelp(w io.Writer) {
@@ -97,5 +97,5 @@ Global flags:
   --quiet             Reduce output
   --no-color          Disable colored output
   --json              Print machine-readable JSON output
-  --yes               Skip interactive confirmations when allowed`)
+  --yes               Bypass apply confirmations for shell commands and symlink replacements`)
 }

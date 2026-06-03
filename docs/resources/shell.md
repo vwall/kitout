@@ -66,7 +66,8 @@ Implemented as `resources.ShellCommandResource`. The MVP supports `always`,
 `missing-command:<name>`, `exists:<path>`, and `missing:<path>` conditions.
 Configured commands run through `sh -c` using the shared command runner
 interface. `kitout apply` requires confirmation before running a shell command
-unless `--yes` is passed.
+unless `--yes` is passed. `kitout apply --dry-run` shows the command in the
+plan without asking for confirmation or running it.
 
 ## Shared expectations
 
