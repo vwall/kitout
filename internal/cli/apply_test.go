@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/vwall/kitout/internal/engine"
 )
 
 func TestApplyDryRunShowsPlanWithoutCreatingDirectory(t *testing.T) {
@@ -207,5 +209,27 @@ symlinks:
 	}
 	if string(content) != "existing\n" {
 		t.Fatalf("target content = %q, want existing file preserved", string(content))
+	}
+}
+
+func TestRiskyApplyItemsIncludesMacOSDefaults(t *testing.T) {
+	plan := engine.Plan{
+		Items: []engine.PlanItem{
+			{
+				ResourceID: "macos_default:NSGlobalDomain/AppleShowAllExtensions",
+				Type:       "macos_default",
+				State:      engine.StateChanged,
+				Action:     engine.ActionApply,
+			},
+		},
+	}
+
+	items := riskyApplyItems(plan)
+
+	if len(items) != 1 {
+		t.Fatalf("len(items) = %d, want 1", len(items))
+	}
+	if items[0].ResourceID != "macos_default:NSGlobalDomain/AppleShowAllExtensions" {
+		t.Fatalf("ResourceID = %q, want macOS default resource", items[0].ResourceID)
 	}
 }

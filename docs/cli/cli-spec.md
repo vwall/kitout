@@ -238,7 +238,7 @@ Risky changes include:
 
 - replacing symlink targets
 - running shell commands
-- modifying macOS defaults, once that resource is implemented
+- modifying macOS defaults
 
 Safe changes may apply without confirmation:
 

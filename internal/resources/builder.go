@@ -34,16 +34,7 @@ func Build(cfg config.Config, runner platform.Runner) []engine.Resource {
 		resources = append(resources, NewSymlink(symlink.Source, symlink.Target, symlink.Replace))
 	}
 	for _, item := range cfg.MacOSDefaults {
-		resources = append(resources, NewUnsupportedResource(
-			"macos_default",
-			"macos_default:"+item.Domain+"/"+item.Key,
-			"macOS defaults resource is not implemented yet",
-			map[string]string{
-				"domain": item.Domain,
-				"key":    item.Key,
-				"type":   item.Type,
-			},
-		))
+		resources = append(resources, NewMacOSDefault(item.Domain, item.Key, item.Type, item.Value, runner))
 	}
 	for _, command := range cfg.Shell {
 		resources = append(resources, NewShellCommand(command.Name, command.Command, command.When, runner))
