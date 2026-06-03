@@ -179,12 +179,13 @@ kitout version
 Current output:
 
 ```txt
-kitout 0.1.0
+kitout dev
 commit unknown
 built unknown
 ```
 
-Release builds may set `commit` and `built` metadata at build time.
+Release and local build artifacts should set `version`, `commit`, and `built`
+metadata at build time.
 
 ## Output modes
 
