@@ -44,7 +44,10 @@ Behavior:
 
 - create parent config directory if missing
 - refuse to overwrite existing config unless `--force` is passed
-- write a commented starter config
+- write a starter config that validates and can be checked by `status` without
+  manual edits
+- keep only deterministic directory resources active by default; package, repo,
+  and dotfile examples are commented until the user customizes them
 
 ### `kitout status`
 
