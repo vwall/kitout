@@ -83,7 +83,10 @@ func TestASDFPluginStatusMissingWhenVersionIsMissing(t *testing.T) {
 		t.Fatalf("Status returned error: %v", err)
 	}
 
-	expectStatus(t, result, resource.ID(), asdfPluginType, engine.StateMissing, "asdf versions are missing")
+	expectStatus(t, result, resource.ID(), asdfPluginType, engine.StateMissing, "asdf version is missing")
+	if result.Details["missing_versions"] != "3.3.6" {
+		t.Fatalf("Details[missing_versions] = %q, want %q", result.Details["missing_versions"], "3.3.6")
+	}
 }
 
 func TestASDFPluginApplyAddsMissingPluginAndInstallsVersions(t *testing.T) {
