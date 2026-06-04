@@ -11,9 +11,10 @@ import (
 // Build converts a validated config into executable resources in stable order.
 func Build(cfg config.Config, runner platform.Runner) []engine.Resource {
 	resources := make([]engine.Resource, 0, resourceCount(cfg))
+	brewOutdated := newBrewOutdatedCache(runner)
 
 	for _, name := range cfg.Brew.Packages {
-		resources = append(resources, NewBrewPackage(name, runner))
+		resources = append(resources, newBrewPackage(name, runner, brewOutdated))
 	}
 	for _, plugin := range cfg.ASDF.Plugins {
 		resources = append(resources, NewASDFPlugin(plugin.Name, plugin.URL, plugin.Versions, runner))

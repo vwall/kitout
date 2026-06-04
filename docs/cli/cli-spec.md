@@ -61,6 +61,7 @@ Current behavior:
 - load and validate the selected config file
 - build resources from config in stable execution order
 - check resource status through the engine planner
+- batch Homebrew outdated checks across brew package resources during planning
 - render resource details and summary counts
 - return `0` when all resources are satisfied or skipped
 - return `1` when changes are needed
