@@ -72,12 +72,25 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 	fmt.Fprintln(r.stdout, "No shell commands will run without explicit approval.")
 }
 
-func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport) {
+func (r humanRenderer) renderApplyStart(path string) {
 	if r.quiet {
 		return
 	}
 
 	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	fmt.Fprintln(r.stdout, "Applying changes:")
+}
+
+func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport) {
+	if r.quiet {
+		return
+	}
+
+	if path != "" {
+		fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	} else {
+		fmt.Fprintln(r.stdout, "\nResults:")
+	}
 	resourceWidth := applyLabelWidth(report.Items)
 	for _, item := range report.Items {
 		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
@@ -87,6 +100,14 @@ func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport)
 		}
 	}
 	fmt.Fprintf(r.stdout, "\nSummary: %s\n", applySummary(report.Summary))
+}
+
+func (r humanRenderer) BeforeApply(item engine.PlanItem) {
+	if r.quiet {
+		return
+	}
+
+	fmt.Fprintf(r.stdout, "%s %s\n", r.progressMarker(), applyProgressMessage(item))
 }
 
 func (r humanRenderer) renderDoctorReport(report doctorReport) {
@@ -177,6 +198,10 @@ func (r humanRenderer) marker(text, color string, width int) string {
 
 func (r humanRenderer) dryRunMarker() string {
 	return r.colorize("i", ansiBlue)
+}
+
+func (r humanRenderer) progressMarker() string {
+	return r.colorize(">", ansiBlue)
 }
 
 func (r humanRenderer) failSymbol() string {
@@ -487,6 +512,52 @@ func dryRunMessage(item engine.PlanItem) string {
 		return "Would update .tool-versions " + target
 	default:
 		return "Would apply " + displayResourceLabel(item.Type, item.ResourceID, item.Details)
+	}
+}
+
+func applyProgressMessage(item engine.PlanItem) string {
+	typ := item.Type
+	if typ == "" {
+		typ, _ = splitResourceID(item.ResourceID)
+	}
+	target := displayResourceTarget(typ, item.ResourceID, item.Details)
+	switch typ {
+	case "brew":
+		if item.State == engine.StateChanged {
+			return "Upgrading formula " + target + "..."
+		}
+		return "Installing formula " + target + "..."
+	case "cask":
+		return "Installing cask " + target + "..."
+	case "directory":
+		return "Creating directory " + target + "..."
+	case "symlink":
+		if item.State == engine.StateChanged {
+			return "Replacing symlink " + target + "..."
+		}
+		return "Linking " + target + "..."
+	case "repo":
+		return "Cloning repository " + target + "..."
+	case "macos_default":
+		return "Setting macOS default " + target + "..."
+	case "shell":
+		if command := item.Details["command"]; command != "" {
+			name := item.Details["name"]
+			if name == "" {
+				return "Running shell command " + command + "..."
+			}
+			return "Running shell command " + name + "..."
+		}
+		return "Running shell command " + target + "..."
+	case "asdf_plugin":
+		if item.State == engine.StateChanged {
+			return "Updating asdf plugin " + target + "..."
+		}
+		return "Installing asdf plugin " + target + "..."
+	case "asdf_tool_versions":
+		return "Updating .tool-versions " + target + "..."
+	default:
+		return "Applying " + displayResourceLabel(item.Type, item.ResourceID, item.Details) + "..."
 	}
 }
 

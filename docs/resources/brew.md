@@ -57,6 +57,10 @@ brew upgrade <name>
 
 Missing formulae are installed. Outdated formulae are upgraded.
 
+Human `kitout apply` output prints a progress line before starting each install
+or upgrade, for example `Upgrading formula go...`, because Homebrew can be slow
+or quiet while it is working.
+
 ## Notes
 
 Do not run `brew update` automatically in the MVP. That can be slow and surprising.

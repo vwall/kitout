@@ -138,6 +138,39 @@ func TestHumanRendererAlignsDryRunAndApplyMessageColumns(t *testing.T) {
 	}
 }
 
+func TestHumanRendererApplyProgressOutput(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	renderer.renderApplyStart("/tmp/kitout.yaml")
+	renderer.BeforeApply(engine.PlanItem{
+		ResourceID: "brew:go",
+		Type:       "brew",
+		State:      engine.StateChanged,
+		Action:     engine.ActionApply,
+		Details:    map[string]string{"name": "go"},
+	})
+	renderer.renderApplyReport("", engine.ApplyReport{
+		Items: []engine.ApplyItem{
+			{ResourceID: "brew:go", Type: "brew", Action: "upgrade", Changed: true, Message: "upgraded formula", Details: map[string]string{"name": "go"}},
+		},
+		Summary: engine.ApplySummary{Total: 1, Changed: 1},
+	})
+
+	for _, fragment := range []string{
+		"Config: /tmp/kitout.yaml\n\nApplying changes:",
+		"> Upgrading formula go...",
+		"\nResults:\n",
+		"✓ done  brew: go",
+		"Summary: 1 changed",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+}
+
 func TestHumanRendererQuietSuppressesStatusOutput(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
