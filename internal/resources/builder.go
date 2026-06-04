@@ -17,7 +17,13 @@ func Build(cfg config.Config, runner platform.Runner) []engine.Resource {
 		resources = append(resources, newBrewPackage(name, runner, brewOutdated))
 	}
 	for _, plugin := range cfg.ASDF.Plugins {
-		resources = append(resources, NewASDFPlugin(plugin.Name, plugin.URL, plugin.Versions, runner))
+		resources = append(resources, NewASDFPluginWithOptions(
+			plugin.Name,
+			plugin.URL,
+			plugin.Versions,
+			ASDFPluginOptions{UpdateBeforeInstall: plugin.UpdateBeforeInstall},
+			runner,
+		))
 	}
 	for _, item := range cfg.ASDF.ToolVersions {
 		resources = append(resources, NewASDFToolVersions(item.Path, item.Tools))

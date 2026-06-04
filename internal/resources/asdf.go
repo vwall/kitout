@@ -20,21 +20,33 @@ const (
 
 // ASDFPluginResource ensures an asdf plugin and exact tool versions are installed.
 type ASDFPluginResource struct {
-	name     string
-	url      string
-	versions []string
-	runner   platform.Runner
+	name                string
+	url                 string
+	updateBeforeInstall bool
+	versions            []string
+	runner              platform.Runner
 }
 
 var _ engine.Resource = ASDFPluginResource{}
 
+// ASDFPluginOptions controls optional asdf plugin apply behavior.
+type ASDFPluginOptions struct {
+	UpdateBeforeInstall bool
+}
+
 // NewASDFPlugin returns a resource for one asdf plugin.
 func NewASDFPlugin(name, url string, versions []string, runner platform.Runner) ASDFPluginResource {
+	return NewASDFPluginWithOptions(name, url, versions, ASDFPluginOptions{}, runner)
+}
+
+// NewASDFPluginWithOptions returns a resource for one asdf plugin with options.
+func NewASDFPluginWithOptions(name, url string, versions []string, options ASDFPluginOptions, runner platform.Runner) ASDFPluginResource {
 	return ASDFPluginResource{
-		name:     name,
-		url:      url,
-		versions: append([]string(nil), versions...),
-		runner:   runner,
+		name:                name,
+		url:                 url,
+		updateBeforeInstall: options.UpdateBeforeInstall,
+		versions:            append([]string(nil), versions...),
+		runner:              runner,
 	}
 }
 
@@ -94,6 +106,7 @@ func (resource ASDFPluginResource) Apply(ctx context.Context) (engine.ApplyResul
 	}
 
 	changed := false
+	pluginWasPresent := ok
 	if !ok {
 		if _, err := resource.runner.Run(ctx, "asdf", "plugin", "add", resource.name, resource.url); err != nil {
 			return resource.applyResult("add", false, "could not add asdf plugin"), err
@@ -105,6 +118,14 @@ func (resource ASDFPluginResource) Apply(ctx context.Context) (engine.ApplyResul
 	if err != nil {
 		return resource.applyResult("fail", changed, "could not inspect asdf versions"), err
 	}
+	updated := false
+	if len(missing) > 0 && resource.updateBeforeInstall && pluginWasPresent {
+		if _, err := resource.runner.Run(ctx, "asdf", "plugin", "update", resource.name); err != nil {
+			return resource.applyResult("update", changed, "could not update asdf plugin"), err
+		}
+		changed = true
+		updated = true
+	}
 	for _, version := range missing {
 		if _, err := resource.runner.Run(ctx, "asdf", "install", resource.name, version); err != nil {
 			return resource.applyResult("install", changed, "could not install asdf version"), err
@@ -114,6 +135,9 @@ func (resource ASDFPluginResource) Apply(ctx context.Context) (engine.ApplyResul
 
 	if !changed {
 		return resource.applyResult("noop", false, "asdf plugin and versions already installed"), nil
+	}
+	if updated {
+		return resource.applyResult("install", true, "updated asdf plugin and installed versions"), nil
 	}
 	return resource.applyResult("install", true, "installed asdf plugin or versions"), nil
 }
@@ -217,6 +241,9 @@ func (resource ASDFPluginResource) details() map[string]string {
 	}
 	if len(resource.versions) > 0 {
 		details["versions"] = strings.Join(resource.versions, ",")
+	}
+	if resource.updateBeforeInstall {
+		details["update_before_install"] = "true"
 	}
 	return details
 }

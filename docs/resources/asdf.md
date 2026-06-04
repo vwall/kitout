@@ -28,6 +28,7 @@ asdf:
   plugins:
     - name: ruby
       url: https://github.com/asdf-vm/asdf-ruby.git
+      update_before_install: true
       versions:
         - 3.3.6
 
@@ -39,6 +40,11 @@ asdf:
 
 Plugin URLs are required so Kitout does not depend on the asdf short-name plugin
 repository. Versions must be exact; `latest` is rejected.
+
+Set `update_before_install: true` on a plugin when Kitout should update that
+asdf plugin before installing missing configured versions. This is useful for
+runtime plugins such as ruby, where a newly released version may not appear
+until the plugin index is refreshed.
 
 ## Status check
 
@@ -68,8 +74,12 @@ Plugin apply may run:
 
 ```sh
 asdf plugin add <name> <url>
+asdf plugin update <name>
 asdf install <name> <version>
 ```
+
+`asdf plugin update <name>` only runs when `update_before_install: true`, the
+plugin is already installed, and at least one configured version is missing.
 
 `.tool-versions` apply writes only configured tool entries. Unrelated entries
 and comments are preserved.
@@ -79,7 +89,6 @@ The first implementation does not:
 - install asdf directly
 - remove plugins
 - uninstall versions
-- update plugins
 - support `latest`
 
 ## Implementation status
