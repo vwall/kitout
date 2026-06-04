@@ -64,3 +64,42 @@ func TestExecutorReportsApplyFailures(t *testing.T) {
 		t.Fatalf("Error = %q, want command failed", report.Items[0].Error)
 	}
 }
+
+func TestExecutorReportsProgressBeforeApply(t *testing.T) {
+	resource := &fakeResource{id: "brew:go", typ: "brew", state: StateChanged}
+	observer := &recordingApplyObserver{
+		applyCallsFor: func() int {
+			return resource.applyCalls
+		},
+	}
+	plan := Plan{
+		Items: []PlanItem{
+			{ResourceID: "brew:go", Type: "brew", State: StateChanged, Action: ActionApply},
+		},
+	}
+
+	NewExecutor().ApplyWithObserver(context.Background(), []Resource{resource}, plan, observer)
+
+	if len(observer.items) != 1 {
+		t.Fatalf("len(observer.items) = %d, want 1", len(observer.items))
+	}
+	if observer.items[0].ResourceID != "brew:go" {
+		t.Fatalf("observer item = %+v, want brew:go", observer.items[0])
+	}
+	if observer.applyCalls[0] != 0 {
+		t.Fatalf("observer saw applyCalls = %d, want 0 before apply", observer.applyCalls[0])
+	}
+}
+
+type recordingApplyObserver struct {
+	items         []PlanItem
+	applyCalls    []int
+	applyCallsFor func() int
+}
+
+func (observer *recordingApplyObserver) BeforeApply(item PlanItem) {
+	observer.items = append(observer.items, item)
+	if observer.applyCallsFor != nil {
+		observer.applyCalls = append(observer.applyCalls, observer.applyCallsFor())
+	}
+}

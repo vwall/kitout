@@ -30,6 +30,11 @@ type ApplyReport struct {
 	Summary ApplySummary
 }
 
+// ApplyObserver receives progress events while the executor applies resources.
+type ApplyObserver interface {
+	BeforeApply(item PlanItem)
+}
+
 // HasFailures reports whether any apply action failed.
 func (report ApplyReport) HasFailures() bool {
 	return report.Summary.Failed > 0
@@ -45,6 +50,11 @@ func NewExecutor() Executor {
 
 // Apply runs Apply for resources whose plan action is ActionApply.
 func (executor Executor) Apply(ctx context.Context, resources []Resource, plan Plan) ApplyReport {
+	return executor.ApplyWithObserver(ctx, resources, plan, nil)
+}
+
+// ApplyWithObserver runs Apply and reports progress before each mutating action.
+func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Resource, plan Plan, observer ApplyObserver) ApplyReport {
 	resourceByID := make(map[string]Resource, len(resources))
 	for _, resource := range resources {
 		resourceByID[resource.ID()] = resource
@@ -75,6 +85,10 @@ func (executor Executor) Apply(ctx context.Context, resources []Resource, plan P
 			report.Items = append(report.Items, item)
 			report.Summary.add(item)
 			continue
+		}
+
+		if observer != nil {
+			observer.BeforeApply(planItem)
 		}
 
 		result, err := resource.Apply(ctx)
