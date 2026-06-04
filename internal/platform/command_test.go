@@ -34,6 +34,40 @@ func TestExecRunnerCapturesSuccessfulCommandOutput(t *testing.T) {
 	}
 }
 
+func TestExecRunnerStreamsOutputWhenVerbose(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	result, err := NewVerboseExecRunner(&stdout, &stderr).Run(context.Background(), os.Args[0], helperProcessArgs("success")...)
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+
+	if !strings.HasPrefix(stdout.String(), "$ "+os.Args[0]+" -test.run=TestHelperProcess -- success\n") {
+		t.Fatalf("stdout = %q, want rendered command prefix", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "hello stdout\n") {
+		t.Fatalf("stdout = %q, want streamed stdout", stdout.String())
+	}
+	if stderr.String() != "hello stderr\n" {
+		t.Fatalf("stderr = %q, want streamed stderr", stderr.String())
+	}
+	if strings.TrimSpace(result.Stdout) != "hello stdout" {
+		t.Fatalf("result.Stdout = %q, want captured stdout", result.Stdout)
+	}
+	if strings.TrimSpace(result.Stderr) != "hello stderr" {
+		t.Fatalf("result.Stderr = %q, want captured stderr", result.Stderr)
+	}
+}
+
+func TestRenderCommandQuotesUnsafeArgs(t *testing.T) {
+	got := renderCommand("brew", []string{"install", "visual studio code"})
+	want := "brew install 'visual studio code'"
+	if got != want {
+		t.Fatalf("renderCommand = %q, want %q", got, want)
+	}
+}
+
 func TestExecRunnerCopiesArgs(t *testing.T) {
 	args := helperProcessArgs("success")
 

@@ -5,7 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
+	"strings"
 )
 
 // Runner executes external commands for resources and platform checks.
@@ -23,11 +25,25 @@ type CommandResult struct {
 }
 
 // ExecRunner runs commands through os/exec.
-type ExecRunner struct{}
+type ExecRunner struct {
+	stdout         io.Writer
+	stderr         io.Writer
+	renderCommands bool
+}
 
 // NewExecRunner returns the default external command runner.
 func NewExecRunner() ExecRunner {
 	return ExecRunner{}
+}
+
+// NewVerboseExecRunner returns a runner that captures command output while also
+// streaming subprocess output to the provided writers.
+func NewVerboseExecRunner(stdout, stderr io.Writer) ExecRunner {
+	return ExecRunner{
+		stdout:         stdout,
+		stderr:         stderr,
+		renderCommands: true,
+	}
 }
 
 // Run executes a command and captures stdout, stderr, and exit status.
@@ -42,11 +58,21 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 		return result, errors.New("command name is required")
 	}
 
+	if runner.renderCommands && runner.stdout != nil {
+		fmt.Fprintf(runner.stdout, "$ %s\n", renderCommand(name, args))
+	}
+
 	cmd := exec.CommandContext(ctx, name, args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	if runner.stdout != nil {
+		cmd.Stdout = io.MultiWriter(&stdout, runner.stdout)
+	}
+	if runner.stderr != nil {
+		cmd.Stderr = io.MultiWriter(&stderr, runner.stderr)
+	}
 
 	err := cmd.Run()
 	result.Stdout = stdout.String()
@@ -61,6 +87,34 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 	}
 
 	return result, nil
+}
+
+func renderCommand(name string, args []string) string {
+	parts := make([]string, 0, len(args)+1)
+	parts = append(parts, shellQuote(name))
+	for _, arg := range args {
+		parts = append(parts, shellQuote(arg))
+	}
+	return strings.Join(parts, " ")
+}
+
+func shellQuote(arg string) string {
+	if arg == "" {
+		return "''"
+	}
+	for _, char := range arg {
+		if !shellSafe(char) {
+			return "'" + strings.ReplaceAll(arg, "'", "'\\''") + "'"
+		}
+	}
+	return arg
+}
+
+func shellSafe(char rune) bool {
+	return char >= 'a' && char <= 'z' ||
+		char >= 'A' && char <= 'Z' ||
+		char >= '0' && char <= '9' ||
+		strings.ContainsRune("@%_+=:,./-", char)
 }
 
 // CommandError wraps a failed external command while preserving its result.
