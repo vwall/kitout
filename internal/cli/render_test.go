@@ -73,6 +73,46 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 	}
 }
 
+func TestHumanRendererShowsASDFMissingVersions(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	item := engine.PlanItem{
+		ResourceID: "asdf_plugin:ruby",
+		Type:       "asdf_plugin",
+		State:      engine.StateMissing,
+		Action:     engine.ActionApply,
+		Message:    "asdf version is missing",
+		Details: map[string]string{
+			"name":             "ruby",
+			"missing_versions": "4.0.5",
+		},
+	}
+	renderer.renderStatusPlan("/tmp/kitout.yaml", engine.Plan{
+		Items:   []engine.PlanItem{item},
+		Summary: engine.PlanSummary{Total: 1, Missing: 1, ToApply: 1},
+	})
+	renderer.renderDryRunPlan("/tmp/kitout.yaml", engine.Plan{
+		Items:   []engine.PlanItem{item},
+		Summary: engine.PlanSummary{Total: 1, Missing: 1, ToApply: 1},
+	})
+	renderer.BeforeApply(item)
+
+	for _, fragment := range []string{
+		"! missing   asdf_plugin: ruby 4.0.5",
+		"i Would install asdf version ruby 4.0.5",
+		"> Installing asdf version ruby 4.0.5...",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
 func TestHumanRendererAlignsMessageColumnsAcrossLongResourceIDs(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

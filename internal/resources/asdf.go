@@ -70,7 +70,7 @@ func (resource ASDFPluginResource) Status(ctx context.Context) (engine.StatusRes
 		return resource.status(engine.StateFailed, "could not inspect asdf versions"), err
 	}
 	if len(missing) > 0 {
-		return resource.status(engine.StateMissing, "asdf versions are missing"), nil
+		return resource.missingVersionStatus(missing), nil
 	}
 
 	return resource.status(engine.StateSatisfied, "asdf plugin and versions are installed"), nil
@@ -194,6 +194,16 @@ func parseASDFVersionList(output string) map[string]bool {
 
 func (resource ASDFPluginResource) status(state engine.ResourceState, message string) engine.StatusResult {
 	return statusResult(resource.ID(), resource.Type(), state, message, resource.details())
+}
+
+func (resource ASDFPluginResource) missingVersionStatus(missing []string) engine.StatusResult {
+	message := "asdf versions are missing"
+	if len(missing) == 1 {
+		message = "asdf version is missing"
+	}
+	details := resource.details()
+	details["missing_versions"] = strings.Join(missing, ",")
+	return statusResult(resource.ID(), resource.Type(), engine.StateMissing, message, details)
 }
 
 func (resource ASDFPluginResource) applyResult(action string, changed bool, message string) engine.ApplyResult {

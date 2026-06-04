@@ -380,8 +380,15 @@ func displayResourceLabel(typ, id string, details map[string]string) string {
 
 func displayResourceTarget(typ, id string, details map[string]string) string {
 	switch typ {
-	case "brew", "cask", "shell", "asdf_plugin":
+	case "brew", "cask", "shell":
 		if value := details["name"]; value != "" {
+			return value
+		}
+	case "asdf_plugin":
+		if value := details["name"]; value != "" {
+			if missing := displayList(details["missing_versions"]); missing != "" {
+				return value + " " + missing
+			}
 			return value
 		}
 	case "directory", "repo", "asdf_tool_versions":
@@ -507,6 +514,9 @@ func dryRunMessage(item engine.PlanItem) string {
 		if item.State == engine.StateChanged {
 			return "Would update asdf plugin " + target
 		}
+		if missing := displayList(item.Details["missing_versions"]); missing != "" {
+			return "Would install asdf " + versionNoun(missing) + " " + target
+		}
 		return "Would install asdf plugin " + target
 	case "asdf_tool_versions":
 		return "Would update .tool-versions " + target
@@ -553,6 +563,9 @@ func applyProgressMessage(item engine.PlanItem) string {
 		if item.State == engine.StateChanged {
 			return "Updating asdf plugin " + target + "..."
 		}
+		if missing := displayList(item.Details["missing_versions"]); missing != "" {
+			return "Installing asdf " + versionNoun(missing) + " " + target + "..."
+		}
 		return "Installing asdf plugin " + target + "..."
 	case "asdf_tool_versions":
 		return "Updating .tool-versions " + target + "..."
@@ -567,6 +580,24 @@ func paddedWidth(width int, label string) int {
 
 func displayWidth(text string) int {
 	return utf8.RuneCountInString(text)
+}
+
+func displayList(value string) string {
+	parts := make([]string, 0)
+	for _, part := range strings.Split(value, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+func versionNoun(versions string) string {
+	if strings.Contains(versions, ",") {
+		return "versions"
+	}
+	return "version"
 }
 
 func doctorMarker(item doctorItem) string {
