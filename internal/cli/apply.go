@@ -42,6 +42,10 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		return renderConfigError("apply", err, opts, renderer, jsonRenderer, stderr)
 	}
 
+	if !opts.json {
+		renderer.renderApplyPlanStart(loaded.Path, applyOpts.dryRun)
+	}
+
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
 	plan := engine.NewPlanner().Build(context.Background(), resourceList)
 
@@ -57,7 +61,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 			return exitOK
 		}
 
-		renderer.renderDryRunPlan(loaded.Path, plan)
+		renderer.renderDryRunPlan("", plan)
 		if plan.HasFailures() {
 			return exitRuntimeError
 		}
@@ -73,7 +77,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 			return exitRuntimeError
 		}
 
-		renderer.renderStatusPlan(loaded.Path, plan)
+		renderer.renderStatusPlan("", plan)
 		return exitRuntimeError
 	}
 
@@ -88,9 +92,9 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 	var observer engine.ApplyObserver
 	reportPath := loaded.Path
 	if !opts.json {
+		reportPath = ""
 		if plan.Summary.ToApply > 0 {
-			renderer.renderApplyStart(loaded.Path)
-			reportPath = ""
+			renderer.renderApplyStart("")
 		}
 		observer = renderer
 	}

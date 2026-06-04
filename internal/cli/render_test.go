@@ -211,6 +211,31 @@ func TestHumanRendererApplyProgressOutput(t *testing.T) {
 	}
 }
 
+func TestHumanRendererStartupOutput(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	renderer.renderStatusStart("/tmp/status.yaml")
+	renderer.renderApplyPlanStart("/tmp/apply.yaml", false)
+	renderer.renderApplyPlanStart("/tmp/dry-run.yaml", true)
+	renderer.renderDoctorStart("/tmp/doctor.yaml")
+
+	for _, fragment := range []string{
+		"Kitout is checking your Mac setup...\nConfig: /tmp/status.yaml",
+		"Kitout is planning changes for your Mac setup...\nConfig: /tmp/apply.yaml",
+		"Kitout is planning changes only. No changes will be made.\nConfig: /tmp/dry-run.yaml",
+		"Kitout is checking local prerequisites...\nConfig: /tmp/doctor.yaml",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
 func TestHumanRendererQuietSuppressesStatusOutput(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

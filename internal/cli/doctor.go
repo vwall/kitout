@@ -70,6 +70,11 @@ func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		configPath = config.DefaultPath
 	}
 
+	renderer := newHumanRenderer(stdout, stderr, opts)
+	if !opts.json {
+		renderer.renderDoctorStart(configPath)
+	}
+
 	checker := newDoctorChecker(platform.NewExecRunner(), doctorSystemInfo{
 		OS:    runtime.GOOS,
 		Arch:  runtime.GOARCH,
@@ -86,7 +91,9 @@ func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		return doctorExitCode(report)
 	}
 
-	newHumanRenderer(stdout, stderr, opts).renderDoctorReport(report)
+	humanReport := report
+	humanReport.ConfigPath = ""
+	renderer.renderDoctorReport(humanReport)
 	return doctorExitCode(report)
 }
 

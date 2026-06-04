@@ -23,8 +23,12 @@ subcommands. `init`, `doctor`, `status`, and `apply` use
 path. Human output colors status markers when stdout is an interactive terminal;
 redirected output remains plain text, and `--no-color` disables ANSI color
 markers. Human output includes both symbols and text labels so status remains
-readable without color. `--json` and `--quiet` currently affect `status` and
-`apply`.
+readable without color. `status`, `apply`, and `doctor` print a short startup
+line before slower checks begin so command startup does not look stuck. `apply`
+prints a progress line before each resource apply starts, so long-running
+commands such as Homebrew installs and upgrades have visible activity even when
+subprocess output is captured. `--json` and `--quiet` currently affect `status`
+`apply`, and `doctor`.
 
 When running from a private setup repo, pass `--config ./kitout.yaml`
 explicitly. The current CLI does not auto-select a repo-local config file.
@@ -62,6 +66,7 @@ kitout status --config ./kitout.yaml
 Current behavior:
 
 - load and validate the selected config file
+- print a startup line naming the selected config before status checks begin
 - build resources from config in stable execution order
 - check resource status through the engine planner
 - batch Homebrew outdated checks across brew package resources during planning
@@ -75,6 +80,7 @@ Current behavior:
 Example human output:
 
 ```txt
+Kitout is checking your Mac setup...
 Config: /Users/example/.config/kitout/kitout.yaml
 
 ✓ satisfied brew: git                    satisfied
@@ -110,6 +116,7 @@ kitout apply --yes
 Behavior:
 
 - load and validate config
+- print a startup line naming the selected config before status checks begin
 - run status checks
 - build plan
 - stop before applying if the plan contains failed or unknown resources
@@ -129,6 +136,7 @@ Shows intended changes without making changes.
 Example output:
 
 ```txt
+Kitout is planning changes only. No changes will be made.
 Config: /Users/example/.config/kitout/kitout.yaml
 
 i Would install cask ghostty
@@ -161,6 +169,7 @@ Checks:
 Current output:
 
 ```txt
+Kitout is checking local prerequisites...
 Config: /Users/me/.config/kitout/kitout.yaml
 
 Doctor:
