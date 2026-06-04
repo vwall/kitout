@@ -12,33 +12,36 @@ import (
 )
 
 const starterConfig = `# Kitout starter config.
-# Edit this file, then run:
+# This file is valid as written. Edit it, then run:
 #   kitout status
 #   kitout apply --dry-run
 
 version: 1
 
-brew:
-  packages:
-    - git
-    - gh
-
-casks:
-  - visual-studio-code
-
 directories:
   - ~/code
   - ~/.config
 
-repos:
-  - path: ~/code/example
-    url: git@github.com:example/example.git
-    branch: main
-
-symlinks:
-  - source: ~/dotfiles/home/zshrc
-    target: ~/.zshrc
-    replace: false
+# Uncomment and customize the examples below when you are ready to manage more
+# of your Mac. Keep placeholder paths and repo URLs out of active config.
+#
+# brew:
+#   packages:
+#     - git
+#     - gh
+#
+# casks:
+#   - visual-studio-code
+#
+# repos:
+#   - path: ~/code/example
+#     url: git@github.com:example/example.git
+#     branch: main
+#
+# symlinks:
+#   - source: ~/dotfiles/home/zshrc
+#     target: ~/.zshrc
+#     replace: false
 `
 
 func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
