@@ -14,15 +14,20 @@ const brewType = "brew"
 
 // BrewPackageResource ensures a Homebrew formula is installed.
 type BrewPackageResource struct {
-	name   string
-	runner platform.Runner
+	name     string
+	runner   platform.Runner
+	outdated *brewOutdatedCache
 }
 
 var _ engine.Resource = BrewPackageResource{}
 
 // NewBrewPackage returns a resource for one Homebrew formula.
 func NewBrewPackage(name string, runner platform.Runner) BrewPackageResource {
-	return BrewPackageResource{name: name, runner: runner}
+	return newBrewPackage(name, runner, newBrewOutdatedCache(runner))
+}
+
+func newBrewPackage(name string, runner platform.Runner, outdated *brewOutdatedCache) BrewPackageResource {
+	return BrewPackageResource{name: name, runner: runner, outdated: outdated}
 }
 
 func (resource BrewPackageResource) ID() string {
@@ -40,14 +45,11 @@ func (resource BrewPackageResource) Status(ctx context.Context) (engine.StatusRe
 
 	_, err := resource.runner.Run(ctx, "brew", "list", "--formula", resource.name)
 	if err == nil {
-		outdated, err := resource.runner.Run(ctx, "brew", "outdated", "--formula", "--quiet", resource.name)
-		if containsLine(outdated.Stdout, resource.name) {
+		isOutdated, err := resource.outdated.Contains(ctx, resource.name)
+		if isOutdated {
 			return resource.status(engine.StateChanged, "formula is outdated"), nil
 		}
 		if err != nil {
-			if isExitCode(err, 1) {
-				return resource.status(engine.StateSatisfied, "formula is installed"), nil
-			}
 			return resource.status(engine.StateFailed, "could not inspect formula updates"), err
 		}
 		return resource.status(engine.StateSatisfied, "formula is installed"), nil
@@ -91,6 +93,9 @@ func (resource BrewPackageResource) validate() error {
 	if resource.runner == nil {
 		return errors.New("command runner is required")
 	}
+	if resource.outdated == nil {
+		return errors.New("brew outdated checker is required")
+	}
 	return nil
 }
 
@@ -111,11 +116,35 @@ func isExitCode(err error, code int) bool {
 	return errors.As(err, &commandError) && commandError.Result.ExitCode == code
 }
 
-func containsLine(output, want string) bool {
-	for _, line := range strings.Fields(output) {
-		if line == want {
-			return true
-		}
+type brewOutdatedCache struct {
+	runner  platform.Runner
+	loaded  bool
+	names   map[string]struct{}
+	loadErr error
+}
+
+func newBrewOutdatedCache(runner platform.Runner) *brewOutdatedCache {
+	return &brewOutdatedCache{runner: runner}
+}
+
+func (cache *brewOutdatedCache) Contains(ctx context.Context, name string) (bool, error) {
+	if !cache.loaded {
+		cache.load(ctx)
 	}
-	return false
+
+	_, ok := cache.names[name]
+	return ok, cache.loadErr
+}
+
+func (cache *brewOutdatedCache) load(ctx context.Context) {
+	cache.loaded = true
+	cache.names = make(map[string]struct{})
+
+	result, err := cache.runner.Run(ctx, "brew", "outdated", "--formula", "--quiet")
+	for _, field := range strings.Fields(result.Stdout) {
+		cache.names[field] = struct{}{}
+	}
+	if err != nil && !isExitCode(err, 1) {
+		cache.loadErr = err
+	}
 }
