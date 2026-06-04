@@ -114,6 +114,68 @@ func TestASDFPluginApplyAddsMissingPluginAndInstallsVersions(t *testing.T) {
 	})
 }
 
+func TestASDFPluginApplyUpdatesPluginBeforeInstallingMissingVersionsWhenConfigured(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("asdf", []string{"--version"}, 0)},
+		{result: resultWithStdout("asdf", []string{"plugin", "list", "--urls"}, "ruby https://github.com/asdf-vm/asdf-ruby.git\n")},
+		{result: resultWithStdout("asdf", []string{"list", "ruby"}, "3.2.0\n")},
+		{result: commandResult("asdf", []string{"plugin", "update", "ruby"}, 0)},
+		{result: commandResult("asdf", []string{"install", "ruby", "3.3.6"}, 0)},
+	}}
+	resource := NewASDFPluginWithOptions(
+		"ruby",
+		"https://github.com/asdf-vm/asdf-ruby.git",
+		[]string{"3.3.6"},
+		ASDFPluginOptions{UpdateBeforeInstall: true},
+		runner,
+	)
+
+	result, err := resource.Apply(context.Background())
+	if err != nil {
+		t.Fatalf("Apply returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), asdfPluginType, "install", true, "updated asdf plugin and installed versions")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "asdf", args: []string{"--version"}},
+		{name: "asdf", args: []string{"plugin", "list", "--urls"}},
+		{name: "asdf", args: []string{"list", "ruby"}},
+		{name: "asdf", args: []string{"plugin", "update", "ruby"}},
+		{name: "asdf", args: []string{"install", "ruby", "3.3.6"}},
+	})
+}
+
+func TestASDFPluginApplyDoesNotUpdateNewlyAddedPluginBeforeInstallingVersions(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("asdf", []string{"--version"}, 0)},
+		{result: resultWithStdout("asdf", []string{"plugin", "list", "--urls"}, "")},
+		{result: commandResult("asdf", []string{"plugin", "add", "ruby", "https://github.com/asdf-vm/asdf-ruby.git"}, 0)},
+		{err: commandError("asdf", []string{"list", "ruby"}, 1)},
+		{result: commandResult("asdf", []string{"install", "ruby", "3.3.6"}, 0)},
+	}}
+	resource := NewASDFPluginWithOptions(
+		"ruby",
+		"https://github.com/asdf-vm/asdf-ruby.git",
+		[]string{"3.3.6"},
+		ASDFPluginOptions{UpdateBeforeInstall: true},
+		runner,
+	)
+
+	result, err := resource.Apply(context.Background())
+	if err != nil {
+		t.Fatalf("Apply returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), asdfPluginType, "install", true, "installed asdf plugin or versions")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "asdf", args: []string{"--version"}},
+		{name: "asdf", args: []string{"plugin", "list", "--urls"}},
+		{name: "asdf", args: []string{"plugin", "add", "ruby", "https://github.com/asdf-vm/asdf-ruby.git"}},
+		{name: "asdf", args: []string{"list", "ruby"}},
+		{name: "asdf", args: []string{"install", "ruby", "3.3.6"}},
+	})
+}
+
 func TestASDFPluginDryRunPlanDoesNotInstall(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("asdf", []string{"--version"}, 0)},

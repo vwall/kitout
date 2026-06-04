@@ -47,6 +47,7 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		{"ASDF", reflect.TypeOf(ASDF{}), "ToolVersions", "tool_versions,omitempty"},
 		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "Name", "name"},
 		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "URL", "url"},
+		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "UpdateBeforeInstall", "update_before_install,omitempty"},
 		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "Versions", "versions,omitempty"},
 		{"ASDFToolVersion", reflect.TypeOf(ASDFToolVersion{}), "Path", "path"},
 		{"ASDFToolVersion", reflect.TypeOf(ASDFToolVersion{}), "Tools", "tools"},
@@ -85,9 +86,10 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 		ASDF: ASDF{
 			Plugins: []ASDFPlugin{
 				{
-					Name:     "ruby",
-					URL:      "https://github.com/asdf-vm/asdf-ruby.git",
-					Versions: []string{"3.3.6"},
+					Name:                "ruby",
+					URL:                 "https://github.com/asdf-vm/asdf-ruby.git",
+					UpdateBeforeInstall: true,
+					Versions:            []string{"3.3.6"},
 				},
 			},
 			ToolVersions: []ASDFToolVersion{
@@ -124,6 +126,9 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	}
 	if got := cfg.ASDF.Plugins[0].Versions[0]; got != "3.3.6" {
 		t.Fatalf("asdf ruby version = %q, want 3.3.6", got)
+	}
+	if !cfg.ASDF.Plugins[0].UpdateBeforeInstall {
+		t.Fatal("asdf ruby update_before_install = false, want true")
 	}
 	if got, ok := cfg.MacOSDefaults[0].Value.(bool); !ok || !got {
 		t.Fatalf("macOS default value = %#v, want true bool", cfg.MacOSDefaults[0].Value)

@@ -32,9 +32,10 @@ type ASDF struct {
 
 // ASDFPlugin describes one asdf plugin and exact tool versions.
 type ASDFPlugin struct {
-	Name     string   `yaml:"name"`
-	URL      string   `yaml:"url"`
-	Versions []string `yaml:"versions,omitempty"`
+	Name                string   `yaml:"name"`
+	URL                 string   `yaml:"url"`
+	UpdateBeforeInstall bool     `yaml:"update_before_install,omitempty"`
+	Versions            []string `yaml:"versions,omitempty"`
 }
 
 // ASDFToolVersion describes entries Kitout should manage in a .tool-versions file.

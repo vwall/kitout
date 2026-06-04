@@ -83,6 +83,7 @@ Named resources require the fields needed to identify and apply the resource:
 
 - `asdf.plugins[].name`
 - `asdf.plugins[].url`
+- `asdf.plugins[].update_before_install` is optional
 - `asdf.tool_versions[].path`
 - `asdf.tool_versions[].tools`
 - `repos[].path`
@@ -137,6 +138,7 @@ asdf:
   plugins:
     - name: ruby
       url: https://github.com/asdf-vm/asdf-ruby.git
+      update_before_install: true
       versions:
         - 3.3.6
     - name: nodejs
