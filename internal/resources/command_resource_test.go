@@ -435,6 +435,12 @@ func commandError(name string, args []string, exitCode int) platform.CommandErro
 	}
 }
 
+func commandErrorWithStderr(name string, args []string, exitCode int, stderr string) platform.CommandError {
+	err := commandError(name, args, exitCode)
+	err.Result.Stderr = stderr
+	return err
+}
+
 func resultWithStdout(name string, args []string, stdout string) platform.CommandResult {
 	result := commandResult(name, args, 0)
 	result.Stdout = stdout

@@ -127,8 +127,10 @@ func (resource ASDFPluginResource) Apply(ctx context.Context) (engine.ApplyResul
 		updated = true
 	}
 	for _, version := range missing {
-		if _, err := resource.runner.Run(ctx, "asdf", "install", resource.name, version); err != nil {
-			return resource.applyResult("install", changed, "could not install asdf version"), err
+		result, err := resource.runner.Run(ctx, "asdf", "install", resource.name, version)
+		if err != nil {
+			message := asdfInstallFailureMessage(resource.name, version, result, err)
+			return resource.applyResult("install", changed, message), err
 		}
 		changed = true
 	}
@@ -214,6 +216,23 @@ func parseASDFVersionList(output string) map[string]bool {
 		}
 	}
 	return versions
+}
+
+func asdfInstallFailureMessage(plugin, version string, result platform.CommandResult, err error) string {
+	if isASDFVersionNotFound(result, err) {
+		return fmt.Sprintf("asdf version %s %s was not found; run `asdf plugin update %s` and retry, or set `update_before_install: true` for this plugin", plugin, version, plugin)
+	}
+	return "could not install asdf version"
+}
+
+func isASDFVersionNotFound(result platform.CommandResult, err error) bool {
+	var commandErr platform.CommandError
+	if errors.As(err, &commandErr) {
+		result = commandErr.Result
+	}
+
+	output := strings.ToLower(result.Stdout + "\n" + result.Stderr)
+	return strings.Contains(output, "version not found")
 }
 
 func (resource ASDFPluginResource) status(state engine.ResourceState, message string) engine.StatusResult {
