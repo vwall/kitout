@@ -14,6 +14,7 @@ asdf:
   plugins:
     - name: ruby
       url: https://github.com/asdf-vm/asdf-ruby.git
+      update_before_install: true
       versions:
         - 3.3.6
     - name: nodejs
