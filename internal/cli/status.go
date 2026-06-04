@@ -33,6 +33,10 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		return renderConfigError("status", err, opts, renderer, jsonRenderer, stderr)
 	}
 
+	if !opts.json {
+		renderer.renderStatusStart(loaded.Path)
+	}
+
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
 	plan := engine.NewPlanner().Build(context.Background(), resourceList)
 
@@ -44,7 +48,7 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		return statusExitCode(plan)
 	}
 
-	renderer.renderStatusPlan(loaded.Path, plan)
+	renderer.renderStatusPlan("", plan)
 	return statusExitCode(plan)
 }
 
