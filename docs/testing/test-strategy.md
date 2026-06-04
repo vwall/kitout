@@ -96,8 +96,10 @@ Add explicit tests that prove:
 Before release:
 
 ```sh
+tmp_config="$(mktemp -d)/kitout.yaml"
 kitout doctor
-kitout init --config /tmp/kitout.yaml
+kitout init --config "$tmp_config"
+kitout status --config "$tmp_config"
 kitout status --config examples/kitout.yaml
 kitout apply --config examples/kitout.yaml --dry-run
 ```

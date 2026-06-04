@@ -66,7 +66,10 @@ Before starting distribution work, fix or verify these items:
   including `doctor`, `init`, `status`, and `apply --dry-run`
 - `README.md`, `docs/config/config-spec.md`, `docs/cli/cli-spec.md`, and
   `examples/kitout.yaml` match the current command behavior and config schema
-- `kitout init` writes a starter config that validates without manual edits
+- `kitout init` writes a starter config that validates without manual edits and
+  `kitout status --config <generated-file>` can parse through it immediately
+- the generated starter keeps external-command resources commented until the
+  user replaces placeholder package, repo, and dotfile values
 - risky apply actions still require confirmation unless `--yes` is passed
 - fresh-machine prerequisite friction is documented in
   `docs/setup/first-real-run.md`

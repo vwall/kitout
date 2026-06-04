@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/vwall/kitout/internal/config"
 )
 
 func TestInitCreatesDefaultConfig(t *testing.T) {
@@ -32,6 +34,49 @@ func TestInitCreatesDefaultConfig(t *testing.T) {
 
 	if !strings.Contains(stdout.String(), configPath) {
 		t.Fatalf("stdout = %q, want created path %q", stdout.String(), configPath)
+	}
+}
+
+func TestInitGeneratedConfigLoadsAndStatusParsesWithoutEdits(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	configPath := filepath.Join(home, ".config", "kitout", "kitout.yaml")
+
+	var initStdout bytes.Buffer
+	var initStderr bytes.Buffer
+
+	code := Run([]string{"init"}, nil, &initStdout, &initStderr)
+	if code != exitOK {
+		t.Fatalf("init exit code = %d, want %d; stderr: %s", code, exitOK, initStderr.String())
+	}
+
+	loaded, err := config.LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("generated config did not load and validate: %v", err)
+	}
+	if loaded.Path != configPath {
+		t.Fatalf("loaded path = %q, want %q", loaded.Path, configPath)
+	}
+	if len(loaded.Config.Directories) == 0 {
+		t.Fatalf("generated config directories = %#v, want at least one safe active directory", loaded.Config.Directories)
+	}
+	if got, want := loaded.Config.Directories[0], filepath.Join(home, "code"); got != want {
+		t.Fatalf("first generated directory = %q, want %q", got, want)
+	}
+
+	var statusStdout bytes.Buffer
+	var statusStderr bytes.Buffer
+
+	code = Run([]string{"status", "--config", configPath}, nil, &statusStdout, &statusStderr)
+	if code != exitChanges {
+		t.Fatalf("status exit code = %d, want %d; stdout: %s; stderr: %s", code, exitChanges, statusStdout.String(), statusStderr.String())
+	}
+	if statusStderr.String() != "" {
+		t.Fatalf("status stderr = %q, want empty", statusStderr.String())
+	}
+	if !strings.Contains(statusStdout.String(), "directory: ~/code") {
+		t.Fatalf("status stdout = %q, want generated directory resource", statusStdout.String())
 	}
 }
 
