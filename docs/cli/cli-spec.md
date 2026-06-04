@@ -111,6 +111,7 @@ Behavior:
 - stop before applying if the plan contains failed or unknown resources
 - require confirmation before implemented risky actions, currently shell commands and symlink replacements, unless `--yes` is passed
 - apply missing or changed resources in stable order
+- show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
 - render summary
 - return `0` when apply completed successfully
 - return `2` for validation, parse, unknown-field, or flag errors

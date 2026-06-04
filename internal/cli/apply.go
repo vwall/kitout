@@ -85,7 +85,16 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		}
 	}
 
-	report := engine.NewExecutor().Apply(context.Background(), resourceList, plan)
+	var observer engine.ApplyObserver
+	reportPath := loaded.Path
+	if !opts.json {
+		if plan.Summary.ToApply > 0 {
+			renderer.renderApplyStart(loaded.Path)
+			reportPath = ""
+		}
+		observer = renderer
+	}
+	report := engine.NewExecutor().ApplyWithObserver(context.Background(), resourceList, plan, observer)
 	if opts.json {
 		if err := jsonRenderer.renderApplyReport(loaded.Path, report); err != nil {
 			fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
@@ -97,7 +106,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		return exitOK
 	}
 
-	renderer.renderApplyReport(loaded.Path, report)
+	renderer.renderApplyReport(reportPath, report)
 	if report.HasFailures() {
 		return exitApplyFailure
 	}
