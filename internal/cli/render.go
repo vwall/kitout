@@ -31,7 +31,9 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	if path != "" {
+		fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	}
 	resourceWidth := planStatusLabelWidth(plan.Items)
 	for _, item := range plan.Items {
 		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
@@ -46,12 +48,23 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 	}
 }
 
+func (r humanRenderer) renderStatusStart(path string) {
+	if r.quiet {
+		return
+	}
+
+	fmt.Fprintln(r.stdout, "Kitout is checking your Mac setup...")
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+}
+
 func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 	if r.quiet {
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	if path != "" {
+		fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	}
 	for _, item := range plan.Items {
 		switch item.Action {
 		case engine.ActionApply:
@@ -72,12 +85,27 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 	fmt.Fprintln(r.stdout, "No shell commands will run without explicit approval.")
 }
 
+func (r humanRenderer) renderApplyPlanStart(path string, dryRun bool) {
+	if r.quiet {
+		return
+	}
+
+	if dryRun {
+		fmt.Fprintln(r.stdout, "Kitout is planning changes only. No changes will be made.")
+	} else {
+		fmt.Fprintln(r.stdout, "Kitout is planning changes for your Mac setup...")
+	}
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+}
+
 func (r humanRenderer) renderApplyStart(path string) {
 	if r.quiet {
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	if path != "" {
+		fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+	}
 	fmt.Fprintln(r.stdout, "Applying changes:")
 }
 
@@ -110,12 +138,23 @@ func (r humanRenderer) BeforeApply(item engine.PlanItem) {
 	fmt.Fprintf(r.stdout, "%s %s\n", r.progressMarker(), applyProgressMessage(item))
 }
 
+func (r humanRenderer) renderDoctorStart(path string) {
+	if r.quiet {
+		return
+	}
+
+	fmt.Fprintln(r.stdout, "Kitout is checking local prerequisites...")
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
+}
+
 func (r humanRenderer) renderDoctorReport(report doctorReport) {
 	if r.quiet {
 		return
 	}
 
-	fmt.Fprintf(r.stdout, "Config: %s\n\n", report.ConfigPath)
+	if report.ConfigPath != "" {
+		fmt.Fprintf(r.stdout, "Config: %s\n\n", report.ConfigPath)
+	}
 	fmt.Fprintln(r.stdout, "Doctor:")
 	for _, item := range report.Items {
 		fmt.Fprintf(r.stdout, "%s %-26s %s\n", r.doctorMarker(item), item.Name, item.Message)

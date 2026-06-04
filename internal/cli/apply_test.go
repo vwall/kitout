@@ -25,6 +25,9 @@ directories:
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
+	if !strings.HasPrefix(stdout.String(), "Kitout is planning changes only. No changes will be made.\nConfig: "+configPath+"\n\n") {
+		t.Fatalf("stdout = %q, want dry-run startup message", stdout.String())
+	}
 	if !strings.Contains(stdout.String(), "Would create directory "+missingDir) {
 		t.Fatalf("stdout = %q, want dry-run directory plan", stdout.String())
 	}
@@ -56,6 +59,9 @@ directories:
 	}
 	if strings.Contains(stderr.String(), "Risky apply actions require confirmation") {
 		t.Fatalf("stderr = %q, want no confirmation prompt for missing directory", stderr.String())
+	}
+	if !strings.HasPrefix(stdout.String(), "Kitout is planning changes for your Mac setup...\nConfig: "+configPath+"\n\n") {
+		t.Fatalf("stdout = %q, want apply startup message", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "created directory") {
 		t.Fatalf("stdout = %q, want created directory message", stdout.String())

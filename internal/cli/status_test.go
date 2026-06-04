@@ -24,6 +24,9 @@ directories:
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
+	if !strings.HasPrefix(stdout.String(), "Kitout is checking your Mac setup...\nConfig: "+configPath+"\n\n") {
+		t.Fatalf("stdout = %q, want status startup message", stdout.String())
+	}
 	if !strings.Contains(stdout.String(), "Config: "+configPath) {
 		t.Fatalf("stdout = %q, want config path", stdout.String())
 	}
