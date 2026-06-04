@@ -98,7 +98,11 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		}
 		observer = renderer
 	}
-	report := engine.NewExecutor().ApplyWithObserver(context.Background(), resourceList, plan, observer)
+	applyResources := resourceList
+	if verboseApplyOutputEnabled(opts, applyOpts) && plan.Summary.ToApply > 0 {
+		applyResources = resources.Build(loaded.Config, platform.NewVerboseExecRunner(stdout, stderr))
+	}
+	report := engine.NewExecutor().ApplyWithObserver(context.Background(), applyResources, plan, observer)
 	if opts.json {
 		if err := jsonRenderer.renderApplyReport(loaded.Path, report); err != nil {
 			fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
@@ -115,6 +119,10 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		return exitApplyFailure
 	}
 	return exitOK
+}
+
+func verboseApplyOutputEnabled(opts globalOptions, applyOpts applyOptions) bool {
+	return opts.verbose && !opts.quiet && !opts.json && !applyOpts.dryRun
 }
 
 func riskyApplyItems(plan engine.Plan) []engine.PlanItem {
