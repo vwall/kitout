@@ -10,7 +10,7 @@ kitout
 
 ```txt
 --config PATH       Path to config file (default: ~/.config/kitout/kitout.yaml)
---verbose           Show detailed command output
+--verbose           Stream subprocess output during apply
 --quiet             Reduce output
 --no-color          Disable colored output
 --json              Print machine-readable JSON output
@@ -26,9 +26,12 @@ markers. Human output includes both symbols and text labels so status remains
 readable without color. `status`, `apply`, and `doctor` print a short startup
 line before slower checks begin so command startup does not look stuck. `apply`
 prints a progress line before each resource apply starts, so long-running
-commands such as Homebrew installs and upgrades have visible activity even when
-subprocess output is captured. `--json` and `--quiet` currently affect `status`
-`apply`, and `doctor`.
+commands such as Homebrew installs and upgrades have visible activity while
+default subprocess output stays captured and hidden. During human `kitout apply`
+runs, `--verbose` renders each subprocess command before it starts and streams
+that subprocess stdout and stderr as it runs. `--verbose` does not stream output
+for `--dry-run`, `--json`, or `--quiet` runs. `--json` and `--quiet` currently
+affect `status`, `apply`, and `doctor`.
 
 When running from a private setup repo, pass `--config ./kitout.yaml`
 explicitly. The current CLI does not auto-select a repo-local config file.
@@ -111,6 +114,7 @@ Applies needed changes.
 kitout apply
 kitout apply --dry-run
 kitout apply --yes
+kitout apply --verbose
 ```
 
 Behavior:
@@ -123,6 +127,8 @@ Behavior:
 - require confirmation before implemented risky actions, currently shell commands and symlink replacements, unless `--yes` is passed
 - apply missing or changed resources in stable order
 - show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
+- by default, capture subprocess output and keep the final report concise
+- with `--verbose`, render each subprocess command and stream its stdout and stderr while it runs
 - render summary
 - return `0` when apply completed successfully
 - return `2` for validation, parse, unknown-field, or flag errors

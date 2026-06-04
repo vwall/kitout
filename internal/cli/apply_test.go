@@ -205,6 +205,57 @@ shell:
 	}
 }
 
+func TestApplyKeepsShellCommandOutputConciseByDefault(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Print verbose output
+    command: printf kitout-stdout; printf kitout-stderr >&2
+    when: always
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if strings.Contains(stdout.String(), "kitout-stdout") {
+		t.Fatalf("stdout = %q, want subprocess stdout hidden by default", stdout.String())
+	}
+	if strings.Contains(stderr.String(), "kitout-stderr") {
+		t.Fatalf("stderr = %q, want subprocess stderr hidden by default", stderr.String())
+	}
+}
+
+func TestApplyVerboseStreamsShellCommandOutput(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Print verbose output
+    command: printf kitout-stdout; printf kitout-stderr >&2
+    when: always
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes", "--verbose"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "$ sh -c 'printf kitout-stdout; printf kitout-stderr >&2'") {
+		t.Fatalf("stdout = %q, want rendered shell command", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "kitout-stdout") {
+		t.Fatalf("stdout = %q, want streamed subprocess stdout", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "kitout-stderr") {
+		t.Fatalf("stderr = %q, want streamed subprocess stderr", stderr.String())
+	}
+}
+
 func TestApplyDryRunDoesNotPromptForShellCommand(t *testing.T) {
 	outputPath := filepath.Join(t.TempDir(), "created")
 	configPath := writeCLIConfigFile(t, `version: 1
