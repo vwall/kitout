@@ -9,7 +9,7 @@ Kitout is inspired by Bork's assertion-based approach, but it is not a strict po
 The first public release target is `v0.1.0` through GitHub releases and a Homebrew tap:
 
 ```sh
-brew tap vwall/tap
+brew tap vwall/kitout
 brew install kitout
 ```
 
