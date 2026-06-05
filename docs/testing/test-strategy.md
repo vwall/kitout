@@ -91,17 +91,17 @@ Add explicit tests that prove:
 - shell command resources require explicit config
 - unknown config fields fail validation
 
-## Manual testing checklist
+## Local distribution smoke test
 
-Before release:
+Before release, run the macOS-local smoke test:
 
 ```sh
-tmp_config="$(mktemp -d)/kitout.yaml"
-kitout doctor
-kitout init --config "$tmp_config"
-kitout status --config "$tmp_config"
-kitout status --config examples/kitout.yaml
-kitout apply --config examples/kitout.yaml --dry-run
+make smoke-distribution
 ```
+
+The target builds `bin/kitout`, creates a temporary HOME, writes a starter config
+with `kitout init --config`, runs `kitout doctor`, expects `kitout status` to
+report the missing starter `~/code` directory, and verifies
+`kitout apply --dry-run` exits without changing the temporary filesystem.
 
 Then test on a disposable macOS user account if possible.
