@@ -103,12 +103,36 @@ kitout
 
 Each release should include:
 
-- macOS arm64 binary
-- macOS amd64 binary
-- checksums
+- `kitout_<version>_darwin_arm64.tar.gz`
+- `kitout_<version>_darwin_amd64.tar.gz`
+- `kitout_<version>_checksums.txt`
 - changelog
 
 Future releases may include Linux builds.
+
+The GitHub Actions release workflow runs when a `v*.*.*` tag is pushed. It
+builds both macOS binaries from `./cmd/kitout`, embeds release metadata with the
+same linker variables as local builds, runs tests and the macOS distribution
+smoke test, packages the binaries, writes checksums, and creates the GitHub
+release.
+
+The archive layout is stable:
+
+```txt
+kitout_<version>_darwin_<arch>/
+  kitout
+```
+
+Checksums are generated after packaging from the exact `*.tar.gz` files that
+are uploaded as release assets. Do not rebuild binaries or regenerate archives
+between checksum generation and upload.
+
+To publish a release:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
 
 ## Versioning
 
@@ -163,6 +187,10 @@ go build -trimpath \
   -ldflags "-s -w -X github.com/vwall/kitout/internal/buildinfo.Version=0.1.0 -X github.com/vwall/kitout/internal/buildinfo.Commit=$(git rev-parse --short HEAD) -X github.com/vwall/kitout/internal/buildinfo.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -o dist/kitout ./cmd/kitout
 ```
+
+Tagged GitHub releases strip the leading `v` from the tag before embedding the
+version. A `v0.1.0` tag therefore produces binaries whose `kitout version`
+output starts with `kitout 0.1.0`.
 
 ## First install docs
 
