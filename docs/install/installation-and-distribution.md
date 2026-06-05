@@ -38,18 +38,15 @@ make build
 bin/kitout version
 ```
 
-## Release goals
+## First release target
 
-Kitout should eventually support:
+The first launch target is public `0.1.0` through GitHub releases and an
+external Homebrew tap.
 
-```sh
-brew install kitout
-```
-
-or:
+The intended Homebrew install path is:
 
 ```sh
-brew tap vwall/kitout
+brew tap vwall/tap
 brew install kitout
 ```
 
@@ -74,6 +71,21 @@ Before starting distribution work, fix or verify these items:
 - fresh-machine prerequisite friction is documented in
   `docs/setup/first-real-run.md`
 
+If Go tries to write module or build-cache files in non-writable user cache
+directories during a sandboxed release check, rerun the gate with writable Go
+caches:
+
+```sh
+tmp_gomodcache="$(mktemp -d)"
+tmp_gocache="$(mktemp -d)"
+GOMODCACHE="$tmp_gomodcache" GOCACHE="$tmp_gocache" go mod download
+GOMODCACHE="$tmp_gomodcache" GOCACHE="$tmp_gocache" go test ./...
+GOMODCACHE="$tmp_gomodcache" GOCACHE="$tmp_gocache" go vet ./...
+GOMODCACHE="$tmp_gomodcache" GOCACHE="$tmp_gocache" make smoke-distribution
+```
+
+This keeps the release check quiet without changing the published artifacts.
+
 These are not blockers for the first distribution:
 
 - automatic Homebrew installation
@@ -90,7 +102,7 @@ A Homebrew tap is the natural distribution method for a developer-focused macOS 
 Recommended tap repo:
 
 ```txt
-github.com/vwall/homebrew-kitout
+github.com/vwall/homebrew-tap
 ```
 
 Formula name:
@@ -133,6 +145,10 @@ To publish a release:
 git tag v0.1.0
 git push origin v0.1.0
 ```
+
+After the GitHub release is created, update the tap formula from
+`packaging/homebrew/kitout.rb.template` with the generated checksums from
+`kitout_0.1.0_checksums.txt`, then publish it to `github.com/vwall/homebrew-tap`.
 
 ## Versioning
 
@@ -194,10 +210,10 @@ output starts with `kitout 0.1.0`.
 
 ## First install docs
 
-A future public README should include:
+Public install docs should include:
 
 ```sh
-brew tap vwall/kitout
+brew tap vwall/tap
 brew install kitout
 kitout init
 kitout status

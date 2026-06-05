@@ -36,6 +36,21 @@ Potential future backup behavior must be opt-in and well documented.
 
 ## Reporting vulnerabilities
 
-Until the project is public, report vulnerabilities privately to the repository owner.
+Report vulnerabilities by creating a GitHub issue.
 
-Before public release, add a real security contact and disclosure policy.
+Preferred channels:
+
+- GitHub private vulnerability reporting for `github.com/vwall/kitout`, when enabled
+- GitHub issues for `github.com/vwall/kitout`
+
+Please include:
+
+- affected Kitout version or commit
+- config/resource type involved
+- steps to reproduce
+- expected impact
+- any suggested mitigation
+
+The maintainer will acknowledge reports as soon as practical, triage the issue,
+and coordinate a fix before public disclosure when the report describes a real
+security impact.

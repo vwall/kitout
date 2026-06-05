@@ -192,16 +192,6 @@ ok:   Path permissions           no configured filesystem write targets
 9 total, 9 ok, 0 warnings, 0 failed
 ```
 
-### `kitout list`
-
-Optional MVP command.
-
-Shows resources parsed from config without checking the system.
-
-```sh
-kitout list
-```
-
 ### `kitout version`
 
 Prints version metadata.
