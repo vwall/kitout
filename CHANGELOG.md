@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 - Local config discovery
+
+### Changed
+
+- `kitout status`, `kitout apply`, and `kitout doctor` now select `./kitout.yaml` before `~/.config/kitout/kitout.yaml` when `--config` is not passed.
+
 ## 0.1.0 - Initial MVP
 
 Kitout 0.1.0 is the first public release candidate for the macOS setup CLI.
@@ -14,7 +20,6 @@ Kitout 0.1.0 is the first public release candidate for the macOS setup CLI.
 - `kitout version` with embedded build metadata for release artifacts.
 - YAML config support for Homebrew packages, casks, asdf plugins and tool versions, directories, symlinks, symlink groups, Git repositories, macOS defaults, and explicit shell commands.
 - Human-readable and JSON output for status, apply planning, and doctor checks.
-- Local config discovery for `status`, `apply`, and `doctor`: `./kitout.yaml` is selected before `~/.config/kitout/kitout.yaml` when `--config` is not passed.
 - macOS release automation for Apple Silicon and Intel binaries with checksums.
 
 ### Notes
