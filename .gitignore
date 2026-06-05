@@ -1,3 +1,5 @@
 /bin/
+.gocache/
 .DS_Store
 private-docs/
+/AGENTS.md
