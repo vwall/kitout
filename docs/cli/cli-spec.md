@@ -9,7 +9,7 @@ kitout
 ## Global flags
 
 ```txt
---config PATH       Path to config file (default: ./kitout.yaml, then ~/.config/kitout/kitout.yaml)
+--config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
 --verbose           Stream subprocess output during apply
 --quiet             Reduce output
 --no-color          Disable colored output
@@ -18,11 +18,12 @@ kitout
 ```
 
 These flags are currently parsed by the root command and by implemented
-subcommands. `doctor`, `status`, and `apply` use `./kitout.yaml` from the
-current working directory when it exists, then fall back to
-`~/.config/kitout/kitout.yaml`; pass `--config` to override that path. `init`
-still writes `~/.config/kitout/kitout.yaml` by default unless `--config` is
-passed. Human output colors status markers when stdout is an interactive terminal;
+subcommands. `doctor`, `status`, and `apply` use `--config` when it is passed.
+Without `--config`, they use `./kitout.yaml` only when no home config exists,
+use `~/.config/kitout/kitout.yaml` only when no local config exists, and fail
+with guidance when both files exist. `init` still writes
+`~/.config/kitout/kitout.yaml` by default unless `--config` is passed. Human
+output colors status markers when stdout is an interactive terminal;
 redirected output remains plain text, and `--no-color` disables ANSI color
 markers. Human output includes both symbols and text labels so status remains
 readable without color. `status`, `apply`, and `doctor` print a short startup
@@ -35,9 +36,9 @@ that subprocess stdout and stderr as it runs. `--verbose` does not stream output
 for `--dry-run`, `--json`, or `--quiet` runs. `--json` and `--quiet` currently
 affect `status`, `apply`, and `doctor`.
 
-When running from a private setup repo that contains `kitout.yaml`, `kitout
-status`, `kitout apply`, and `kitout doctor` select that repo-local file by
-default and print the selected path before running checks.
+When running from a private setup repo that contains `kitout.yaml`, pass
+`--config ./kitout.yaml` if a home config also exists. Kitout prints the selected
+path before running checks.
 
 ## Commands
 

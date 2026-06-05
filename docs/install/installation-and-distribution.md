@@ -21,14 +21,15 @@ developer-local equivalent:
 go run ./cmd/kitout status
 ```
 
-For a real setup repo that contains `kitout.yaml`, run Kitout from the repo
-root while dogfooding:
+For a real setup repo that contains `kitout.yaml`, run Kitout from the repo root
+while dogfooding. If `~/.config/kitout/kitout.yaml` also exists, pass
+`--config ./kitout.yaml`:
 
 ```sh
 cd ~/code/setup
-kitout doctor
-kitout status
-kitout apply --dry-run
+kitout doctor --config ./kitout.yaml
+kitout status --config ./kitout.yaml
+kitout apply --config ./kitout.yaml --dry-run
 ```
 
 See `docs/setup/first-real-run.md` for the full first-run checklist.
@@ -240,6 +241,6 @@ README.md
 Kitout itself can be public or private. The user's setup repo should remain private if it contains personal paths, repo lists, or machine preferences.
 
 When the setup repo contains `kitout.yaml`, run Kitout from inside the setup
-repo to use that local config by default. Copy the file to
-`~/.config/kitout/kitout.yaml` only when the setup is ready to become the normal
-machine config outside the repo.
+repo and pass `--config ./kitout.yaml` whenever a home config also exists. Copy
+the file to `~/.config/kitout/kitout.yaml` only when the setup is ready to
+become the normal machine config outside the repo.

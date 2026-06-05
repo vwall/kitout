@@ -81,14 +81,14 @@ echo "Using temporary local config: $local_config_path"
 expect_success init --config "$config_path"
 expect_success init --config "$local_config_path"
 
-expect_setup_exit_output_contains 0 "Config: $local_config_path" doctor
+expect_setup_exit_output_contains 0 "Config: $local_config_path" doctor --config "$local_config_path"
 expect_setup_exit_output_contains 0 "Config: $config_path" doctor --config "$config_path"
 
 # The starter config intentionally includes ~/code. In the temporary HOME that
 # directory is missing, so status should report planned work with exit code 1.
-expect_setup_exit_output_contains 1 "Config: $local_config_path" status
+expect_setup_exit_output_contains 1 "Config: $local_config_path" status --config "$local_config_path"
 
-expect_setup_exit_output_contains 0 "Config: $local_config_path" apply --dry-run
+expect_setup_exit_output_contains 0 "Config: $local_config_path" apply --config "$local_config_path" --dry-run
 expect_setup_exit_output_contains 0 "Config: $config_path" apply --config "$config_path" --dry-run
 
 echo

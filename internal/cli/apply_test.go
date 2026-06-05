@@ -42,9 +42,11 @@ directories:
 	}
 }
 
-func TestApplyDryRunUsesLocalConfigByDefaultAndExplicitConfigWins(t *testing.T) {
+func TestApplyDryRunUsesLocalConfigByDefaultWhenHomeConfigIsMissing(t *testing.T) {
 	dir := t.TempDir()
+	home := t.TempDir()
 	t.Chdir(dir)
+	t.Setenv("HOME", home)
 
 	localDir := filepath.Join(dir, "local-code")
 	localPath := filepath.Join(dir, "kitout.yaml")
@@ -91,6 +93,74 @@ func TestApplyDryRunUsesLocalConfigByDefaultAndExplicitConfigWins(t *testing.T) 
 	}
 	if strings.Contains(stdout.String(), localDir) {
 		t.Fatalf("stdout = %q, want explicit config to override local config", stdout.String())
+	}
+}
+
+func TestApplyRejectsImplicitConfigWhenLocalAndHomeBothExist(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("HOME", home)
+
+	localPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(localPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	homePath := writeHomeCLIConfigFile(t, home, "version: 1\n")
+	wantLocalPath, err := filepath.Abs("kitout.yaml")
+	if err != nil {
+		t.Fatalf("resolve absolute local path: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if stdout.String() != "" {
+		t.Fatalf("stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "both local config "+wantLocalPath+" and home config "+homePath+" exist") {
+		t.Fatalf("stderr = %q, want ambiguous config guidance", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "pass --config to choose one") {
+		t.Fatalf("stderr = %q, want --config guidance", stderr.String())
+	}
+}
+
+func TestApplyJSONRejectsImplicitConfigWhenLocalAndHomeBothExist(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("HOME", home)
+
+	if err := os.WriteFile(filepath.Join(dir, "kitout.yaml"), []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	writeHomeCLIConfigFile(t, home, "version: 1\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--dry-run", "--json"}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	response := decodeStatusJSON(t, stdout.String())
+	if response.OK {
+		t.Fatalf("ok = true, want false")
+	}
+	if response.Error == nil || response.Error.Type != "runtime" {
+		t.Fatalf("error = %+v, want runtime error", response.Error)
+	}
+	if !strings.Contains(response.Error.Message, "pass --config to choose one") {
+		t.Fatalf("message = %q, want --config guidance", response.Error.Message)
 	}
 }
 

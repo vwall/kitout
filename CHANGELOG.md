@@ -1,10 +1,11 @@
 # Changelog
 
-## 0.1.1 - Local config discovery
+## 0.1.1 - Explicit config discovery
 
 ### Changed
 
-- `kitout status`, `kitout apply`, and `kitout doctor` now select `./kitout.yaml` before `~/.config/kitout/kitout.yaml` when `--config` is not passed.
+- `kitout status`, `kitout apply`, and `kitout doctor` now require `--config` when both `./kitout.yaml` and `~/.config/kitout/kitout.yaml` exist.
+- `./kitout.yaml` is still used automatically when it is the only implicit config file.
 
 ## 0.1.0 - Initial MVP
 

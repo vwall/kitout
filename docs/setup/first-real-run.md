@@ -5,35 +5,40 @@ real personal setup repo for the first time.
 
 ## Pick the config
 
-Kitout commands that load config look in this order:
+Kitout commands that load config use `--config` when it is passed:
 
 ```txt
-1. --config PATH
-2. ./kitout.yaml
-3. ~/.config/kitout/kitout.yaml
+--config PATH
 ```
 
+Without `--config`, Kitout uses an implicit config only when the choice is
+unambiguous:
+
+- if only `./kitout.yaml` exists, use the repo-local config
+- if only `~/.config/kitout/kitout.yaml` exists, use the home config
+- if both exist, stop and ask you to pass `--config`
+
 When dogfooding from a cloned setup repo that contains `kitout.yaml`, run Kitout
-from the repo root:
+from the repo root. If you also have the home config, pass `--config`:
 
 ```sh
 cd ~/code/setup
-kitout doctor
-kitout status
-kitout apply --dry-run
+kitout doctor --config ./kitout.yaml
+kitout status --config ./kitout.yaml
+kitout apply --config ./kitout.yaml --dry-run
 ```
 
 Do the same with `go run` when working from source:
 
 ```sh
 cd ~/code/setup
-go run /path/to/kitout/cmd/kitout doctor
-go run /path/to/kitout/cmd/kitout status
-go run /path/to/kitout/cmd/kitout apply --dry-run
+go run /path/to/kitout/cmd/kitout doctor --config ./kitout.yaml
+go run /path/to/kitout/cmd/kitout status --config ./kitout.yaml
+go run /path/to/kitout/cmd/kitout apply --config ./kitout.yaml --dry-run
 ```
 
 Use `--config` when you want to check a file outside the current directory or
-when you intentionally want to bypass a repo-local `kitout.yaml`.
+when both the current directory and home config files exist.
 
 ## Run doctor before apply
 

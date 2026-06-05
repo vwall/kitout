@@ -36,13 +36,15 @@ kitout doctor
 ```
 
 When using a cloned setup repo with `kitout.yaml` at its root, run Kitout from
-that directory:
+that directory. If you also have `~/.config/kitout/kitout.yaml`, pass
+`--config ./kitout.yaml` so Kitout knows you intend to trust the repo-local
+file:
 
 ```sh
 cd ~/code/setup
-kitout doctor
-kitout status
-kitout apply --dry-run
+kitout doctor --config ./kitout.yaml
+kitout status --config ./kitout.yaml
+kitout apply --config ./kitout.yaml --dry-run
 ```
 
 See `docs/setup/first-real-run.md` for the practical first-run loop and common

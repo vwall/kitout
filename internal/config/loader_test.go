@@ -59,9 +59,38 @@ func TestSelectPathUsesExplicitConfig(t *testing.T) {
 	}
 }
 
-func TestSelectPathPrefersLocalConfig(t *testing.T) {
+func TestSelectPathUsesExplicitConfigWhenLocalAndHomeBothExist(t *testing.T) {
 	dir := t.TempDir()
+	home := t.TempDir()
 	t.Chdir(dir)
+	t.Setenv("HOME", home)
+
+	if err := os.WriteFile(filepath.Join(dir, "kitout.yaml"), []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	homePath := filepath.Join(home, ".config", "kitout", "kitout.yaml")
+	if err := os.MkdirAll(filepath.Dir(homePath), 0o755); err != nil {
+		t.Fatalf("create home config dir: %v", err)
+	}
+	if err := os.WriteFile(homePath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write home config: %v", err)
+	}
+
+	explicitPath := filepath.Join(dir, "custom.yaml")
+	got, err := SelectPath(explicitPath)
+	if err != nil {
+		t.Fatalf("SelectPath returned error: %v", err)
+	}
+	if got != explicitPath {
+		t.Fatalf("SelectPath = %q, want explicit path %q", got, explicitPath)
+	}
+}
+
+func TestSelectPathUsesLocalConfigWhenHomeConfigIsMissing(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("HOME", home)
 	localPath := filepath.Join(dir, "kitout.yaml")
 	if err := os.WriteFile(localPath, []byte("version: 1\n"), 0o644); err != nil {
 		t.Fatalf("write local config: %v", err)
@@ -77,6 +106,45 @@ func TestSelectPathPrefersLocalConfig(t *testing.T) {
 	}
 	if got != want {
 		t.Fatalf("SelectPath = %q, want local path %q", got, want)
+	}
+}
+
+func TestSelectPathRejectsImplicitConfigWhenLocalAndHomeBothExist(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("HOME", home)
+
+	localPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(localPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	homePath := filepath.Join(home, ".config", "kitout", "kitout.yaml")
+	if err := os.MkdirAll(filepath.Dir(homePath), 0o755); err != nil {
+		t.Fatalf("create home config dir: %v", err)
+	}
+	if err := os.WriteFile(homePath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write home config: %v", err)
+	}
+
+	_, selectErr := SelectPath("")
+	if selectErr == nil {
+		t.Fatal("SelectPath returned nil error, want ambiguous config error")
+	}
+
+	var ambiguous AmbiguousConfigError
+	if !errors.As(selectErr, &ambiguous) {
+		t.Fatalf("SelectPath error = %T %[1]v, want AmbiguousConfigError", selectErr)
+	}
+	wantLocal, err := filepath.Abs("kitout.yaml")
+	if err != nil {
+		t.Fatalf("resolve absolute local path: %v", err)
+	}
+	if ambiguous.LocalPath != wantLocal || ambiguous.HomePath != homePath {
+		t.Fatalf("AmbiguousConfigError = %+v, want local %q and home %q", ambiguous, wantLocal, homePath)
+	}
+	if !strings.Contains(selectErr.Error(), "pass --config to choose one") {
+		t.Fatalf("error = %q, want --config guidance", selectErr.Error())
 	}
 }
 

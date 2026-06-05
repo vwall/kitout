@@ -92,7 +92,7 @@ Examples:
   kitout version
 
 Global flags:
-  --config PATH       Path to config file (default: ./kitout.yaml, then ~/.config/kitout/kitout.yaml)
+  --config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
   --verbose           Stream subprocess output during apply
   --quiet             Reduce output
   --no-color          Disable colored output

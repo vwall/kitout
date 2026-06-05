@@ -23,6 +23,17 @@ type LoadedConfig struct {
 	Config Config
 }
 
+// AmbiguousConfigError reports that Kitout found both implicit config paths and
+// needs the caller to choose one explicitly.
+type AmbiguousConfigError struct {
+	LocalPath string
+	HomePath  string
+}
+
+func (err AmbiguousConfigError) Error() string {
+	return fmt.Sprintf("both local config %s and home config %s exist; pass --config to choose one", err.LocalPath, err.HomePath)
+}
+
 // ParseError wraps YAML parsing and schema decode failures for a config file.
 type ParseError struct {
 	Path string
@@ -61,8 +72,8 @@ func ResolvePath(path string) (string, error) {
 
 // SelectPath resolves the config path Kitout should use when loading config.
 //
-// An explicit path always wins. Without one, Kitout prefers a config in the
-// current working directory and falls back to the home config path.
+// An explicit path always wins. Without one, Kitout can use an unambiguous
+// local or home config. If both exist, the caller must pass --config.
 func SelectPath(explicitPath string) (string, error) {
 	if explicitPath != "" {
 		return ResolvePath(explicitPath)
@@ -72,13 +83,36 @@ func SelectPath(explicitPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	localAbs, err := filepath.Abs(localPath)
+	if err != nil {
+		return "", err
+	}
+	localExists := false
 	if _, err := os.Stat(localPath); err == nil {
-		return filepath.Abs(localPath)
+		localExists = true
 	} else if !errors.Is(err, os.ErrNotExist) {
-		return filepath.Abs(localPath)
+		return localAbs, nil
 	}
 
-	return ResolvePath(DefaultPath)
+	homePath, err := ResolvePath(DefaultPath)
+	if err != nil {
+		return "", err
+	}
+	homeExists := false
+	if _, err := os.Stat(homePath); err == nil {
+		homeExists = true
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return homePath, nil
+	}
+
+	if localExists && homeExists {
+		return "", AmbiguousConfigError{LocalPath: localAbs, HomePath: homePath}
+	}
+	if localExists {
+		return localAbs, nil
+	}
+
+	return homePath, nil
 }
 
 // LoadFile reads and decodes a Kitout YAML config file.
