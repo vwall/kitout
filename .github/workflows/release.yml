@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: macos-latest
+
+    env:
+      BUILDINFO_PACKAGE: github.com/vwall/kitout/internal/buildinfo
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Derive release metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            echo "Release workflow must run from a tag." >&2
+            exit 1
+          fi
+
+          version="${GITHUB_REF_NAME#v}"
+          commit="$(git rev-parse --short HEAD)"
+          build_date="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          {
+            echo "VERSION=${version}"
+            echo "COMMIT=${commit}"
+            echo "BUILD_DATE=${build_date}"
+            echo "LDFLAGS=-s -w -X ${BUILDINFO_PACKAGE}.Version=${version} -X ${BUILDINFO_PACKAGE}.Commit=${commit} -X ${BUILDINFO_PACKAGE}.BuildDate=${build_date}"
+          } >> "${GITHUB_ENV}"
+          {
+            echo "version=${version}"
+            echo "commit=${commit}"
+            echo "build_date=${build_date}"
+          } >> "${GITHUB_OUTPUT}"
+
+          printf "version=%s\ncommit=%s\nbuilt=%s\n" "${version}" "${commit}" "${build_date}"
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Run distribution smoke test
+        run: make smoke-distribution VERSION="${VERSION}" COMMIT="${COMMIT}" BUILD_DATE="${BUILD_DATE}"
+
+      - name: Build release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          dist_dir="dist"
+          rm -rf "${dist_dir}"
+          mkdir -p "${dist_dir}"
+
+          for arch in arm64 amd64; do
+            package_dir="${dist_dir}/kitout_${VERSION}_darwin_${arch}"
+            binary="${package_dir}/kitout"
+
+            mkdir -p "${package_dir}"
+            GOOS=darwin GOARCH="${arch}" CGO_ENABLED=0 go build \
+              -trimpath \
+              -ldflags "${LDFLAGS}" \
+              -o "${binary}" \
+              ./cmd/kitout
+            chmod 0755 "${binary}"
+          done
+
+      - name: Verify embedded metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for arch in arm64 amd64; do
+            binary="dist/kitout_${VERSION}_darwin_${arch}/kitout"
+            grep -a -F -q "${VERSION}" "${binary}"
+            grep -a -F -q "${COMMIT}" "${binary}"
+            grep -a -F -q "${BUILD_DATE}" "${binary}"
+          done
+
+          host_arch="$(go env GOHOSTARCH)"
+          host_binary="dist/kitout_${VERSION}_darwin_${host_arch}/kitout"
+          if [ -x "${host_binary}" ]; then
+            "${host_binary}" version | tee version.txt
+            grep -F -q "kitout ${VERSION}" version.txt
+            grep -F -q "commit ${COMMIT}" version.txt
+            grep -F -q "built ${BUILD_DATE}" version.txt
+          fi
+
+      - name: Package release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for arch in arm64 amd64; do
+            package_name="kitout_${VERSION}_darwin_${arch}"
+            COPYFILE_DISABLE=1 tar -C dist -czf "dist/${package_name}.tar.gz" "${package_name}"
+          done
+
+          (
+            cd dist
+            shasum -a 256 kitout_${VERSION}_darwin_*.tar.gz > "kitout_${VERSION}_checksums.txt"
+          )
+
+          cat "dist/kitout_${VERSION}_checksums.txt"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitout-${{ steps.metadata.outputs.version }}-darwin
+          path: |
+            dist/kitout_*_darwin_*.tar.gz
+            dist/kitout_*_checksums.txt
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh release create "${GITHUB_REF_NAME}" \
+            "dist/kitout_${VERSION}_darwin_arm64.tar.gz" \
+            "dist/kitout_${VERSION}_darwin_amd64.tar.gz" \
+            "dist/kitout_${VERSION}_checksums.txt" \
+            --title "Kitout ${VERSION}" \
+            --generate-notes \
+            --verify-tag
