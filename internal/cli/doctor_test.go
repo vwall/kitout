@@ -200,6 +200,53 @@ func TestDoctorCheckerWarnsWhenShellPathMissesHomebrewBin(t *testing.T) {
 	assertDoctorItem(t, report, "Shell environment", doctorWarn, "PATH does not include /opt/homebrew/bin")
 }
 
+func TestDoctorUsesLocalConfigByDefaultAndExplicitConfigWins(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	localPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(localPath, []byte("version: 1\n\nrepos:\n  - path: local-repo\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	wantLocalPath, err := filepath.Abs("kitout.yaml")
+	if err != nil {
+		t.Fatalf("resolve absolute local path: %v", err)
+	}
+
+	explicitPath := filepath.Join(dir, "explicit.yaml")
+	if err := os.WriteFile(explicitPath, []byte("version: 1\n\nrepos:\n  - path: explicit-repo\n"), 0o644); err != nil {
+		t.Fatalf("write explicit config: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitRuntimeError, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Config: "+wantLocalPath) {
+		t.Fatalf("stdout = %q, want local config path %q", stdout.String(), wantLocalPath)
+	}
+	if !strings.Contains(stdout.String(), "config is not valid") {
+		t.Fatalf("stdout = %q, want invalid selected config", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+
+	code = Run([]string{"doctor", "--config", explicitPath}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitRuntimeError, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Config: "+explicitPath) {
+		t.Fatalf("stdout = %q, want explicit config path %q", stdout.String(), explicitPath)
+	}
+	if strings.Contains(stdout.String(), wantLocalPath) {
+		t.Fatalf("stdout = %q, want explicit config to override local config", stdout.String())
+	}
+}
+
 func TestDoctorExitCodeAllowsWarnings(t *testing.T) {
 	report := doctorReport{
 		Summary: doctorSummary{Total: 1, Warn: 1},

@@ -42,6 +42,58 @@ directories:
 	}
 }
 
+func TestApplyDryRunUsesLocalConfigByDefaultAndExplicitConfigWins(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	localDir := filepath.Join(dir, "local-code")
+	localPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(localPath, []byte("version: 1\n\ndirectories:\n  - "+localDir+"\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	wantLocalPath, err := filepath.Abs("kitout.yaml")
+	if err != nil {
+		t.Fatalf("resolve absolute local path: %v", err)
+	}
+
+	explicitDir := filepath.Join(dir, "explicit-code")
+	explicitPath := filepath.Join(dir, "explicit.yaml")
+	if err := os.WriteFile(explicitPath, []byte("version: 1\n\ndirectories:\n  - "+explicitDir+"\n"), 0o644); err != nil {
+		t.Fatalf("write explicit config: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Config: "+wantLocalPath) {
+		t.Fatalf("stdout = %q, want local config path %q", stdout.String(), wantLocalPath)
+	}
+	if !strings.Contains(stdout.String(), "Would create directory "+localDir) {
+		t.Fatalf("stdout = %q, want local directory plan", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+
+	code = Run([]string{"apply", "--config", explicitPath, "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Config: "+explicitPath) {
+		t.Fatalf("stdout = %q, want explicit config path %q", stdout.String(), explicitPath)
+	}
+	if !strings.Contains(stdout.String(), "Would create directory "+explicitDir) {
+		t.Fatalf("stdout = %q, want explicit directory plan", stdout.String())
+	}
+	if strings.Contains(stdout.String(), localDir) {
+		t.Fatalf("stdout = %q, want explicit config to override local config", stdout.String())
+	}
+}
+
 func TestApplyCreatesMissingDirectory(t *testing.T) {
 	missingDir := filepath.Join(t.TempDir(), "code")
 	configPath := writeCLIConfigFile(t, `version: 1

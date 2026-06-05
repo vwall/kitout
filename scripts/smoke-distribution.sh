@@ -22,18 +22,25 @@ tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/kitout-smoke.XXXXXX")" || {
 }
 tmp_home="$tmp_root/home"
 config_path="$tmp_home/.config/kitout/kitout.yaml"
+setup_dir="$tmp_root/setup"
+local_config_path="$setup_dir/kitout.yaml"
 
 cleanup() {
   rm -rf "$tmp_root"
 }
 trap cleanup EXIT
 
-mkdir -p "$tmp_home"
+mkdir -p "$tmp_home" "$setup_dir"
 export SHELL="${SHELL:-/bin/zsh}"
 
 run_kitout() {
   printf "\n==> kitout %s\n" "$*"
   HOME="$tmp_home" "$KITOUT_BIN" "$@" --no-color
+}
+
+run_kitout_in_setup() {
+  printf "\n==> cd %s && kitout %s\n" "$setup_dir" "$*"
+  (cd "$setup_dir" && HOME="$tmp_home" "$KITOUT_BIN" "$@" --no-color)
 }
 
 expect_success() {
@@ -45,29 +52,44 @@ expect_success() {
   fi
 }
 
-expect_exit() {
+expect_setup_exit_output_contains() {
   expected=$1
-  shift
+  fragment=$2
+  shift 2
 
-  run_kitout "$@"
+  output="$(run_kitout_in_setup "$@" 2>&1)"
   code=$?
+  printf "%s\n" "$output"
   if [ "$code" -ne "$expected" ]; then
     echo "Expected exit code $expected, got $code." >&2
     exit 1
   fi
+  case "$output" in
+    *"$fragment"*) ;;
+    *)
+      echo "Expected output to contain: $fragment" >&2
+      exit 1
+      ;;
+  esac
 }
 
 echo "Using temporary HOME: $tmp_home"
 echo "Using temporary config: $config_path"
+echo "Using temporary setup repo: $setup_dir"
+echo "Using temporary local config: $local_config_path"
 
 expect_success init --config "$config_path"
-expect_success doctor --config "$config_path"
+expect_success init --config "$local_config_path"
+
+expect_setup_exit_output_contains 0 "Config: $local_config_path" doctor
+expect_setup_exit_output_contains 0 "Config: $config_path" doctor --config "$config_path"
 
 # The starter config intentionally includes ~/code. In the temporary HOME that
 # directory is missing, so status should report planned work with exit code 1.
-expect_exit 1 status --config "$config_path"
+expect_setup_exit_output_contains 1 "Config: $local_config_path" status
 
-expect_success apply --config "$config_path" --dry-run
+expect_setup_exit_output_contains 0 "Config: $local_config_path" apply --dry-run
+expect_setup_exit_output_contains 0 "Config: $config_path" apply --config "$config_path" --dry-run
 
 echo
 echo "Kitout distribution smoke test passed."
