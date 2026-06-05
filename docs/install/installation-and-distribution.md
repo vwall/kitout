@@ -127,7 +127,11 @@ The GitHub Actions release workflow runs when a `v*.*.*` tag is pushed. It
 builds both macOS binaries from `./cmd/kitout`, embeds release metadata with the
 same linker variables as local builds, runs tests and the macOS distribution
 smoke test, packages the binaries, writes checksums, and creates the GitHub
-release.
+release. If `docs/release/<version>.md` exists, where `<version>` is the tag
+without the leading `v`, the workflow uses that file as the release body. If
+not, it uses `docs/release/<tag>.md` when present. When neither file exists,
+the workflow publishes a small generated fallback body that lists the release
+assets.
 
 The archive layout is stable:
 
