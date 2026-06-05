@@ -39,7 +39,7 @@ kitout-docs
 If using a Homebrew tap:
 
 ```txt
-homebrew-tap
+homebrew-kitout
 ```
 
 ## Taglines
