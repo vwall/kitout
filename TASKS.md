@@ -93,12 +93,12 @@ as the phase-level map; use this file for near-term implementation tasks.
 
 - [ ] Decide whether the first launch target is private beta, public `0.1.0`,
       or website-only preview.
-- [ ] Add release build automation for macOS `arm64` and `amd64` binaries.
-- [ ] Ensure release binaries embed version, commit, and build date metadata.
-- [ ] Generate checksums from the exact release artifacts that will be
+- [x] Add release build automation for macOS `arm64` and `amd64` binaries.
+- [x] Ensure release binaries embed version, commit, and build date metadata.
+- [x] Generate checksums from the exact release artifacts that will be
       published.
 - [ ] Prepare a short changelog for the first tagged release.
-- [ ] Create the GitHub release flow for publishing binaries and checksums.
+- [x] Create the GitHub release flow for publishing binaries and checksums.
 - [ ] Create or update the Homebrew tap formula for `kitout`.
 - [ ] Verify the Homebrew install path from a clean machine or disposable macOS
       user account.
