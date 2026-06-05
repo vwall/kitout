@@ -114,4 +114,7 @@ Use this framing:
 
 The word "kitout" is also used in clothing and workwear contexts. That does not block this product direction because the developer domain and `.dev` positioning make the use case clear.
 
-Before public release, run a proper trademark and package registry review.
+A lightweight launch-readiness review is captured in
+`docs/release/name-registry-review.md`. It did not identify an obvious package
+registry conflict for a `v0.1.0` developer-tool preview, but it is not legal
+advice or formal trademark clearance.

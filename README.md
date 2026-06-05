@@ -4,6 +4,21 @@ Kitout is a Go-based command line tool for setting up a fresh Mac with the packa
 
 Kitout is inspired by Bork's assertion-based approach, but it is not a strict port. The goal is to keep the useful idea of declaring desired machine state while using a typed Go codebase, a structured config file, better test coverage, and a clearer command surface.
 
+## Install
+
+The first public release target is `v0.1.0` through GitHub releases and a Homebrew tap:
+
+```sh
+brew tap vwall/tap
+brew install kitout
+```
+
+Until the tap is published, build from source with:
+
+```sh
+go install ./cmd/kitout
+```
+
 ## Product statement
 
 > Kitout equips a fresh Mac with your apps, packages, repos, dotfiles, and defaults.

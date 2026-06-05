@@ -91,31 +91,35 @@ as the phase-level map; use this file for near-term implementation tasks.
 
 ## Next: launch and distribution readiness
 
-- [ ] Decide whether the first launch target is private beta, public `0.1.0`,
+- [x] Decide whether the first launch target is private beta, public `0.1.0`,
       or website-only preview.
 - [x] Add release build automation for macOS `arm64` and `amd64` binaries.
 - [x] Ensure release binaries embed version, commit, and build date metadata.
 - [x] Generate checksums from the exact release artifacts that will be
       published.
-- [ ] Prepare a short changelog for the first tagged release.
+- [x] Prepare a short changelog for the first tagged release.
 - [x] Create the GitHub release flow for publishing binaries and checksums.
-- [ ] Create or update the Homebrew tap formula for `kitout`.
+- [x] Prepare a Homebrew tap formula template for `kitout`.
+- [x] Update launch-facing docs so install commands match the actual release
+      path.
+- [x] Remove or mark unsupported CLI promises, including the optional
+      `kitout list` command in the CLI spec.
+- [x] Add a real public security contact and disclosure policy.
+- [x] Run a trademark and package registry review for the Kitout name.
+- [x] Decide whether to keep the new landing page HTML, generated assets,
+      screenshots, and design QA notes in the repo.
+- [x] Remove local-only artifacts such as `.DS_Store` before staging launch
+      assets.
+- [x] Update `MANIFEST.md` if launch assets, scripts, or new RFCs are kept.
+- [x] Run `go test ./...`, `go vet ./...`, and `make smoke-distribution`
+      locally with a writable Go module cache.
+- [x] Run `go test ./...`, `go vet ./...`, and `make smoke-distribution`
+      from a clean temporary copy with writable Go caches.
+- [x] Resolve release-environment warning guidance, including Go module cache
+      permission noise.
+- [x] Re-run `go test ./...`, `go vet ./...`, and `make smoke-distribution`
+      from a clean checkout immediately before tagging.
+- [ ] Tag the first release after docs and smoke checks are verified.
+- [ ] Publish the Homebrew tap formula after release checksums exist.
 - [ ] Verify the Homebrew install path from a clean machine or disposable macOS
       user account.
-- [ ] Update launch-facing docs so install commands match the actual release
-      path.
-- [ ] Remove or mark unsupported CLI promises, including the optional
-      `kitout list` command in the CLI spec.
-- [ ] Add a real public security contact and disclosure policy.
-- [ ] Run a trademark and package registry review for the Kitout name.
-- [ ] Decide whether to keep the new landing page HTML, generated assets,
-      screenshots, and design QA notes in the repo.
-- [ ] Remove local-only artifacts such as `.DS_Store` before staging launch
-      assets.
-- [ ] Update `MANIFEST.md` if launch assets, scripts, or new RFCs are kept.
-- [ ] Run `go test ./...`, `go vet ./...`, and `make smoke-distribution` from a
-      clean checkout.
-- [ ] Resolve any release-environment warnings, including Go module cache
-      permission noise.
-- [ ] Tag the first release after the release artifacts, docs, tap, and smoke
-      checks are verified.
