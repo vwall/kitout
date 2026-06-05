@@ -103,9 +103,6 @@ Do not start with Linux support, secrets, templates, plugins, or a package manag
 
 ## Documentation map
 
-- `docs/charter/project-charter.md`
-- `docs/product/product-brief.md`
-- `docs/product/naming-positioning.md`
 - `docs/architecture/architecture-overview.md`
 - `docs/runtime/resource-model.md`
 - `docs/cli/cli-spec.md`
