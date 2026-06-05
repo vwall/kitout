@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -145,18 +146,19 @@ func TestHumanRendererAlignsDryRunAndApplyMessageColumns(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+	home := mustUserHome(t)
 
 	renderer.renderDryRunPlan("/tmp/kitout.yaml", engine.Plan{
 		Items: []engine.PlanItem{
 			{ResourceID: "cask:ghostty", Action: engine.ActionApply, Message: "cask is missing"},
-			{ResourceID: "symlink:/Users/example/.zshrc", Action: engine.ActionApply, Message: "symlink points elsewhere"},
+			{ResourceID: "symlink:" + home + "/.zshrc", Action: engine.ActionApply, Message: "symlink points elsewhere"},
 		},
 		Summary: engine.PlanSummary{Total: 2, Missing: 2, ToApply: 2},
 	})
 	renderer.renderApplyReport("/tmp/kitout.yaml", engine.ApplyReport{
 		Items: []engine.ApplyItem{
 			{ResourceID: "brew:git", Changed: true, Message: "installed formula"},
-			{ResourceID: "directory:/Users/example/.config", Action: "noop", Message: "directory exists"},
+			{ResourceID: "directory:" + home + "/.config", Action: "noop", Message: "directory exists"},
 		},
 		Summary: engine.ApplySummary{Total: 2, Changed: 1, Noop: 1},
 	})
@@ -176,6 +178,15 @@ func TestHumanRendererAlignsDryRunAndApplyMessageColumns(t *testing.T) {
 	if want := visualColumn(applyShort, "installed formula"); visualColumn(applyLong, "directory exists") != want {
 		t.Fatalf("apply lines are not message-aligned:\n%q\n%q", applyShort, applyLong)
 	}
+}
+
+func mustUserHome(t *testing.T) string {
+	t.Helper()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("user home: %v", err)
+	}
+	return home
 }
 
 func TestHumanRendererApplyProgressOutput(t *testing.T) {
