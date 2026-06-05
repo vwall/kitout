@@ -46,7 +46,7 @@ external Homebrew tap.
 The intended Homebrew install path is:
 
 ```sh
-brew tap vwall/tap
+brew tap vwall/kitout
 brew install kitout
 ```
 
@@ -102,7 +102,7 @@ A Homebrew tap is the natural distribution method for a developer-focused macOS 
 Recommended tap repo:
 
 ```txt
-github.com/vwall/homebrew-tap
+github.com/vwall/homebrew-kitout
 ```
 
 Formula name:
@@ -148,7 +148,7 @@ git push origin v0.1.0
 
 After the GitHub release is created, update the tap formula from
 `packaging/homebrew/kitout.rb.template` with the generated checksums from
-`kitout_0.1.0_checksums.txt`, then publish it to `github.com/vwall/homebrew-tap`.
+`kitout_0.1.0_checksums.txt`, then publish it to `github.com/vwall/homebrew-kitout`.
 
 ## Versioning
 
@@ -213,7 +213,7 @@ output starts with `kitout 0.1.0`.
 Public install docs should include:
 
 ```sh
-brew tap vwall/tap
+brew tap vwall/kitout
 brew install kitout
 kitout init
 kitout status
