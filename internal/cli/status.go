@@ -23,11 +23,10 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 
 	renderer := newHumanRenderer(stdout, stderr, opts)
 	jsonRenderer := newJSONRenderer(stdout)
-	configPath := opts.configPath
-	if configPath == "" {
-		configPath = config.DefaultPath
+	configPath, err := config.SelectPath(opts.configPath)
+	if err != nil {
+		return renderConfigError("status", err, opts, renderer, jsonRenderer, stderr)
 	}
-
 	loaded, err := config.LoadFile(configPath)
 	if err != nil {
 		return renderConfigError("status", err, opts, renderer, jsonRenderer, stderr)

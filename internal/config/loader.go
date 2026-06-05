@@ -14,6 +14,9 @@ import (
 // DefaultPath is the default Kitout config file location.
 const DefaultPath = "~/.config/kitout/kitout.yaml"
 
+// LocalPath is the repo-local Kitout config file location.
+const LocalPath = "./kitout.yaml"
+
 // LoadedConfig is a config loaded from disk with its resolved source path.
 type LoadedConfig struct {
 	Path   string
@@ -54,6 +57,28 @@ func ResolvePath(path string) (string, error) {
 	}
 
 	return filepath.Clean(expanded), nil
+}
+
+// SelectPath resolves the config path Kitout should use when loading config.
+//
+// An explicit path always wins. Without one, Kitout prefers a config in the
+// current working directory and falls back to the home config path.
+func SelectPath(explicitPath string) (string, error) {
+	if explicitPath != "" {
+		return ResolvePath(explicitPath)
+	}
+
+	localPath, err := ResolvePath(LocalPath)
+	if err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(localPath); err == nil {
+		return filepath.Abs(localPath)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return filepath.Abs(localPath)
+	}
+
+	return ResolvePath(DefaultPath)
 }
 
 // LoadFile reads and decodes a Kitout YAML config file.

@@ -35,13 +35,14 @@ kitout apply
 kitout doctor
 ```
 
-When using a cloned setup repo before installing a config to the default path,
-pass the config explicitly:
+When using a cloned setup repo with `kitout.yaml` at its root, run Kitout from
+that directory:
 
 ```sh
-kitout doctor --config ~/code/setup/kitout.yaml
-kitout status --config ~/code/setup/kitout.yaml
-kitout apply --config ~/code/setup/kitout.yaml --dry-run
+cd ~/code/setup
+kitout doctor
+kitout status
+kitout apply --dry-run
 ```
 
 See `docs/setup/first-real-run.md` for the practical first-run loop and common

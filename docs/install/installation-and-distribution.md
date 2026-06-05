@@ -21,12 +21,14 @@ developer-local equivalent:
 go run ./cmd/kitout status
 ```
 
-For a real setup repo, keep the config path explicit while dogfooding:
+For a real setup repo that contains `kitout.yaml`, run Kitout from the repo
+root while dogfooding:
 
 ```sh
-kitout doctor --config ~/code/setup/kitout.yaml
-kitout status --config ~/code/setup/kitout.yaml
-kitout apply --config ~/code/setup/kitout.yaml --dry-run
+cd ~/code/setup
+kitout doctor
+kitout status
+kitout apply --dry-run
 ```
 
 See `docs/setup/first-real-run.md` for the full first-run checklist.
@@ -89,7 +91,6 @@ This keeps the release check quiet without changing the published artifacts.
 These are not blockers for the first distribution:
 
 - automatic Homebrew installation
-- automatic repo-local config selection
 - Linux or Windows builds
 - config includes, templates, secrets, or plugins
 - a larger macOS defaults library
@@ -234,7 +235,7 @@ README.md
 
 Kitout itself can be public or private. The user's setup repo should remain private if it contains personal paths, repo lists, or machine preferences.
 
-When the setup repo contains `kitout.yaml`, the current CLI still uses
-`~/.config/kitout/kitout.yaml` by default. Pass `--config ./kitout.yaml` from
-inside the setup repo, or copy the file to the default path when the setup is
-ready to become the normal machine config.
+When the setup repo contains `kitout.yaml`, run Kitout from inside the setup
+repo to use that local config by default. Copy the file to
+`~/.config/kitout/kitout.yaml` only when the setup is ready to become the normal
+machine config outside the repo.

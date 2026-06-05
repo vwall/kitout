@@ -46,6 +46,56 @@ func TestResolvePathExpandsHomePaths(t *testing.T) {
 	}
 }
 
+func TestSelectPathUsesExplicitConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "custom.yaml")
+
+	got, err := SelectPath(configPath)
+	if err != nil {
+		t.Fatalf("SelectPath returned error: %v", err)
+	}
+	if got != configPath {
+		t.Fatalf("SelectPath = %q, want explicit path %q", got, configPath)
+	}
+}
+
+func TestSelectPathPrefersLocalConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	localPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(localPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	want, err := filepath.Abs("kitout.yaml")
+	if err != nil {
+		t.Fatalf("resolve absolute local path: %v", err)
+	}
+
+	got, err := SelectPath("")
+	if err != nil {
+		t.Fatalf("SelectPath returned error: %v", err)
+	}
+	if got != want {
+		t.Fatalf("SelectPath = %q, want local path %q", got, want)
+	}
+}
+
+func TestSelectPathFallsBackToHomeConfig(t *testing.T) {
+	cwd := t.TempDir()
+	home := t.TempDir()
+	t.Chdir(cwd)
+	t.Setenv("HOME", home)
+
+	got, err := SelectPath("")
+	if err != nil {
+		t.Fatalf("SelectPath returned error: %v", err)
+	}
+	want := filepath.Join(home, ".config", "kitout", "kitout.yaml")
+	if got != want {
+		t.Fatalf("SelectPath = %q, want home config %q", got, want)
+	}
+}
+
 func TestLoadFileParsesValidConfig(t *testing.T) {
 	configPath := writeConfigFile(t, `version: 1
 

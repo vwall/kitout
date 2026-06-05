@@ -18,12 +18,20 @@ Repo-local path:
 
 Use `--config` to select a specific config file.
 
-The current CLI does not auto-select `./kitout.yaml`. When running from a
-private setup repo, pass the repo config explicitly:
+For commands that load config, the lookup order is:
+
+```txt
+1. --config PATH
+2. ./kitout.yaml
+3. ~/.config/kitout/kitout.yaml
+```
+
+When running from a private setup repo, `kitout status`, `kitout apply`, and
+`kitout doctor` use `./kitout.yaml` automatically when the file exists:
 
 ```sh
-kitout status --config ./kitout.yaml
-kitout apply --config ./kitout.yaml --dry-run
+kitout status
+kitout apply --dry-run
 ```
 
 This is intentionally boring: users should be able to tell which file is being

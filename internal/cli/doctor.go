@@ -65,9 +65,11 @@ func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		return exitValidation
 	}
 
-	configPath := opts.configPath
-	if configPath == "" {
-		configPath = config.DefaultPath
+	configPath, err := config.SelectPath(opts.configPath)
+	if err != nil {
+		renderer := newHumanRenderer(stdout, stderr, opts)
+		jsonRenderer := newJSONRenderer(stdout)
+		return renderConfigError("doctor", err, opts, renderer, jsonRenderer, stderr)
 	}
 
 	renderer := newHumanRenderer(stdout, stderr, opts)

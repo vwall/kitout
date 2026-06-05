@@ -32,11 +32,10 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 
 	renderer := newHumanRenderer(stdout, stderr, opts)
 	jsonRenderer := newJSONRenderer(stdout)
-	configPath := opts.configPath
-	if configPath == "" {
-		configPath = config.DefaultPath
+	configPath, err := config.SelectPath(opts.configPath)
+	if err != nil {
+		return renderConfigError("apply", err, opts, renderer, jsonRenderer, stderr)
 	}
-
 	loaded, err := config.LoadFile(configPath)
 	if err != nil {
 		return renderConfigError("apply", err, opts, renderer, jsonRenderer, stderr)

@@ -38,6 +38,30 @@ directories:
 	}
 }
 
+func TestStatusLoadsLocalConfigByDefault(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	configPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(configPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write local config: %v", err)
+	}
+	wantPath, err := filepath.Abs("kitout.yaml")
+	if err != nil {
+		t.Fatalf("resolve absolute local path: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Config: "+wantPath) {
+		t.Fatalf("stdout = %q, want local config path %q", stdout.String(), wantPath)
+	}
+}
+
 func TestStatusReturnsChangesWhenResourceIsMissing(t *testing.T) {
 	missingDir := filepath.Join(t.TempDir(), "missing")
 	configPath := writeCLIConfigFile(t, `version: 1
