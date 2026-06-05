@@ -115,6 +115,14 @@ Do not start with Linux support, secrets, templates, plugins, or a package manag
 - `rfcs/*.md`
 - `AGENTS.md`
 
+## Issues
+
+Create a GitHub issue for bugs, feature requests, support questions, and
+security reports: `https://github.com/vwall/kitout/issues/new`.
+
+Use GitHub private vulnerability reporting when it is enabled and the report
+contains sensitive security details.
+
 ## Development
 
 Run the installed CLI with:

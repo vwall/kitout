@@ -38,10 +38,10 @@ Potential future backup behavior must be opt-in and well documented.
 
 Report vulnerabilities by creating a GitHub issue.
 
-Preferred channels:
+GitHub channels:
 
-- GitHub private vulnerability reporting for `github.com/vwall/kitout`, when enabled
 - GitHub issues for `github.com/vwall/kitout`
+- GitHub private vulnerability reporting for `github.com/vwall/kitout`, when enabled
 
 Please include:
 
