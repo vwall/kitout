@@ -487,21 +487,29 @@ p code {
 
 .output-grid {
   display: grid;
-  grid-template-columns: 1.12fr 0.88fr;
+  grid-template-areas:
+    "status doctor"
+    "safety safety";
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(1.25rem, 3vw, 2rem);
   align-items: start;
 }
 
 .output-panel.wide {
-  grid-row: span 2;
+  grid-area: status;
 }
 
 .doctor-panel {
-  grid-column: 1 / -1;
+  grid-area: doctor;
 }
 
 .safety-note {
+  display: grid;
   min-width: 0;
+  grid-area: safety;
+  grid-template-columns: minmax(8rem, 0.32fr) minmax(14rem, 0.48fr) minmax(0, 0.8fr);
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: start;
   padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -510,10 +518,14 @@ p code {
 }
 
 .safety-note h3 {
-  max-width: 14ch;
+  max-width: 16ch;
   font-size: clamp(1.65rem, 3vw, 2.4rem);
   line-height: 1.05;
   letter-spacing: -0.02em;
+}
+
+.safety-note p:last-child {
+  margin-bottom: 0;
 }
 
 .install {
@@ -606,7 +618,19 @@ pre {
   }
 
   .output-panel.wide {
-    grid-row: auto;
+    grid-area: status;
+  }
+
+  .output-grid {
+    grid-template-areas:
+      "status"
+      "doctor"
+      "safety";
+    align-items: start;
+  }
+
+  .safety-note {
+    grid-template-columns: 1fr;
   }
 }
 
