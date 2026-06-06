@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Kitout | Your Mac. Defined.</title>
     <meta
       name="description"
       content="Kitout is a Go CLI for declaring, checking, and applying the Mac setup that makes a machine feel like home."
-    >
-    <link rel="stylesheet" href="assets/site.css">
+    />
+    <link rel="stylesheet" href="assets/site.css" />
   </head>
   <body>
     <header class="site-header" aria-label="Site header">
@@ -16,7 +16,9 @@
         <span class="brand-mark">KITOUT</span>
         <span class="brand-line">Declarative setup for your Mac</span>
       </a>
-      <a class="github-link" href="https://github.com/vwall/kitout">View on GitHub</a>
+      <a class="github-link" href="https://github.com/vwall/kitout"
+        >View on GitHub</a
+      >
     </header>
 
     <main>
@@ -29,7 +31,9 @@
             against a YAML file before it changes anything.
           </p>
           <div class="hero-actions" aria-label="Primary actions">
-            <a class="button primary" href="https://github.com/vwall/kitout">Open GitHub</a>
+            <a class="button primary" href="https://github.com/vwall/kitout"
+              >Open GitHub</a
+            >
             <code class="install-chip">brew install kitout</code>
           </div>
         </div>
@@ -38,18 +42,20 @@
           <img
             class="hero-computer"
             src="assets/retro-modern-mac.png"
-            alt="Retro-modern Macintosh-style computer, keyboard, and mouse."
-            width="1402"
-            height="1122"
-          >
+            alt="Retro Macintosh-style computer, keyboard, and mouse."
+            width="1200"
+            height="960"
+          />
           <figure class="hero-output">
             <img
               src="assets/screenshots/dry-run.png"
               alt="Screenshot of kitout apply --dry-run showing planned repository and shell command changes with no changes made."
               width="920"
               height="460"
-            >
-            <figcaption>`kitout apply --dry-run` against a home config, with TTY colors.</figcaption>
+            />
+            <figcaption>
+              `kitout apply --dry-run` against a home config, with TTY colors.
+            </figcaption>
           </figure>
         </div>
       </section>
@@ -63,22 +69,34 @@
           <li>
             <span class="step-index">1</span>
             <h3>Define</h3>
-            <p>Write the Mac state you expect in YAML, then keep it in version control.</p>
+            <p>
+              Write the Mac state you expect in YAML, then keep it in version
+              control.
+            </p>
           </li>
           <li>
             <span class="step-index">2</span>
             <h3>Check</h3>
-            <p>Run status to see what is satisfied, missing, changed, skipped, or failed.</p>
+            <p>
+              Run status to see what is satisfied, missing, changed, skipped, or
+              failed.
+            </p>
           </li>
           <li>
             <span class="step-index">3</span>
             <h3>Preview</h3>
-            <p>Use dry-run to inspect the exact work Kitout would do without changing files.</p>
+            <p>
+              Use dry-run to inspect the exact work Kitout would do without
+              changing files.
+            </p>
           </li>
           <li>
             <span class="step-index">4</span>
             <h3>Apply</h3>
-            <p>Apply only the resources that need work, with explicit approval for risky actions.</p>
+            <p>
+              Apply only the resources that need work, with explicit approval
+              for risky actions.
+            </p>
           </li>
         </ol>
       </section>
@@ -95,8 +113,11 @@
               alt="Screenshot of kitout status reporting satisfied, missing, changed, and skipped resources from a home config."
               width="920"
               height="460"
-            >
-            <figcaption>`kitout status` reports current resource state from the default config.</figcaption>
+            />
+            <figcaption>
+              `kitout status` reports current resource state from the default
+              config.
+            </figcaption>
           </figure>
           <figure class="output-panel doctor-panel">
             <img
@@ -104,8 +125,10 @@
               alt="Screenshot of kitout doctor reporting macOS, architecture, Homebrew, Git, shell, config, and path permission checks."
               width="920"
               height="460"
-            >
-            <figcaption>`kitout doctor` checks the local prerequisites.</figcaption>
+            />
+            <figcaption>
+              `kitout doctor` checks the local prerequisites.
+            </figcaption>
           </figure>
           <div class="safety-note">
             <p class="system-label">Safety model</p>
@@ -121,7 +144,9 @@
       <section class="install" aria-labelledby="install-title">
         <div>
           <p class="system-label">Install</p>
-          <h2 id="install-title">Start with the same commands in the README.</h2>
+          <h2 id="install-title">
+            Start with the same commands in the README.
+          </h2>
         </div>
         <div class="install-grid">
           <div class="command-block">

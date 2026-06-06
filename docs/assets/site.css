@@ -35,9 +35,8 @@ body {
   background:
     linear-gradient(var(--bg-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
-    radial-gradient(circle at 82% 7%, oklch(82% 0.1 255 / 0.45), transparent 20rem),
     var(--bg);
-  background-size: 34px 34px, 34px 34px, auto, auto;
+  background-size: 34px 34px, 34px 34px, auto;
 }
 
 a {
