@@ -14,6 +14,16 @@
   --red: oklch(66% 0.18 28);
   --dark: oklch(17% 0.04 258);
   --radius: 8px;
+  --radius-lg: 12px;
+  --page-gutter: clamp(2rem, 7vw, 6rem);
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -39,6 +49,10 @@ body {
   background-size: 34px 34px, 34px 34px, auto;
 }
 
+main {
+  overflow: clip;
+}
+
 a {
   color: inherit;
 }
@@ -55,7 +69,7 @@ img {
 .outputs,
 .install,
 .site-footer {
-  width: min(calc(100% - clamp(2rem, 7vw, 6rem)), 1180px);
+  width: min(calc(100% - var(--page-gutter)), 1240px);
   margin-inline: auto;
 }
 
@@ -63,15 +77,15 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding-block: 1.55rem;
+  gap: var(--space-sm);
+  padding-block: 1.35rem;
   border-bottom: 1px solid var(--line);
 }
 
 .brand {
   display: flex;
   align-items: baseline;
-  gap: clamp(0.75rem, 2vw, 1.5rem);
+  gap: var(--space-md);
   text-decoration: none;
 }
 
@@ -90,15 +104,15 @@ img {
 
 .brand-mark {
   color: var(--ink);
-  font-size: clamp(1.35rem, 2.2vw, 2rem);
+  font-size: 1.62rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0;
 }
 
 .brand-line {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: clamp(0.68rem, 1.2vw, 0.82rem);
+  font-size: 0.78rem;
 }
 
 .github-link,
@@ -111,6 +125,9 @@ img {
   text-decoration: none;
   font-size: 0.82rem;
   font-weight: 700;
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .github-link {
@@ -119,14 +136,19 @@ img {
   background: var(--dark);
 }
 
+.github-link:hover,
+.button:hover {
+  transform: translateY(-1px);
+}
+
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.86fr) minmax(420px, 1.14fr);
-  gap: clamp(2rem, 5vw, 4.5rem);
+  grid-template-columns: minmax(0, 0.88fr) minmax(24rem, 1.12fr);
+  gap: clamp(var(--space-xl), 6vw, 5.5rem);
   align-items: center;
-  min-height: min(780px, calc(100vh - 92px));
-  padding-block: clamp(3rem, 8vw, 6.5rem);
+  min-height: min(820px, calc(100svh - 82px));
+  padding-block: clamp(var(--space-xl), 8vw, 7rem) clamp(var(--space-2xl), 8vw, 8rem);
 }
 
 .hero::after {
@@ -146,22 +168,27 @@ img {
 
 .hero-copy {
   min-width: 0;
-  max-width: 34rem;
+  max-width: 36rem;
 }
 
 .hero-visual {
+  position: relative;
   display: grid;
+  min-height: clamp(32rem, 48vw, 43rem);
   min-width: 0;
-  gap: 1.2rem;
-  justify-items: end;
+  align-items: end;
 }
 
 .hero-computer {
-  width: min(100%, 600px);
+  grid-area: 1 / 1;
+  width: min(82%, 620px);
+  align-self: start;
+  justify-self: end;
+  margin-top: clamp(0rem, 2vw, 2.25rem);
 }
 
 .system-label {
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-sm);
   color: var(--blue-deep);
   font-size: 0.78rem;
   font-weight: 700;
@@ -176,20 +203,20 @@ p {
 }
 
 h1 {
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--space-md);
   color: var(--ink);
   font-family: var(--mono);
-  font-size: clamp(3.25rem, 8.2vw, 6rem);
+  font-size: 5.75rem;
   line-height: 0.98;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
 h2 {
   margin-bottom: 0;
-  font-size: clamp(2rem, 4.3vw, 4.1rem);
+  font-size: 3.55rem;
   line-height: 1.02;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
@@ -203,7 +230,7 @@ h3 {
 .workflow-steps p,
 .safety-note p {
   color: var(--muted);
-  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-size: 1.12rem;
   line-height: 1.7;
   text-wrap: pretty;
 }
@@ -211,9 +238,9 @@ h3 {
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.85rem;
+  gap: var(--space-xs);
   align-items: center;
-  margin-top: 2rem;
+  margin-top: var(--space-lg);
 }
 
 .button.primary {
@@ -241,14 +268,20 @@ h3 {
 }
 
 .hero-output {
-  width: min(100%, 640px);
+  grid-area: 1 / 1;
+  width: min(74%, 610px);
+  align-self: end;
+  justify-self: start;
+  margin-bottom: clamp(0.75rem, 4vw, 2.5rem);
 }
 
 .hero-output img,
 .output-panel img {
   width: 100%;
+  aspect-ratio: 2 / 1;
   border-radius: 12px;
   background: var(--dark);
+  object-fit: cover;
 }
 
 figcaption {
@@ -270,69 +303,82 @@ p code {
 .workflow,
 .outputs,
 .install {
-  padding-block: clamp(3.5rem, 8vw, 6.5rem);
+  padding-block: clamp(var(--space-2xl), 8vw, 7rem);
   border-top: 1px solid var(--line);
 }
 
 .section-heading {
   display: grid;
-  grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 0.65fr);
-  gap: clamp(1.25rem, 4vw, 3rem);
+  grid-template-columns: minmax(8rem, 0.28fr) minmax(0, 0.72fr);
+  gap: clamp(var(--space-md), 4vw, var(--space-xl));
   align-items: start;
-  margin-bottom: clamp(2rem, 5vw, 3.75rem);
+  margin-bottom: clamp(var(--space-lg), 5vw, var(--space-2xl));
+}
+
+.section-heading h2 {
+  max-width: 15ch;
 }
 
 .workflow-steps {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-md);
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: oklch(100% 0 0 / 0.7);
 }
 
 .workflow-steps li {
   position: relative;
   display: grid;
   min-width: 0;
-  min-height: 22rem;
+  min-height: 21rem;
   align-content: start;
-  padding: clamp(1rem, 1.8vw, 1.3rem);
-  background: oklch(100% 0 0 / 0.74);
+  padding: clamp(var(--space-sm), 1.8vw, var(--space-md));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: oklch(100% 0 0 / 0.78);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.workflow-steps li + li {
-  border-left: 1px solid var(--line);
+.workflow-steps li:hover {
+  background: var(--panel);
+  transform: translateY(-2px);
 }
 
-.workflow-steps li:not(:last-child)::after {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  right: -0.72rem;
+.workflow-steps li:nth-child(-n + 3) {
+  grid-column: span 2;
+}
+
+.workflow-steps li:nth-child(n + 4) {
   display: grid;
-  width: 1.35rem;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 1px solid oklch(76% 0.13 255 / 0.52);
-  border-radius: 50%;
-  color: var(--blue);
-  background: var(--bg);
-  content: ">";
-  font-family: var(--mono);
-  font-size: 0.86rem;
-  font-weight: 700;
-  transform: translateY(-50%);
+  grid-column: span 3;
+  grid-template-columns: minmax(0, 1fr) minmax(9rem, 0.62fr);
+  column-gap: var(--space-lg);
+  min-height: 16.5rem;
+  align-items: start;
+}
+
+.workflow-steps li:nth-child(n + 4) .step-kicker,
+.workflow-steps li:nth-child(n + 4) .step-command,
+.workflow-steps li:nth-child(n + 4) p {
+  grid-column: 1;
+}
+
+.workflow-steps li:nth-child(n + 4) .workflow-art {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  margin: 0;
 }
 
 .step-kicker {
   display: flex;
   align-items: baseline;
-  gap: 0.55rem;
-  margin-bottom: 0.35rem;
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-2xs);
 }
 
 .step-index {
@@ -344,14 +390,14 @@ p code {
 .step-kicker h3 {
   margin-bottom: 0;
   font-family: var(--mono);
-  font-size: clamp(0.95rem, 1.2vw, 1.04rem);
+  font-size: 1rem;
   letter-spacing: 0;
 }
 
 .step-command {
   display: block;
   min-height: 2.8rem;
-  margin-bottom: 1.35rem;
+  margin-bottom: var(--space-md);
   color: var(--muted);
   font-size: 0.9rem;
   font-variant-ligatures: none;
@@ -364,8 +410,8 @@ p code {
   width: min(100%, 14rem);
   min-height: 7.4rem;
   align-content: center;
-  justify-self: center;
-  margin-block: 0 1.35rem;
+  justify-self: start;
+  margin-block: 0 var(--space-md);
   padding: 0.85rem;
   border: 1px solid oklch(78% 0.025 255);
   border-radius: var(--radius);
@@ -491,7 +537,7 @@ p code {
     "status doctor"
     "safety safety";
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(1.25rem, 3vw, 2rem);
+  gap: clamp(var(--space-md), 3vw, var(--space-lg));
   align-items: start;
 }
 
@@ -507,21 +553,21 @@ p code {
   display: grid;
   min-width: 0;
   grid-area: safety;
-  grid-template-columns: minmax(8rem, 0.32fr) minmax(14rem, 0.48fr) minmax(0, 0.8fr);
-  gap: clamp(1rem, 3vw, 2rem);
+  grid-template-columns: minmax(8rem, 0.3fr) minmax(14rem, 0.45fr) minmax(0, 0.8fr);
+  gap: clamp(var(--space-sm), 3vw, var(--space-lg));
   align-items: start;
-  padding: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(var(--space-md), 3vw, var(--space-lg));
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background:
     linear-gradient(135deg, oklch(100% 0 0 / 0.86), oklch(94% 0.018 255 / 0.86));
 }
 
 .safety-note h3 {
-  max-width: 16ch;
-  font-size: clamp(1.65rem, 3vw, 2.4rem);
+  max-width: 15ch;
+  font-size: 2.2rem;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .safety-note p:last-child {
@@ -530,21 +576,21 @@ p code {
 
 .install {
   display: grid;
-  grid-template-columns: 0.72fr 1.28fr;
-  gap: clamp(2rem, 5vw, 4rem);
+  grid-template-columns: minmax(14rem, 0.58fr) minmax(0, 1.42fr);
+  gap: clamp(var(--space-lg), 5vw, var(--space-2xl));
   align-items: start;
 }
 
 .install-grid {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-sm);
 }
 
 .command-block {
   min-width: 0;
-  padding: 1.25rem;
+  padding: var(--space-md);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: oklch(100% 0 0 / 0.78);
 }
 
@@ -583,50 +629,57 @@ pre {
   text-decoration: none;
 }
 
+@media (max-width: 1080px) {
+  h1 {
+    font-size: 4.9rem;
+  }
+
+  h2 {
+    font-size: 3rem;
+  }
+}
+
 @media (max-width: 920px) {
   .site-header,
   .hero,
   .install,
-  .section-heading,
-  .output-grid {
+  .section-heading {
     grid-template-columns: 1fr;
   }
 
   .hero {
     min-height: auto;
+    padding-block: clamp(var(--space-xl), 8vw, var(--space-2xl));
+  }
+
+  .hero-copy {
+    max-width: 44rem;
+  }
+
+  .hero-visual {
+    width: min(100%, 48rem);
+    min-height: clamp(27rem, 68vw, 36rem);
+    justify-self: center;
   }
 
   .workflow-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .workflow-steps li {
+  .workflow-steps li,
+  .workflow-steps li:nth-child(-n + 3),
+  .workflow-steps li:nth-child(n + 4) {
+    grid-column: auto;
+    grid-template-columns: 1fr;
     min-height: 19rem;
   }
 
-  .workflow-steps li + li {
-    border-left: 0;
-    border-top: 1px solid var(--line);
-  }
-
-  .workflow-steps li:nth-child(2n) {
-    border-left: 1px solid var(--line);
-  }
-
-  .workflow-steps li:not(:last-child)::after {
-    display: none;
-  }
-
-  .output-panel.wide {
-    grid-area: status;
-  }
-
-  .output-grid {
-    grid-template-areas:
-      "status"
-      "doctor"
-      "safety";
-    align-items: start;
+  .workflow-steps li:nth-child(n + 4) .step-kicker,
+  .workflow-steps li:nth-child(n + 4) .step-command,
+  .workflow-steps li:nth-child(n + 4) p,
+  .workflow-steps li:nth-child(n + 4) .workflow-art {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .safety-note {
@@ -636,11 +689,11 @@ pre {
 
 @media (max-width: 620px) {
   h1 {
-    font-size: clamp(3rem, 17vw, 4.15rem);
+    font-size: 3.5rem;
   }
 
   h2 {
-    font-size: clamp(2rem, 11vw, 2.65rem);
+    font-size: 2.35rem;
   }
 
   .site-header {
@@ -651,7 +704,28 @@ pre {
   .brand {
     align-items: flex-start;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: var(--space-2xs);
+  }
+
+  .brand-mark {
+    font-size: 1.45rem;
+  }
+
+  .hero-visual {
+    display: block;
+    min-height: auto;
+  }
+
+  .hero-computer,
+  .hero-output {
+    width: 100%;
+    margin: 0;
+  }
+
+  .hero-computer {
+    max-width: 24rem;
+    margin-inline: auto;
+    margin-bottom: var(--space-md);
   }
 
   .hero-actions,
@@ -665,12 +739,22 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .output-grid {
+    grid-template-areas:
+      "status"
+      "doctor"
+      "safety";
+    grid-template-columns: 1fr;
+  }
+
   .workflow-steps li {
     min-height: auto;
   }
 
-  .workflow-steps li:nth-child(2n) {
-    border-left: 0;
+  .workflow-steps p,
+  .hero-text,
+  .safety-note p {
+    font-size: 1rem;
   }
 
   .workflow-art {
@@ -680,5 +764,22 @@ pre {
   .site-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 390px) {
+  h1 {
+    font-size: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
