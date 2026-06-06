@@ -54,7 +54,8 @@
               height="460"
             />
             <figcaption>
-              `kitout apply` against a temporary home config, with TTY colors.
+              `kitout apply` against an explicitly selected test config, with
+              TTY colors.
             </figcaption>
           </figure>
         </div>
@@ -80,8 +81,9 @@
               <span>repos:</span>
             </div>
             <p>
-              Create or edit <code>kitout.yaml</code> with packages, apps,
-              repos, dotfiles, directories, defaults, and named shell commands.
+              Create the home config, or keep <code>./kitout.yaml</code> in a
+              setup repo. If both config files exist, bring
+              <code>--config</code>.
             </p>
           </li>
           <li>
@@ -155,18 +157,18 @@
       <section class="outputs" aria-labelledby="outputs-title">
         <div class="section-heading">
           <p class="system-label">Real output</p>
-          <h2 id="outputs-title">Home-config runs with CLI colors.</h2>
+          <h2 id="outputs-title">Selected config. Electric output.</h2>
         </div>
         <div class="output-grid">
           <figure class="output-panel wide">
             <img
               src="assets/screenshots/status.webp"
-              alt="Screenshot of kitout status reporting satisfied, missing, changed, and skipped resources from a home config."
+              alt="Screenshot of kitout status reporting satisfied, missing, changed, and skipped resources from a selected config."
               width="920"
               height="460"
             />
             <figcaption>
-              `kitout status` reports current resource state from the default
+              `kitout status` reports current resource state from the selected
               config.
             </figcaption>
           </figure>
@@ -187,6 +189,9 @@
             <p>
               Status never makes changes, dry-run never makes changes, and shell
               commands only run when they are listed in config and approved.
+              When <code>./kitout.yaml</code> and
+              <code>~/.config/kitout/kitout.yaml</code> both exist, Kitout stops
+              and asks for <code>--config</code>.
             </p>
           </div>
         </div>
@@ -208,6 +213,13 @@ brew install kitout</code></pre>
           <div class="command-block">
             <p>Build from source until the tap is published</p>
             <pre><code>go install ./cmd/kitout</code></pre>
+          </div>
+          <div class="command-block">
+            <p>Setup repo first pass</p>
+            <pre><code>cd ~/code/setup
+kitout doctor --config ./kitout.yaml
+kitout status --config ./kitout.yaml
+kitout apply --config ./kitout.yaml --dry-run</code></pre>
           </div>
         </div>
       </section>
