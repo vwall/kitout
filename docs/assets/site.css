@@ -174,17 +174,16 @@ img {
 .hero-visual {
   position: relative;
   display: grid;
-  min-height: clamp(32rem, 48vw, 43rem);
   min-width: 0;
-  align-items: end;
+  gap: var(--space-xs);
+  align-content: center;
+  justify-items: end;
 }
 
 .hero-computer {
-  grid-area: 1 / 1;
-  width: min(82%, 620px);
-  align-self: start;
+  width: min(46%, 300px);
   justify-self: end;
-  margin-top: clamp(0rem, 2vw, 2.25rem);
+  margin-right: clamp(0rem, 4vw, var(--space-xl));
 }
 
 .system-label {
@@ -268,11 +267,8 @@ h3 {
 }
 
 .hero-output {
-  grid-area: 1 / 1;
-  width: min(74%, 610px);
-  align-self: end;
-  justify-self: start;
-  margin-bottom: clamp(0.75rem, 4vw, 2.5rem);
+  width: min(100%, 640px);
+  justify-self: stretch;
 }
 
 .hero-output img,
@@ -658,7 +654,6 @@ pre {
 
   .hero-visual {
     width: min(100%, 48rem);
-    min-height: clamp(27rem, 68vw, 36rem);
     justify-self: center;
   }
 
@@ -723,7 +718,7 @@ pre {
   }
 
   .hero-computer {
-    max-width: 24rem;
+    max-width: 20rem;
     margin-inline: auto;
     margin-bottom: var(--space-md);
   }
