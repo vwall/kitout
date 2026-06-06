@@ -157,14 +157,6 @@ img {
 
 .hero-computer {
   width: min(100%, 600px);
-  -webkit-mask-image:
-    linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%),
-    linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%),
-    linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
-  mask-composite: intersect;
 }
 
 .system-label {
