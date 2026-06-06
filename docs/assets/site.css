@@ -1,0 +1,441 @@
+:root {
+  color-scheme: light;
+  --bg: oklch(98% 0 0);
+  --bg-grid: oklch(91% 0.018 255);
+  --ink: oklch(18% 0.035 260);
+  --muted: oklch(42% 0.035 255);
+  --line: oklch(84% 0.025 255);
+  --panel: oklch(100% 0 0);
+  --panel-soft: oklch(96% 0.012 255);
+  --blue: oklch(66% 0.18 257);
+  --blue-deep: oklch(35% 0.14 258);
+  --green: oklch(68% 0.17 150);
+  --yellow: oklch(78% 0.15 85);
+  --red: oklch(66% 0.18 28);
+  --dark: oklch(17% 0.04 258);
+  --radius: 8px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
+    radial-gradient(circle at 82% 7%, oklch(82% 0.1 255 / 0.45), transparent 20rem),
+    var(--bg);
+  background-size: 34px 34px, 34px 34px, auto, auto;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.site-header,
+.hero,
+.workflow,
+.outputs,
+.install,
+.site-footer {
+  width: min(calc(100% - clamp(2rem, 7vw, 6rem)), 1180px);
+  margin-inline: auto;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.55rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  text-decoration: none;
+}
+
+.brand-mark,
+.system-label,
+.github-link,
+.button,
+.install-chip,
+.step-index,
+.command-block p,
+.site-footer {
+  font-family: var(--mono);
+}
+
+.brand-mark {
+  color: var(--ink);
+  font-size: clamp(1.35rem, 2.2vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.brand-line {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: clamp(0.68rem, 1.2vw, 0.82rem);
+}
+
+.github-link,
+.button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.github-link {
+  padding: 0.7rem 1rem;
+  color: var(--bg);
+  background: var(--dark);
+}
+
+.hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.86fr) minmax(420px, 1.14fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  min-height: min(780px, calc(100vh - 92px));
+  padding-block: clamp(3rem, 8vw, 6.5rem);
+}
+
+.hero::after {
+  position: absolute;
+  z-index: -1;
+  right: 4%;
+  bottom: 6%;
+  width: min(44vw, 520px);
+  aspect-ratio: 1;
+  border: 1px solid oklch(72% 0.13 255 / 0.45);
+  border-radius: 50%;
+  background:
+    linear-gradient(transparent 48%, oklch(72% 0.13 255 / 0.24) 49%, transparent 51%);
+  background-size: 100% 13px;
+  content: "";
+}
+
+.hero-copy {
+  min-width: 0;
+  max-width: 34rem;
+}
+
+.system-label {
+  margin: 0 0 1rem;
+  color: var(--blue-deep);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+
+h1 {
+  margin-bottom: 1.25rem;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: clamp(3.25rem, 8.2vw, 6rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: clamp(2rem, 4.3vw, 4.1rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+h3 {
+  margin-bottom: 0.65rem;
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.hero-text,
+.workflow-steps p,
+.safety-note p {
+  color: var(--muted);
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.button.primary {
+  padding: 0.85rem 1.2rem;
+  color: var(--bg);
+  background: var(--dark);
+}
+
+.install-chip {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--blue-deep);
+  background: oklch(100% 0 0 / 0.7);
+  font-size: 0.88rem;
+}
+
+.hero-output,
+.output-panel {
+  min-width: 0;
+  margin: 0;
+}
+
+.hero-output img,
+.output-panel img {
+  width: 100%;
+  border-radius: 12px;
+  background: var(--dark);
+}
+
+figcaption {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.workflow,
+.outputs,
+.install {
+  padding-block: clamp(3.5rem, 8vw, 6.5rem);
+  border-top: 1px solid var(--line);
+}
+
+.section-heading {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 0.65fr);
+  gap: clamp(1.25rem, 4vw, 3rem);
+  align-items: start;
+  margin-bottom: clamp(2rem, 5vw, 3.75rem);
+}
+
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.workflow-steps li {
+  min-height: 15rem;
+  padding: 1.35rem;
+  background: oklch(100% 0 0 / 0.74);
+}
+
+.step-index {
+  display: grid;
+  width: 2.2rem;
+  aspect-ratio: 1;
+  place-items: center;
+  margin-bottom: 2.75rem;
+  border: 1px solid oklch(74% 0.12 255 / 0.65);
+  border-radius: 50%;
+  color: var(--blue-deep);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.output-grid {
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: start;
+}
+
+.output-panel.wide {
+  grid-row: span 2;
+}
+
+.safety-note {
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, oklch(100% 0 0 / 0.86), oklch(94% 0.018 255 / 0.86));
+}
+
+.safety-note h3 {
+  max-width: 14ch;
+  font-size: clamp(1.65rem, 3vw, 2.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.install {
+  display: grid;
+  grid-template-columns: 0.72fr 1.28fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+.install-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.command-block {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: oklch(100% 0 0 / 0.78);
+}
+
+.command-block p {
+  margin-bottom: 0.8rem;
+  color: var(--blue-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: var(--radius);
+  color: oklch(94% 0.025 255);
+  background: var(--dark);
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.5rem 2rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.site-footer a {
+  color: var(--blue-deep);
+  text-decoration: none;
+}
+
+@media (max-width: 920px) {
+  .site-header,
+  .hero,
+  .install,
+  .section-heading,
+  .output-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    min-height: auto;
+  }
+
+  .workflow-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .output-panel.wide {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  h1 {
+    font-size: clamp(3rem, 17vw, 4.15rem);
+  }
+
+  h2 {
+    font-size: clamp(2rem, 11vw, 2.65rem);
+  }
+
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .brand {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .hero-actions,
+  .github-link,
+  .button,
+  .install-chip {
+    width: 100%;
+  }
+
+  .workflow-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-steps li {
+    min-height: auto;
+  }
+
+  .step-index {
+    margin-bottom: 1.5rem;
+  }
+
+  .site-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

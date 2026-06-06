@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kitout | Your Mac. Defined.</title>
+    <meta
+      name="description"
+      content="Kitout is a Go CLI for declaring, checking, and applying the Mac setup that makes a machine feel like home."
+    >
+    <link rel="stylesheet" href="assets/site.css">
+  </head>
+  <body>
+    <header class="site-header" aria-label="Site header">
+      <a class="brand" href="./" aria-label="Kitout home">
+        <span class="brand-mark">KITOUT</span>
+        <span class="brand-line">Declarative setup for your Mac</span>
+      </a>
+      <a class="github-link" href="https://github.com/vwall/kitout">View on GitHub</a>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="system-label">Mac setup as reviewed state</p>
+          <h1 id="hero-title">Your Mac. Defined.</h1>
+          <p class="hero-text">
+            Kitout checks packages, apps, repos, dotfiles, folders, and defaults
+            against a YAML file before it changes anything.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button primary" href="https://github.com/vwall/kitout">Open GitHub</a>
+            <code class="install-chip">brew install kitout</code>
+          </div>
+        </div>
+
+        <figure class="hero-output">
+          <img
+            src="assets/screenshots/dry-run.png"
+            alt="Screenshot of kitout apply --dry-run showing planned repository and shell command changes with no changes made."
+            width="1120"
+            height="560"
+          >
+          <figcaption>Real `kitout apply --dry-run` output from the current CLI.</figcaption>
+        </figure>
+      </section>
+
+      <section class="workflow" aria-labelledby="workflow-title">
+        <div class="section-heading">
+          <p class="system-label">Workflow</p>
+          <h2 id="workflow-title">Declare, inspect, preview, apply.</h2>
+        </div>
+        <ol class="workflow-steps">
+          <li>
+            <span class="step-index">1</span>
+            <h3>Define</h3>
+            <p>Write the Mac state you expect in YAML, then keep it in version control.</p>
+          </li>
+          <li>
+            <span class="step-index">2</span>
+            <h3>Check</h3>
+            <p>Run status to see what is satisfied, missing, changed, skipped, or failed.</p>
+          </li>
+          <li>
+            <span class="step-index">3</span>
+            <h3>Preview</h3>
+            <p>Use dry-run to inspect the exact work Kitout would do without changing files.</p>
+          </li>
+          <li>
+            <span class="step-index">4</span>
+            <h3>Apply</h3>
+            <p>Apply only the resources that need work, with explicit approval for risky actions.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="outputs" aria-labelledby="outputs-title">
+        <div class="section-heading">
+          <p class="system-label">Real output</p>
+          <h2 id="outputs-title">Screenshots from the CLI, not mock text.</h2>
+        </div>
+        <div class="output-grid">
+          <figure class="output-panel wide">
+            <img
+              src="assets/screenshots/status.png"
+              alt="Screenshot of kitout status reporting two missing resources and two resources needing attention."
+              width="1120"
+              height="520"
+            >
+            <figcaption>`kitout status` reports current resource state.</figcaption>
+          </figure>
+          <figure class="output-panel">
+            <img
+              src="assets/screenshots/doctor.png"
+              alt="Screenshot of kitout doctor reporting macOS, architecture, Homebrew, Git, shell, config, and path permission checks."
+              width="1120"
+              height="760"
+            >
+            <figcaption>`kitout doctor` checks the local prerequisites.</figcaption>
+          </figure>
+          <div class="safety-note">
+            <p class="system-label">Safety model</p>
+            <h3>Preview first. Apply after review.</h3>
+            <p>
+              Status never makes changes, dry-run never makes changes, and shell
+              commands only run when they are listed in config and approved.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="install" aria-labelledby="install-title">
+        <div>
+          <p class="system-label">Install</p>
+          <h2 id="install-title">Start with the same commands in the README.</h2>
+        </div>
+        <div class="install-grid">
+          <div class="command-block">
+            <p>Public release path</p>
+            <pre><code>brew tap vwall/kitout
+brew install kitout</code></pre>
+          </div>
+          <div class="command-block">
+            <p>Build from source until the tap is published</p>
+            <pre><code>go install ./cmd/kitout</code></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Kitout is Mac-first, local-first, and written in Go.</span>
+      <a href="https://github.com/vwall/kitout">github.com/vwall/kitout</a>
+    </footer>
+  </body>
+</html>
