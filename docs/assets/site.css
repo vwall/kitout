@@ -81,6 +81,8 @@ img {
 .button,
 .install-chip,
 .step-index,
+.step-command,
+.workflow-art,
 .command-block p,
 .site-footer {
   font-family: var(--mono);
@@ -258,6 +260,13 @@ figcaption {
   overflow-wrap: anywhere;
 }
 
+p code {
+  color: var(--blue-deep);
+  font-family: var(--mono);
+  font-size: 0.92em;
+  font-variant-ligatures: none;
+}
+
 .workflow,
 .outputs,
 .install {
@@ -275,34 +284,205 @@ figcaption {
 
 .workflow-steps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
   border: 1px solid var(--line);
   border-radius: 12px;
-  overflow: hidden;
-  background: var(--line);
+  background: oklch(100% 0 0 / 0.7);
 }
 
 .workflow-steps li {
-  min-height: 15rem;
-  padding: 1.35rem;
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 22rem;
+  align-content: start;
+  padding: clamp(1rem, 1.8vw, 1.3rem);
   background: oklch(100% 0 0 / 0.74);
 }
 
-.step-index {
+.workflow-steps li + li {
+  border-left: 1px solid var(--line);
+}
+
+.workflow-steps li:not(:last-child)::after {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: -0.72rem;
   display: grid;
-  width: 2.2rem;
+  width: 1.35rem;
   aspect-ratio: 1;
   place-items: center;
-  margin-bottom: 2.75rem;
-  border: 1px solid oklch(74% 0.12 255 / 0.65);
+  border: 1px solid oklch(76% 0.13 255 / 0.52);
   border-radius: 50%;
-  color: var(--blue-deep);
-  font-size: 0.9rem;
+  color: var(--blue);
+  background: var(--bg);
+  content: ">";
+  font-family: var(--mono);
+  font-size: 0.86rem;
   font-weight: 700;
+  transform: translateY(-50%);
+}
+
+.step-kicker {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.step-index {
+  color: var(--blue-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.step-kicker h3 {
+  margin-bottom: 0;
+  font-family: var(--mono);
+  font-size: clamp(0.95rem, 1.2vw, 1.04rem);
+  letter-spacing: 0;
+}
+
+.step-command {
+  display: block;
+  min-height: 2.8rem;
+  margin-bottom: 1.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-ligatures: none;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.workflow-art {
+  display: grid;
+  width: min(100%, 14rem);
+  min-height: 7.4rem;
+  align-content: center;
+  justify-self: center;
+  margin-block: 0 1.35rem;
+  padding: 0.85rem;
+  border: 1px solid oklch(78% 0.025 255);
+  border-radius: var(--radius);
+  color: oklch(38% 0.045 258);
+  background: oklch(98% 0.006 255);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.yaml-art {
+  position: relative;
+  aspect-ratio: 0.76;
+  width: 6.2rem;
+  min-height: 0;
+  padding-top: 1.1rem;
+  border-color: oklch(76% 0.11 255 / 0.6);
+  color: var(--blue-deep);
+  background:
+    linear-gradient(135deg, transparent 0 14%, oklch(91% 0.026 255) 14% 23%, transparent 23%),
+    var(--panel);
+}
+
+.yaml-art span:nth-child(n + 2) {
+  color: oklch(58% 0.14 255);
+}
+
+.check-art {
+  gap: 0.45rem;
+}
+
+.check-art span,
+.status-art span,
+.dryrun-art span,
+.apply-art span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.check-art b {
+  display: inline-grid;
+  width: 0.86rem;
+  aspect-ratio: 1;
+  place-items: center;
+  margin-right: 0.48rem;
+  border: 1px solid var(--green);
+  border-radius: 50%;
+  vertical-align: -0.12rem;
+}
+
+.check-art b::before {
+  width: 0.28rem;
+  height: 0.48rem;
+  border-right: 1.5px solid var(--green);
+  border-bottom: 1.5px solid var(--green);
+  content: "";
+  transform: rotate(40deg) translateY(-0.05rem);
+}
+
+.status-art {
+  gap: 0.36rem;
+  padding-top: 1.7rem;
+  background:
+    linear-gradient(oklch(91% 0.01 255) 0 1.2rem, transparent 1.2rem),
+    var(--panel);
+}
+
+.status-art strong {
+  display: inline-block;
+  width: 2.2rem;
+  margin-right: 0.35rem;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.status-art span:nth-child(2) strong {
+  color: var(--yellow);
+}
+
+.status-art span:nth-child(3) strong {
+  color: var(--blue);
+}
+
+.dryrun-art {
+  gap: 0.4rem;
+  color: var(--blue-deep);
+}
+
+.dryrun-art span::before {
+  margin-right: 0.4rem;
+  color: var(--green);
+  content: "+";
+  font-weight: 700;
+}
+
+.dryrun-art span:last-child::before {
+  color: var(--red);
+  content: "!";
+}
+
+.apply-art {
+  gap: 0.55rem;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.progress-track {
+  display: block;
+  height: 0.68rem;
+  border: 1px solid oklch(73% 0.14 150 / 0.55);
+  background:
+    linear-gradient(90deg, oklch(75% 0.16 150) 0 92%, transparent 92%),
+    oklch(92% 0.055 150);
+}
+
+.progress-track b {
+  display: block;
+  height: 100%;
 }
 
 .output-grid {
@@ -408,6 +588,23 @@ pre {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .workflow-steps li {
+    min-height: 19rem;
+  }
+
+  .workflow-steps li + li {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .workflow-steps li:nth-child(2n) {
+    border-left: 1px solid var(--line);
+  }
+
+  .workflow-steps li:not(:last-child)::after {
+    display: none;
+  }
+
   .output-panel.wide {
     grid-row: auto;
   }
@@ -448,8 +645,12 @@ pre {
     min-height: auto;
   }
 
-  .step-index {
-    margin-bottom: 1.5rem;
+  .workflow-steps li:nth-child(2n) {
+    border-left: 0;
+  }
+
+  .workflow-art {
+    justify-self: start;
   }
 
   .site-footer {

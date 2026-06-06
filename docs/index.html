@@ -63,39 +63,90 @@
       <section class="workflow" aria-labelledby="workflow-title">
         <div class="section-heading">
           <p class="system-label">Workflow</p>
-          <h2 id="workflow-title">Declare, inspect, preview, apply.</h2>
+          <h2 id="workflow-title">Define, check, preview, apply.</h2>
         </div>
         <ol class="workflow-steps">
           <li>
-            <span class="step-index">1</span>
-            <h3>Define</h3>
+            <div class="step-kicker">
+              <span class="step-index">1.</span>
+              <h3>Define</h3>
+            </div>
+            <code class="step-command">kitout init</code>
+            <div class="workflow-art yaml-art" aria-hidden="true">
+              <span>version: 1</span>
+              <span>brew:</span>
+              <span>&nbsp;&nbsp;packages:</span>
+              <span>&nbsp;&nbsp;&nbsp;&nbsp;- git</span>
+              <span>repos:</span>
+            </div>
             <p>
-              Write the Mac state you expect in YAML, then keep it in version
-              control.
+              Create or edit <code>kitout.yaml</code> with packages, apps,
+              repos, dotfiles, directories, defaults, and named shell commands.
             </p>
           </li>
           <li>
-            <span class="step-index">2</span>
-            <h3>Check</h3>
+            <div class="step-kicker">
+              <span class="step-index">2.</span>
+              <h3>Check</h3>
+            </div>
+            <code class="step-command">kitout doctor</code>
+            <div class="workflow-art check-art" aria-hidden="true">
+              <span><b></b>macOS</span>
+              <span><b></b>Homebrew</span>
+              <span><b></b>Git</span>
+              <span><b></b>config</span>
+            </div>
             <p>
-              Run status to see what is satisfied, missing, changed, skipped, or
-              failed.
+              Confirm Homebrew, Git, shell environment, config validity, and
+              path permissions before touching resources.
             </p>
           </li>
           <li>
-            <span class="step-index">3</span>
-            <h3>Preview</h3>
+            <div class="step-kicker">
+              <span class="step-index">3.</span>
+              <h3>Inspect</h3>
+            </div>
+            <code class="step-command">kitout status</code>
+            <div class="workflow-art status-art" aria-hidden="true">
+              <span><strong>ok</strong> brew: git</span>
+              <span><strong>miss</strong> cask: ghostty</span>
+              <span><strong>chg</strong> symlink: ~/.zshrc</span>
+            </div>
             <p>
-              Use dry-run to inspect the exact work Kitout would do without
-              changing files.
+              See satisfied, missing, changed, skipped, and failed resources in
+              one structured report.
             </p>
           </li>
           <li>
-            <span class="step-index">4</span>
-            <h3>Apply</h3>
+            <div class="step-kicker">
+              <span class="step-index">4.</span>
+              <h3>Preview</h3>
+            </div>
+            <code class="step-command">kitout apply --dry-run</code>
+            <div class="workflow-art dryrun-art" aria-hidden="true">
+              <span>dry-run install cask ghostty</span>
+              <span>dry-run clone ~/code/app</span>
+              <span>no shell command will run</span>
+            </div>
             <p>
-              Apply only the resources that need work, with explicit approval
-              for risky actions.
+              Inspect installs, clones, symlinks, defaults, and approved shell
+              commands with no filesystem changes.
+            </p>
+          </li>
+          <li>
+            <div class="step-kicker">
+              <span class="step-index">5.</span>
+              <h3>Apply</h3>
+            </div>
+            <code class="step-command">kitout apply</code>
+            <div class="workflow-art apply-art" aria-hidden="true">
+              <span>Applying...</span>
+              <span class="progress-track"><b></b></span>
+              <span>Complete</span>
+            </div>
+            <p>
+              Kitout applies only missing or changed resources. Rerun status and
+              the Mac matches the declared state.
             </p>
           </li>
         </ol>
