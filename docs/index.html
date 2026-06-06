@@ -34,15 +34,24 @@
           </div>
         </div>
 
-        <figure class="hero-output">
+        <div class="hero-visual">
           <img
-            src="assets/screenshots/dry-run.png"
-            alt="Screenshot of kitout apply --dry-run showing planned repository and shell command changes with no changes made."
-            width="1120"
-            height="560"
+            class="hero-computer"
+            src="assets/retro-mac-computer.png"
+            alt="Retro Macintosh-style computer, keyboard, and mouse on a pale blueprint grid."
+            width="600"
+            height="445"
           >
-          <figcaption>Real `kitout apply --dry-run` output from the current CLI.</figcaption>
-        </figure>
+          <figure class="hero-output">
+            <img
+              src="assets/screenshots/dry-run.png"
+              alt="Screenshot of kitout apply --dry-run showing planned repository and shell command changes with no changes made."
+              width="920"
+              height="460"
+            >
+            <figcaption>`kitout apply --dry-run` against a home config, with TTY colors.</figcaption>
+          </figure>
+        </div>
       </section>
 
       <section class="workflow" aria-labelledby="workflow-title">
@@ -77,24 +86,24 @@
       <section class="outputs" aria-labelledby="outputs-title">
         <div class="section-heading">
           <p class="system-label">Real output</p>
-          <h2 id="outputs-title">Screenshots from the CLI, not mock text.</h2>
+          <h2 id="outputs-title">Home-config runs with CLI colors.</h2>
         </div>
         <div class="output-grid">
           <figure class="output-panel wide">
             <img
               src="assets/screenshots/status.png"
-              alt="Screenshot of kitout status reporting two missing resources and two resources needing attention."
-              width="1120"
-              height="520"
+              alt="Screenshot of kitout status reporting satisfied, missing, changed, and skipped resources from a home config."
+              width="920"
+              height="460"
             >
-            <figcaption>`kitout status` reports current resource state.</figcaption>
+            <figcaption>`kitout status` reports current resource state from the default config.</figcaption>
           </figure>
-          <figure class="output-panel">
+          <figure class="output-panel doctor-panel">
             <img
               src="assets/screenshots/doctor.png"
               alt="Screenshot of kitout doctor reporting macOS, architecture, Homebrew, Git, shell, config, and path permission checks."
-              width="1120"
-              height="760"
+              width="920"
+              height="460"
             >
             <figcaption>`kitout doctor` checks the local prerequisites.</figcaption>
           </figure>

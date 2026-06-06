@@ -148,6 +148,25 @@ img {
   max-width: 34rem;
 }
 
+.hero-visual {
+  display: grid;
+  min-width: 0;
+  gap: 1.2rem;
+  justify-items: end;
+}
+
+.hero-computer {
+  width: min(100%, 600px);
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
+  mask-composite: intersect;
+}
+
 .system-label {
   margin: 0 0 1rem;
   color: var(--blue-deep);
@@ -228,6 +247,10 @@ h3 {
   margin: 0;
 }
 
+.hero-output {
+  width: min(100%, 640px);
+}
+
 .hero-output img,
 .output-panel img {
   width: 100%;
@@ -300,6 +323,10 @@ figcaption {
 
 .output-panel.wide {
   grid-row: span 2;
+}
+
+.doctor-panel {
+  grid-column: 1 / -1;
 }
 
 .safety-note {
