@@ -18,6 +18,7 @@ type globalOptions struct {
 	configPath string
 	verbose    bool
 	quiet      bool
+	color      bool
 	noColor    bool
 	json       bool
 	yes        bool
@@ -65,6 +66,7 @@ func addGlobalFlags(fs *flag.FlagSet, opts *globalOptions) {
 	fs.StringVar(&opts.configPath, "config", opts.configPath, "Path to config file")
 	fs.BoolVar(&opts.verbose, "verbose", opts.verbose, "Stream subprocess output during apply")
 	fs.BoolVar(&opts.quiet, "quiet", opts.quiet, "Reduce output")
+	fs.BoolVar(&opts.color, "color", opts.color, "Force colored output")
 	fs.BoolVar(&opts.noColor, "no-color", opts.noColor, "Disable colored output")
 	fs.BoolVar(&opts.json, "json", opts.json, "Print machine-readable JSON output")
 	fs.BoolVar(&opts.yes, "yes", opts.yes, "Bypass apply confirmations for shell commands and symlink replacements")
@@ -95,6 +97,7 @@ Global flags:
   --config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
   --verbose           Stream subprocess output during apply
   --quiet             Reduce output
+  --color             Force colored output
   --no-color          Disable colored output
   --json              Print machine-readable JSON output
   --yes               Bypass apply confirmations for shell commands and symlink replacements`)

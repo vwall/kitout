@@ -102,7 +102,7 @@ func TestHumanRendererShowsASDFMissingVersions(t *testing.T) {
 
 	for _, fragment := range []string{
 		"! missing   asdf_plugin: ruby 4.0.5",
-		"i Would install asdf version ruby 4.0.5",
+		"dry-run Would install asdf version ruby 4.0.5",
 		"> Installing asdf version ruby 4.0.5...",
 	} {
 		if !strings.Contains(stdout.String(), fragment) {
@@ -162,10 +162,10 @@ func TestHumanRendererAlignsDryRunAndApplyMessageColumns(t *testing.T) {
 		},
 		Summary: engine.ApplySummary{Total: 2, Changed: 1, Noop: 1},
 	})
-	if !strings.Contains(stdout.String(), "Config: /tmp/kitout.yaml\n\ni Would install cask ghostty") {
+	if !strings.Contains(stdout.String(), "Config: /tmp/kitout.yaml\n\n[dry-run] Previewing planned changes:\ndry-run Would install cask ghostty") {
 		t.Fatalf("stdout = %q, want compact dry-run plan", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "i Would link ~/.zshrc") {
+	if !strings.Contains(stdout.String(), "dry-run Would link ~/.zshrc") {
 		t.Fatalf("stdout = %q, want symlink dry-run sentence", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "No shell commands will run without explicit approval.") {
@@ -235,7 +235,7 @@ func TestHumanRendererStartupOutput(t *testing.T) {
 	for _, fragment := range []string{
 		"Kitout is checking your Mac setup...\nConfig: /tmp/status.yaml",
 		"Kitout is planning changes for your Mac setup...\nConfig: /tmp/apply.yaml",
-		"Kitout is planning changes only. No changes will be made.\nConfig: /tmp/dry-run.yaml",
+		"[dry-run] Kitout is running in dry-run mode. No changes will be made.\nConfig: /tmp/dry-run.yaml",
 		"Kitout is checking local prerequisites...\nConfig: /tmp/doctor.yaml",
 	} {
 		if !strings.Contains(stdout.String(), fragment) {
@@ -307,7 +307,9 @@ func TestHumanRendererColorsHumanMarkersWhenEnabled(t *testing.T) {
 		ansiYellow + "! changed  " + ansiReset,
 		ansiRed + "× fail     " + ansiReset,
 		ansiCyan + "- skip     " + ansiReset,
-		ansiBlue + "i" + ansiReset,
+		ansiBlue + "[dry-run]" + ansiReset,
+		ansiBlue + "dry-run" + ansiReset,
+		ansiYellow + "Would create directory /tmp/code" + ansiReset,
 		ansiGreen + "✓ done " + ansiReset,
 		ansiYellow + "warn:" + ansiReset,
 	} {

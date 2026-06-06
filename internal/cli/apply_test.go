@@ -25,8 +25,14 @@ directories:
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
-	if !strings.HasPrefix(stdout.String(), "Kitout is planning changes only. No changes will be made.\nConfig: "+configPath+"\n\n") {
+	if !strings.HasPrefix(stdout.String(), "[dry-run] Kitout is running in dry-run mode. No changes will be made.\nConfig: "+configPath+"\n\n") {
 		t.Fatalf("stdout = %q, want dry-run startup message", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "[dry-run] Previewing planned changes:") {
+		t.Fatalf("stdout = %q, want dry-run preview heading", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "dry-run Would create directory "+missingDir) {
+		t.Fatalf("stdout = %q, want dry-run row marker", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "Would create directory "+missingDir) {
 		t.Fatalf("stdout = %q, want dry-run directory plan", stdout.String())
@@ -39,6 +45,32 @@ directories:
 	}
 	if _, err := os.Stat(missingDir); !os.IsNotExist(err) {
 		t.Fatalf("Stat(%q) error = %v, want directory to remain missing", missingDir, err)
+	}
+}
+
+func TestApplyDryRunColorCanBeForced(t *testing.T) {
+	missingDir := filepath.Join(t.TempDir(), "code")
+	configPath := writeCLIConfigFile(t, `version: 1
+
+directories:
+  - `+missingDir+`
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--dry-run", "--color"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	for _, fragment := range []string{
+		ansiBlue + "[dry-run]" + ansiReset,
+		ansiBlue + "dry-run" + ansiReset,
+		ansiYellow + "Would create directory " + missingDir + ansiReset,
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want color fragment %q", stdout.String(), fragment)
+		}
 	}
 }
 

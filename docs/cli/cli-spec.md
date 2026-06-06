@@ -12,6 +12,7 @@ kitout
 --config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
 --verbose           Stream subprocess output during apply
 --quiet             Reduce output
+--color             Force colored output
 --no-color          Disable colored output
 --json              Print machine-readable JSON output
 --yes               Bypass apply confirmations for shell commands and symlink replacements
@@ -23,12 +24,13 @@ Without `--config`, they use `./kitout.yaml` only when no home config exists,
 use `~/.config/kitout/kitout.yaml` only when no local config exists, and fail
 with guidance when both files exist. `init` still writes
 `~/.config/kitout/kitout.yaml` by default unless `--config` is passed. Human
-output colors status markers when stdout is an interactive terminal;
-redirected output remains plain text, and `--no-color` disables ANSI color
-markers. Human output includes both symbols and text labels so status remains
-readable without color. `status`, `apply`, and `doctor` print a short startup
-line before slower checks begin so command startup does not look stuck. `apply`
-prints a progress line before each resource apply starts, so long-running
+output colors status and action markers when stdout is an interactive terminal;
+redirected output remains plain text by default, `--color` forces ANSI color,
+and `--no-color` disables ANSI color markers. Human output includes both
+symbols and text labels so status remains readable without color. `status`,
+`apply`, and `doctor` print a short startup line before slower checks begin so
+command startup does not look stuck. `apply` prints a progress line before each
+resource apply starts, so long-running
 commands such as Homebrew installs and upgrades have visible activity while
 default subprocess output stays captured and hidden. During human `kitout apply`
 runs, `--verbose` renders each subprocess command before it starts and streams
@@ -146,13 +148,14 @@ Shows intended changes without making changes.
 Example output:
 
 ```txt
-Kitout is planning changes only. No changes will be made.
+[dry-run] Kitout is running in dry-run mode. No changes will be made.
 Config: /Users/example/.config/kitout/kitout.yaml
 
-i Would install cask ghostty
-i Would replace symlink /Users/example/.zshrc
+[dry-run] Previewing planned changes:
+dry-run Would install cask ghostty
+dry-run Would replace symlink /Users/example/.zshrc
 
-No changes made because --dry-run was used.
+[dry-run] No changes made because --dry-run was used.
 No shell commands will run without explicit approval.
 ```
 

@@ -65,10 +65,11 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 	if path != "" {
 		fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
 	}
+	fmt.Fprintf(r.stdout, "%s Previewing planned changes:\n", r.dryRunBadge())
 	for _, item := range plan.Items {
 		switch item.Action {
 		case engine.ActionApply:
-			fmt.Fprintf(r.stdout, "%s %s\n", r.dryRunMarker(), dryRunMessage(item))
+			fmt.Fprintf(r.stdout, "%s %s\n", r.dryRunMarker(), r.colorize(dryRunMessage(item), ansiYellow))
 		case engine.ActionFail:
 			fmt.Fprintf(r.stdout, "%s Cannot apply %s: %s\n", r.failSymbol(), displayResourceLabel(item.Type, item.ResourceID, item.Details), item.Message)
 			if item.Error != "" {
@@ -81,7 +82,7 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 	if plan.Summary.ToApply == 0 {
 		fmt.Fprintln(r.stdout, "No changes.")
 	}
-	fmt.Fprintln(r.stdout, "\nNo changes made because --dry-run was used.")
+	fmt.Fprintf(r.stdout, "\n%s No changes made because --dry-run was used.\n", r.dryRunBadge())
 	fmt.Fprintln(r.stdout, "No shell commands will run without explicit approval.")
 }
 
@@ -91,7 +92,7 @@ func (r humanRenderer) renderApplyPlanStart(path string, dryRun bool) {
 	}
 
 	if dryRun {
-		fmt.Fprintln(r.stdout, "Kitout is planning changes only. No changes will be made.")
+		fmt.Fprintf(r.stdout, "%s Kitout is running in dry-run mode. No changes will be made.\n", r.dryRunBadge())
 	} else {
 		fmt.Fprintln(r.stdout, "Kitout is planning changes for your Mac setup...")
 	}
@@ -200,6 +201,9 @@ func humanColorEnabled(stdout io.Writer, opts globalOptions) bool {
 	if opts.noColor {
 		return false
 	}
+	if opts.color {
+		return true
+	}
 
 	file, ok := stdout.(*os.File)
 	if !ok {
@@ -236,7 +240,11 @@ func (r humanRenderer) marker(text, color string, width int) string {
 }
 
 func (r humanRenderer) dryRunMarker() string {
-	return r.colorize("i", ansiBlue)
+	return r.colorize("dry-run", ansiBlue)
+}
+
+func (r humanRenderer) dryRunBadge() string {
+	return r.colorize("[dry-run]", ansiBlue)
 }
 
 func (r humanRenderer) progressMarker() string {
