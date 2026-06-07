@@ -145,10 +145,10 @@ img {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 0.88fr) minmax(24rem, 1.12fr);
-  gap: clamp(var(--space-xl), 6vw, 5.5rem);
-  align-items: center;
-  min-height: min(820px, calc(100svh - 82px));
-  padding-block: clamp(var(--space-xl), 8vw, 7rem) clamp(var(--space-2xl), 8vw, 8rem);
+  gap: clamp(var(--space-lg), 5vw, 4.25rem);
+  align-items: start;
+  min-height: min(680px, calc(100svh - 82px));
+  padding-block: clamp(var(--space-lg), 5vw, 4.25rem) clamp(var(--space-xl), 5vw, 5rem);
 }
 
 .hero::after {
@@ -169,21 +169,22 @@ img {
 .hero-copy {
   min-width: 0;
   max-width: 36rem;
+  align-self: start;
 }
 
 .hero-visual {
   position: relative;
   display: grid;
   min-width: 0;
-  gap: var(--space-xs);
+  gap: var(--space-2xs);
   align-content: center;
   justify-items: end;
 }
 
 .hero-computer {
-  width: min(46%, 300px);
+  width: min(36%, 230px);
   justify-self: end;
-  margin-right: clamp(0rem, 4vw, var(--space-xl));
+  margin-right: clamp(0rem, 3vw, var(--space-lg));
 }
 
 .system-label {
@@ -239,7 +240,7 @@ h3 {
   flex-wrap: wrap;
   gap: var(--space-xs);
   align-items: center;
-  margin-top: var(--space-lg);
+  margin-top: var(--space-md);
 }
 
 .button.primary {
@@ -282,7 +283,7 @@ h3 {
 }
 
 .hero-output {
-  width: min(100%, 640px);
+  width: min(100%, 620px);
   justify-self: stretch;
 }
 
@@ -348,6 +349,12 @@ h3 {
   tab-size: 2;
   text-shadow: 0 0 12px oklch(68% 0.17 150 / 0.1);
   user-select: text;
+}
+
+.hero-output .terminal-screen {
+  padding: 0.9rem 1rem;
+  font-size: 0.7rem;
+  line-height: 1.43;
 }
 
 .terminal-ok {
@@ -752,6 +759,15 @@ pre {
     padding-block: clamp(var(--space-xl), 8vw, var(--space-2xl));
   }
 
+  .hero-computer {
+    width: min(42%, 260px);
+  }
+
+  .hero-output .terminal-screen {
+    font-size: 0.74rem;
+    line-height: 1.5;
+  }
+
   .hero-copy {
     max-width: 44rem;
   }
@@ -800,6 +816,10 @@ pre {
     flex-direction: column;
   }
 
+  .site-header .github-link {
+    display: none;
+  }
+
   .brand {
     align-items: flex-start;
     flex-direction: column;
@@ -836,6 +856,12 @@ pre {
 
   .workflow-steps {
     grid-template-columns: 1fr;
+  }
+
+  .terminal-screen {
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .output-grid {

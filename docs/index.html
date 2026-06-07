@@ -55,20 +55,20 @@
                 <span class="terminal-title">kitout apply</span>
               </div>
               <pre class="terminal-screen"><code>Kitout is planning changes for your Mac setup...
-Config: /Users/example/dotfiles/kitout.yaml
+Config: ~/setup/kitout.yaml
 
 Results:
-<span class="terminal-ok">✓ ok   </span> brew: asdf                           formula is installed
-<span class="terminal-ok">✓ ok   </span> brew: git                            formula is installed
-<span class="terminal-ok">✓ ok   </span> brew: fish                           formula is installed
-<span class="terminal-ok">✓ ok   </span> brew: pnpm                           formula is installed
-<span class="terminal-ok">✓ ok   </span> brew: go                             formula is installed
-<span class="terminal-ok">✓ ok   </span> brew: gh                             formula is installed
-<span class="terminal-ok">✓ ok   </span> brew: kitout                         formula is installed
-<span class="terminal-ok">✓ ok   </span> asdf_plugin: ruby                    asdf plugin and versions are installed
-<span class="terminal-ok">✓ ok   </span> asdf_plugin: nodejs                  asdf plugin and versions are installed
-<span class="terminal-ok">✓ ok   </span> asdf_tool_versions: ~/.tool-versions .tool-versions entries are correct
-<span class="terminal-ok">✓ ok   </span> directory: ~/.config                 directory exists
+<span class="terminal-ok">✓ ok   </span> brew: asdf installed
+<span class="terminal-ok">✓ ok   </span> brew: git installed
+<span class="terminal-ok">✓ ok   </span> brew: fish installed
+<span class="terminal-ok">✓ ok   </span> brew: pnpm installed
+<span class="terminal-ok">✓ ok   </span> brew: go installed
+<span class="terminal-ok">✓ ok   </span> brew: gh installed
+<span class="terminal-ok">✓ ok   </span> brew: kitout installed
+<span class="terminal-ok">✓ ok   </span> asdf: ruby ready
+<span class="terminal-ok">✓ ok   </span> asdf: nodejs ready
+<span class="terminal-ok">✓ ok   </span> tool-versions correct
+<span class="terminal-ok">✓ ok   </span> directory: ~/.config exists
 
 <span class="terminal-summary">Summary: 11 unchanged</span></code></pre>
             </div>
@@ -188,14 +188,14 @@ Results:
                 <span class="terminal-title">kitout status</span>
               </div>
               <pre class="terminal-screen"><code>Kitout is checking your Mac setup...
-Config: /Users/example/dotfiles/kitout.yaml
+Config: ~/setup/kitout.yaml
 
-<span class="terminal-ok">✓ satisfied</span> brew: git                            satisfied
-<span class="terminal-ok">✓ satisfied</span> brew: asdf                           satisfied
-<span class="terminal-warn">! missing  </span> cask: ghostty                        missing
-<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc                    target points elsewhere
-<span class="terminal-skip">- skip     </span> shell: Enable Corepack                pnpm already available
-<span class="terminal-fail">× fail     </span> repo: ~/code/example-project          failed: git is not available
+<span class="terminal-ok">✓ satisfied</span> brew: git ready
+<span class="terminal-ok">✓ satisfied</span> brew: asdf ready
+<span class="terminal-warn">! missing  </span> cask: ghostty install needed
+<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc points elsewhere
+<span class="terminal-skip">- skip     </span> shell: Corepack pnpm already present
+<span class="terminal-fail">× fail     </span> repo: ~/code/app git unavailable
 
 <span class="terminal-summary">Summary: 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
 3 resources need attention</span></code></pre>
@@ -214,19 +214,19 @@ Config: /Users/example/dotfiles/kitout.yaml
                 <span class="terminal-title">kitout doctor</span>
               </div>
               <pre class="terminal-screen"><code>Kitout is checking local prerequisites...
-Config: /Users/example/dotfiles/kitout.yaml
+Config: ~/setup/kitout.yaml
 
 Doctor:
-<span class="terminal-ok">ok:  </span> macOS                      running on macOS
-<span class="terminal-ok">ok:  </span> CPU architecture           running on Apple Silicon
-<span class="terminal-ok">ok:  </span> Xcode Command Line Tools   /Library/Developer/CommandLineTools
-<span class="terminal-ok">ok:  </span> Homebrew                   Homebrew 5.1.15
-<span class="terminal-warn">warn:</span> Homebrew path              Homebrew prefix is /usr/local; expected /opt/homebrew for this architecture
-    fix: Use the Homebrew installation at /opt/homebrew or update PATH before running Kitout.
-<span class="terminal-ok">ok:  </span> Git                        git version 2.54.0
-<span class="terminal-ok">ok:  </span> Shell environment          SHELL and PATH look usable
-<span class="terminal-ok">ok:  </span> Config                     config is valid
-<span class="terminal-ok">ok:  </span> Path permissions           7 configured write target(s) look writable
+<span class="terminal-ok">ok:  </span> macOS running on macOS
+<span class="terminal-ok">ok:  </span> CPU architecture Apple Silicon
+<span class="terminal-ok">ok:  </span> Xcode tools installed
+<span class="terminal-ok">ok:  </span> Homebrew 5.1.15
+<span class="terminal-warn">warn:</span> Homebrew path /usr/local, expected /opt/homebrew
+    fix: update PATH before running Kitout.
+<span class="terminal-ok">ok:  </span> Git version 2.54.0
+<span class="terminal-ok">ok:  </span> Shell environment usable
+<span class="terminal-ok">ok:  </span> Config valid
+<span class="terminal-ok">ok:  </span> Path permissions writable
 
 <span class="terminal-summary">9 total, 8 ok, 1 warnings, 0 failed</span></code></pre>
             </div>
