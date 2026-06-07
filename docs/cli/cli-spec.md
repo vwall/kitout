@@ -24,7 +24,7 @@ Without `--config`, they use `./kitout.yaml` only when no home config exists,
 use `~/.config/kitout/kitout.yaml` only when no local config exists, and fail
 with guidance when both files exist. `init` still writes
 `~/.config/kitout/kitout.yaml` by default unless `--config` is passed. Human
-output colors status and action markers when stdout is an interactive terminal;
+output colors status, progress, and action markers when stdout is an interactive terminal;
 redirected output remains plain text by default, `--color` forces ANSI color,
 and `--no-color` disables ANSI color markers. Human output includes both
 symbols and text labels so status remains readable without color. `status`,
@@ -76,6 +76,7 @@ Current behavior:
 
 - load and validate the selected config file
 - print a startup line naming the selected config before status checks begin
+- show a progress line before each resource status check
 - build resources from config in stable execution order
 - check resource status through the engine planner
 - batch Homebrew outdated checks across brew package resources during planning
@@ -91,6 +92,13 @@ Example human output:
 ```txt
 Kitout is checking your Mac setup...
 Config: /Users/example/.config/kitout/kitout.yaml
+
+> Checking brew: git...
+> Checking brew: go...
+> Checking cask: ghostty...
+> Checking directory: /Users/example/code...
+> Checking repo: /Users/example/code/app...
+> Checking shell: setup...
 
 ✓ satisfied brew: git                    satisfied
 ! changed   brew: go                     formula is outdated
@@ -127,6 +135,7 @@ Behavior:
 
 - load and validate config
 - print a startup line naming the selected config before status checks begin
+- show a progress line before each resource status check
 - run status checks
 - build plan
 - stop before applying if the plan contains failed or unknown resources
@@ -150,6 +159,9 @@ Example output:
 ```txt
 [dry-run] Kitout is running in dry-run mode. No changes will be made.
 Config: /Users/example/.config/kitout/kitout.yaml
+
+> Checking cask: ghostty...
+> Checking symlink: /Users/example/.zshrc...
 
 [dry-run] Previewing planned changes:
 dry-run Would install cask ghostty

@@ -28,6 +28,9 @@ directories:
 	if !strings.HasPrefix(stdout.String(), "[dry-run] Kitout is running in dry-run mode. No changes will be made.\nConfig: "+configPath+"\n\n") {
 		t.Fatalf("stdout = %q, want dry-run startup message", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "> Checking directory: "+missingDir+"...") {
+		t.Fatalf("stdout = %q, want dry-run status check progress", stdout.String())
+	}
 	if !strings.Contains(stdout.String(), "[dry-run] Previewing planned changes:") {
 		t.Fatalf("stdout = %q, want dry-run preview heading", stdout.String())
 	}
@@ -216,6 +219,9 @@ directories:
 	}
 	if !strings.HasPrefix(stdout.String(), "Kitout is planning changes for your Mac setup...\nConfig: "+configPath+"\n\n") {
 		t.Fatalf("stdout = %q, want apply startup message", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "> Checking directory: "+missingDir+"...") {
+		t.Fatalf("stdout = %q, want apply status check progress", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "created directory") {
 		t.Fatalf("stdout = %q, want created directory message", stdout.String())

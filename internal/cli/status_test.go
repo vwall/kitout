@@ -30,6 +30,9 @@ directories:
 	if !strings.Contains(stdout.String(), "Config: "+configPath) {
 		t.Fatalf("stdout = %q, want config path", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "> Checking directory: "+dir+"...") {
+		t.Fatalf("stdout = %q, want status check progress", stdout.String())
+	}
 	if !strings.Contains(stdout.String(), "directory: "+dir) {
 		t.Fatalf("stdout = %q, want directory status", stdout.String())
 	}

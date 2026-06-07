@@ -37,7 +37,11 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 	}
 
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
-	plan := engine.NewPlanner().Build(context.Background(), resourceList)
+	var observer engine.PlanObserver
+	if !opts.json {
+		observer = renderer
+	}
+	plan := engine.NewPlanner().BuildWithObserver(context.Background(), resourceList, observer)
 
 	if opts.json {
 		if err := jsonRenderer.renderPlan("status", loaded.Path, plan, false); err != nil {

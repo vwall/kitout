@@ -131,6 +131,14 @@ func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport)
 	fmt.Fprintf(r.stdout, "\nSummary: %s\n", applySummary(report.Summary))
 }
 
+func (r humanRenderer) BeforeStatus(resource engine.Resource) {
+	if r.quiet {
+		return
+	}
+
+	fmt.Fprintf(r.stdout, "%s Checking %s...\n", r.progressMarker(), displayResourceLabel(resource.Type(), resource.ID(), nil))
+}
+
 func (r humanRenderer) BeforeApply(item engine.PlanItem) {
 	if r.quiet {
 		return

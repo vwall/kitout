@@ -51,6 +51,11 @@ func (p Plan) HasFailures() bool {
 	return p.Summary.Failed > 0 || p.Summary.Unknown > 0
 }
 
+// PlanObserver receives progress events while the planner checks resources.
+type PlanObserver interface {
+	BeforeStatus(resource Resource)
+}
+
 // Planner checks resources and builds a mutation-free plan.
 type Planner struct{}
 
@@ -61,11 +66,19 @@ func NewPlanner() Planner {
 
 // Build checks resource status and builds a plan without applying changes.
 func (p Planner) Build(ctx context.Context, resources []Resource) Plan {
+	return p.BuildWithObserver(ctx, resources, nil)
+}
+
+// BuildWithObserver checks resource status and reports progress before each check.
+func (p Planner) BuildWithObserver(ctx context.Context, resources []Resource, observer PlanObserver) Plan {
 	plan := Plan{
 		Items: make([]PlanItem, 0, len(resources)),
 	}
 
 	for _, resource := range resources {
+		if observer != nil {
+			observer.BeforeStatus(resource)
+		}
 		result, err := resource.Status(ctx)
 		item := planItemFor(resource, result, err)
 		plan.Items = append(plan.Items, item)

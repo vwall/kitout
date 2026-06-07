@@ -46,7 +46,11 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 	}
 
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
-	plan := engine.NewPlanner().Build(context.Background(), resourceList)
+	var planObserver engine.PlanObserver
+	if !opts.json {
+		planObserver = renderer
+	}
+	plan := engine.NewPlanner().BuildWithObserver(context.Background(), resourceList, planObserver)
 
 	if applyOpts.dryRun {
 		if opts.json {

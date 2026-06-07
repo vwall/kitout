@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 )
 
@@ -93,6 +94,23 @@ func TestPlannerNeverAppliesResources(t *testing.T) {
 	}
 }
 
+func TestPlannerNotifiesObserverBeforeEachStatusCheck(t *testing.T) {
+	resources := []Resource{
+		&fakeResource{id: "directory:/Users/example/code", typ: "directory", state: StateSatisfied},
+		&fakeResource{id: "brew:git", typ: "brew", state: StateMissing},
+	}
+	observer := &fakePlanObserver{}
+
+	plan := NewPlanner().BuildWithObserver(context.Background(), resources, observer)
+
+	if got, want := observer.ids, []string{"directory:/Users/example/code", "brew:git"}; !slices.Equal(got, want) {
+		t.Fatalf("observer ids = %#v, want %#v", got, want)
+	}
+	if got, want := len(plan.Items), 2; got != want {
+		t.Fatalf("len(plan.Items) = %d, want %d", got, want)
+	}
+}
+
 func TestPlannerDefaultsIncompleteStatusResults(t *testing.T) {
 	resource := &fakeResource{id: "mystery:thing", typ: "mystery"}
 
@@ -133,6 +151,14 @@ type fakeResource struct {
 	applyErr    error
 	statusCalls int
 	applyCalls  int
+}
+
+type fakePlanObserver struct {
+	ids []string
+}
+
+func (observer *fakePlanObserver) BeforeStatus(resource Resource) {
+	observer.ids = append(observer.ids, resource.ID())
 }
 
 func (resource *fakeResource) ID() string {
