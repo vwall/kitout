@@ -271,6 +271,80 @@ h3 {
   justify-self: stretch;
 }
 
+.terminal-preview {
+  overflow: hidden;
+  border: 1px solid oklch(26% 0.045 258);
+  border-radius: var(--radius-lg);
+  background: oklch(13% 0.035 258);
+  box-shadow:
+    0 8px 12px oklch(18% 0.035 260 / 0.14),
+    inset 0 1px 0 oklch(100% 0 0 / 0.08);
+}
+
+.terminal-titlebar {
+  display: flex;
+  min-height: 2.35rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding-inline: 0.8rem;
+  border-bottom: 1px solid oklch(100% 0 0 / 0.08);
+  color: oklch(74% 0.04 255);
+  background:
+    linear-gradient(180deg, oklch(23% 0.045 258), oklch(18% 0.04 258));
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.terminal-dot {
+  width: 0.66rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.terminal-dot.red {
+  background: oklch(66% 0.18 28);
+}
+
+.terminal-dot.yellow {
+  background: oklch(78% 0.15 85);
+}
+
+.terminal-dot.green {
+  background: oklch(68% 0.17 150);
+}
+
+.terminal-title {
+  margin-left: 0.45rem;
+}
+
+.terminal-screen {
+  margin: 0;
+  overflow-x: auto;
+  padding: clamp(0.9rem, 1.7vw, 1.15rem);
+  border-radius: 0;
+  color: oklch(90% 0.025 255);
+  background:
+    radial-gradient(circle at 10% 0%, oklch(68% 0.17 150 / 0.11), transparent 34%),
+    linear-gradient(180deg, oklch(16% 0.04 258), oklch(12% 0.035 258));
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-variant-ligatures: none;
+  line-height: 1.58;
+  tab-size: 2;
+  text-shadow: 0 0 12px oklch(68% 0.17 150 / 0.1);
+  user-select: text;
+}
+
+.terminal-ok {
+  color: oklch(78% 0.18 150);
+  font-weight: 700;
+}
+
+.terminal-summary {
+  color: oklch(96% 0.018 255);
+  font-weight: 700;
+}
+
 .hero-output img,
 .output-panel img {
   width: 100%;

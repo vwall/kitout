@@ -47,15 +47,34 @@
             height="960"
           />
           <figure class="hero-output">
-            <img
-              src="assets/screenshots/apply.webp"
-              alt="Screenshot of kitout apply reporting installed Homebrew formulae as unchanged from a selected config."
-              width="920"
-              height="460"
-            />
+            <div class="terminal-preview">
+              <div class="terminal-titlebar" aria-hidden="true">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+                <span class="terminal-title">kitout apply</span>
+              </div>
+              <pre class="terminal-screen"><code>Kitout is planning changes for your Mac setup...
+Config: /Users/example/dotfiles/kitout.yaml
+
+Results:
+<span class="terminal-ok">✓ ok   </span> brew: asdf                           formula is installed
+<span class="terminal-ok">✓ ok   </span> brew: git                            formula is installed
+<span class="terminal-ok">✓ ok   </span> brew: fish                           formula is installed
+<span class="terminal-ok">✓ ok   </span> brew: pnpm                           formula is installed
+<span class="terminal-ok">✓ ok   </span> brew: go                             formula is installed
+<span class="terminal-ok">✓ ok   </span> brew: gh                             formula is installed
+<span class="terminal-ok">✓ ok   </span> brew: kitout                         formula is installed
+<span class="terminal-ok">✓ ok   </span> asdf_plugin: ruby                    asdf plugin and versions are installed
+<span class="terminal-ok">✓ ok   </span> asdf_plugin: nodejs                  asdf plugin and versions are installed
+<span class="terminal-ok">✓ ok   </span> asdf_tool_versions: ~/.tool-versions .tool-versions entries are correct
+<span class="terminal-ok">✓ ok   </span> directory: ~/.config                 directory exists
+
+<span class="terminal-summary">Summary: 11 unchanged</span></code></pre>
+            </div>
             <figcaption>
-              `kitout apply` against an explicitly selected brew-only config,
-              with TTY colors.
+              `kitout apply` against an explicitly selected config, rendered as
+              selectable terminal text.
             </figcaption>
           </figure>
         </div>
