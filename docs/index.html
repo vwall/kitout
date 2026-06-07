@@ -180,24 +180,56 @@ Results:
         </div>
         <div class="output-grid">
           <figure class="output-panel wide">
-            <img
-              src="assets/screenshots/status.webp"
-              alt="Screenshot of kitout status reporting satisfied, missing, changed, and skipped resources from a selected config."
-              width="920"
-              height="460"
-            />
+            <div class="terminal-preview">
+              <div class="terminal-titlebar" aria-hidden="true">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+                <span class="terminal-title">kitout status</span>
+              </div>
+              <pre class="terminal-screen"><code>Kitout is checking your Mac setup...
+Config: /Users/example/dotfiles/kitout.yaml
+
+<span class="terminal-ok">✓ satisfied</span> brew: git                            satisfied
+<span class="terminal-ok">✓ satisfied</span> brew: asdf                           satisfied
+<span class="terminal-warn">! missing  </span> cask: ghostty                        missing
+<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc                    target points elsewhere
+<span class="terminal-skip">- skip     </span> shell: Enable Corepack                pnpm already available
+<span class="terminal-fail">× fail     </span> repo: ~/code/example-project          failed: git is not available
+
+<span class="terminal-summary">Summary: 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
+3 resources need attention</span></code></pre>
+            </div>
             <figcaption>
               `kitout status` reports current resource state from the selected
               config.
             </figcaption>
           </figure>
           <figure class="output-panel doctor-panel">
-            <img
-              src="assets/screenshots/doctor.webp"
-              alt="Screenshot of kitout doctor reporting macOS, architecture, Homebrew, Git, shell, config, and path permission checks."
-              width="920"
-              height="460"
-            />
+            <div class="terminal-preview">
+              <div class="terminal-titlebar" aria-hidden="true">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+                <span class="terminal-title">kitout doctor</span>
+              </div>
+              <pre class="terminal-screen"><code>Kitout is checking local prerequisites...
+Config: /Users/example/dotfiles/kitout.yaml
+
+Doctor:
+<span class="terminal-ok">ok:  </span> macOS                      running on macOS
+<span class="terminal-ok">ok:  </span> CPU architecture           running on Apple Silicon
+<span class="terminal-ok">ok:  </span> Xcode Command Line Tools   /Library/Developer/CommandLineTools
+<span class="terminal-ok">ok:  </span> Homebrew                   Homebrew 5.1.15
+<span class="terminal-warn">warn:</span> Homebrew path              Homebrew prefix is /usr/local; expected /opt/homebrew for this architecture
+    fix: Use the Homebrew installation at /opt/homebrew or update PATH before running Kitout.
+<span class="terminal-ok">ok:  </span> Git                        git version 2.54.0
+<span class="terminal-ok">ok:  </span> Shell environment          SHELL and PATH look usable
+<span class="terminal-ok">ok:  </span> Config                     config is valid
+<span class="terminal-ok">ok:  </span> Path permissions           7 configured write target(s) look writable
+
+<span class="terminal-summary">9 total, 8 ok, 1 warnings, 0 failed</span></code></pre>
+            </div>
             <figcaption>
               `kitout doctor` checks the local prerequisites.
             </figcaption>

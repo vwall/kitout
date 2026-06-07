@@ -266,6 +266,21 @@ h3 {
   margin: 0;
 }
 
+.output-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.output-panel .terminal-preview {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.output-panel .terminal-screen {
+  flex: 1;
+}
+
 .hero-output {
   width: min(100%, 640px);
   justify-self: stretch;
@@ -337,6 +352,21 @@ h3 {
 
 .terminal-ok {
   color: oklch(78% 0.18 150);
+  font-weight: 700;
+}
+
+.terminal-warn {
+  color: oklch(86% 0.16 85);
+  font-weight: 700;
+}
+
+.terminal-skip {
+  color: oklch(78% 0.13 215);
+  font-weight: 700;
+}
+
+.terminal-fail {
+  color: oklch(72% 0.19 28);
   font-weight: 700;
 }
 
@@ -608,7 +638,7 @@ p code {
     "safety safety";
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(var(--space-md), 3vw, var(--space-lg));
-  align-items: start;
+  align-items: stretch;
 }
 
 .output-panel.wide {
