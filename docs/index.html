@@ -17,6 +17,7 @@
         <span class="brand-line">Declarative setup for your Mac</span>
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
+        <a class="nav-link" href="#outputs">Output</a>
         <a class="nav-link" href="#install">Install</a>
         <a class="github-link" href="https://github.com/vwall/kitout"
           >View on GitHub</a
@@ -37,7 +38,15 @@
             <a class="button primary" href="https://github.com/vwall/kitout"
               >Open GitHub</a
             >
-            <code class="install-chip">brew install kitout</code>
+            <button
+              class="install-chip"
+              type="button"
+              data-copy-text="brew install kitout"
+              aria-label="Copy install command"
+            >
+              <code>brew install kitout</code>
+              <span class="copy-state" aria-live="polite">Copy</span>
+            </button>
           </div>
         </div>
 
@@ -99,6 +108,9 @@ Results:
               Create the home config, or keep <code>./kitout.yaml</code> in a
               setup repo. If both config files exist, bring
               <code>--config</code>.
+            </p>
+            <p class="config-rule">
+              Kitout refuses ambiguous config paths until you choose one.
             </p>
           </li>
           <li>
@@ -169,10 +181,10 @@ Results:
         </ol>
       </section>
 
-      <section class="outputs" aria-labelledby="outputs-title">
+      <section id="outputs" class="outputs" aria-labelledby="outputs-title">
         <div class="section-heading">
           <p class="system-label">Real output</p>
-          <h2 id="outputs-title">Selected config. Electric output.</h2>
+          <h2 id="outputs-title">Selected config. Output you can audit.</h2>
         </div>
         <div class="output-grid">
           <figure class="output-panel wide">
@@ -253,17 +265,44 @@ Doctor:
         </div>
         <div class="install-grid">
           <div class="command-block">
-            <p>Public release path</p>
-            <pre><code>brew tap vwall/kitout
+            <div class="command-block-header">
+              <p>Public release path</p>
+              <button
+                class="copy-command"
+                type="button"
+                data-copy-target="install-public"
+              >
+                Copy command
+              </button>
+            </div>
+            <pre><code id="install-public">brew tap vwall/kitout
 brew install kitout</code></pre>
           </div>
           <div class="command-block">
-            <p>Build from source until the tap is published</p>
-            <pre><code>go install ./cmd/kitout</code></pre>
+            <div class="command-block-header">
+              <p>Build from source until the tap is published</p>
+              <button
+                class="copy-command"
+                type="button"
+                data-copy-target="install-source"
+              >
+                Copy command
+              </button>
+            </div>
+            <pre><code id="install-source">go install ./cmd/kitout</code></pre>
           </div>
           <div class="command-block">
-            <p>Setup repo first pass</p>
-            <pre><code>cd ~/code/setup
+            <div class="command-block-header">
+              <p>Setup repo first pass</p>
+              <button
+                class="copy-command"
+                type="button"
+                data-copy-target="install-first-pass"
+              >
+                Copy command
+              </button>
+            </div>
+            <pre><code id="install-first-pass">cd ~/code/setup
 kitout doctor --config ./kitout.yaml
 kitout status --config ./kitout.yaml
 kitout apply --config ./kitout.yaml --dry-run</code></pre>
@@ -286,5 +325,69 @@ kitout apply --config ./kitout.yaml --dry-run</code></pre>
       </div>
       <a href="https://github.com/vwall/kitout">github.com/vwall/kitout</a>
     </footer>
+    <script>
+      const copyButtons = document.querySelectorAll(
+        "[data-copy-text], [data-copy-target]",
+      );
+
+      const writeClipboard = async (text) => {
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return;
+          } catch {
+            /* Fall through to the selectable text fallback. */
+          }
+        }
+
+        const field = document.createElement("textarea");
+        field.value = text;
+        field.setAttribute("readonly", "");
+        field.style.position = "fixed";
+        field.style.inset = "0 auto auto 0";
+        field.style.opacity = "0";
+        document.body.append(field);
+        field.select();
+        document.execCommand("copy");
+        field.remove();
+      };
+
+      copyButtons.forEach((button) => {
+        const initialLabel = button.textContent.trim();
+
+        button.addEventListener("click", async () => {
+          const targetId = button.dataset.copyTarget;
+          const target = targetId ? document.getElementById(targetId) : null;
+          const text = button.dataset.copyText || target?.textContent || "";
+
+          try {
+            await writeClipboard(text.trim());
+            const state = button.querySelector(".copy-state");
+
+            if (state) {
+              state.textContent = "Copied";
+            } else {
+              button.textContent = "Copied";
+            }
+
+            window.setTimeout(() => {
+              if (state) {
+                state.textContent = "Copy";
+              } else {
+                button.textContent = initialLabel;
+              }
+            }, 1600);
+          } catch {
+            const state = button.querySelector(".copy-state");
+
+            if (state) {
+              state.textContent = "Select";
+            } else {
+              button.textContent = "Select text";
+            }
+          }
+        });
+      });
+    </script>
   </body>
 </html>

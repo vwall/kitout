@@ -57,6 +57,10 @@ a {
   color: inherit;
 }
 
+button {
+  font: inherit;
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -84,6 +88,7 @@ img {
 
 .brand {
   display: flex;
+  min-height: 44px;
   align-items: baseline;
   gap: var(--space-md);
   text-decoration: none;
@@ -144,12 +149,16 @@ img {
 }
 
 .github-link,
-.button {
+.button,
+.install-chip,
+.copy-command {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius);
+  border: 0;
+  cursor: pointer;
   text-decoration: none;
   font-size: 0.82rem;
   font-weight: 700;
@@ -165,8 +174,15 @@ img {
 }
 
 .github-link:hover,
-.button:hover {
+.button:hover,
+.install-chip:hover,
+.copy-command:hover {
   transform: translateY(-1px);
+}
+
+:where(a, button):focus-visible {
+  outline: 3px solid oklch(72% 0.18 257);
+  outline-offset: 3px;
 }
 
 .hero {
@@ -271,15 +287,29 @@ h3 {
 }
 
 .install-chip {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
+  gap: 0.65rem;
   padding: 0.8rem 1rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
   color: var(--blue-deep);
   background: oklch(100% 0 0 / 0.7);
-  font-size: 0.88rem;
+  font-size: 0.86rem;
+}
+
+.install-chip code {
+  font-family: var(--mono);
+  font-size: inherit;
+  font-variant-ligatures: none;
+}
+
+.copy-state {
+  display: inline-grid;
+  min-width: 4.2rem;
+  min-height: 1.65rem;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--bg);
+  background: var(--blue-deep);
+  font-size: 0.72rem;
 }
 
 .hero-output,
@@ -550,6 +580,19 @@ p code {
   overflow-wrap: anywhere;
 }
 
+.config-rule {
+  margin-top: var(--space-sm);
+  padding: 0.72rem 0.82rem;
+  border: 1px solid oklch(76% 0.11 255 / 0.6);
+  border-radius: var(--radius);
+  color: var(--blue-deep) !important;
+  background: oklch(96% 0.02 255);
+  font-family: var(--mono);
+  font-size: 0.78rem !important;
+  font-weight: 700;
+  line-height: 1.45 !important;
+}
+
 .workflow-art {
   display: grid;
   width: min(100%, 14rem);
@@ -739,11 +782,28 @@ p code {
   background: oklch(100% 0 0 / 0.78);
 }
 
-.command-block p {
+.command-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
   margin-bottom: 0.8rem;
+}
+
+.command-block p {
+  margin-bottom: 0;
   color: var(--blue-deep);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.copy-command {
+  flex: none;
+  min-height: 44px;
+  padding: 0.58rem 0.74rem;
+  color: var(--bg);
+  background: var(--blue-deep);
+  font-size: 0.74rem;
 }
 
 pre {
@@ -782,6 +842,9 @@ pre {
 }
 
 .site-footer a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
   color: var(--blue-deep);
   text-decoration: none;
 }
@@ -900,6 +963,19 @@ pre {
   .github-link,
   .button,
   .install-chip {
+    width: 100%;
+  }
+
+  .install-chip {
+    justify-content: space-between;
+  }
+
+  .command-block-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .copy-command {
     width: 100%;
   }
 
