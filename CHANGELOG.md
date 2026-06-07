@@ -1,11 +1,27 @@
 # Changelog
 
-## 0.1.1 - Explicit config discovery
+## 0.1.2 - Explicit config discovery
 
 ### Changed
 
 - `kitout status`, `kitout apply`, and `kitout doctor` now require `--config` when both `./kitout.yaml` and `~/.config/kitout/kitout.yaml` exist.
 - `./kitout.yaml` is still used automatically when it is the only implicit config file.
+- Added `--color` and `--no-color` output controls.
+
+### Added
+
+- Release-note preparation tooling and tests.
+- GitHub Pages documentation site assets and publishing workflow.
+
+### Fixed
+
+- Normalized `TMPDIR` handling in the distribution smoke test.
+
+## 0.1.1 - Local config discovery
+
+### Changed
+
+- `kitout status`, `kitout apply`, and `kitout doctor` now select `./kitout.yaml` before `~/.config/kitout/kitout.yaml` when `--config` is not passed.
 
 ## 0.1.0 - Initial MVP
 

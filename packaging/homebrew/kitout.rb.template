@@ -1,17 +1,17 @@
 class Kitout < Formula
   desc "Declarative setup tool for fresh Macs"
   homepage "https://github.com/vwall/kitout"
-  version "0.1.1"
+  version "0.1.2"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/vwall/kitout/releases/download/v0.1.1/kitout_0.1.1_darwin_arm64.tar.gz"
+      url "https://github.com/vwall/kitout/releases/download/v0.1.2/kitout_0.1.2_darwin_arm64.tar.gz"
       sha256 "ARM64_SHA256_FROM_RELEASE"
     end
 
     on_intel do
-      url "https://github.com/vwall/kitout/releases/download/v0.1.1/kitout_0.1.1_darwin_amd64.tar.gz"
+      url "https://github.com/vwall/kitout/releases/download/v0.1.2/kitout_0.1.2_darwin_amd64.tar.gz"
       sha256 "AMD64_SHA256_FROM_RELEASE"
     end
   end
