@@ -177,14 +177,8 @@ img {
   display: grid;
   min-width: 0;
   gap: var(--space-2xs);
-  align-content: center;
+  align-content: start;
   justify-items: end;
-}
-
-.hero-computer {
-  width: min(36%, 230px);
-  justify-self: end;
-  margin-right: clamp(0rem, 3vw, var(--space-lg));
 }
 
 .system-label {
@@ -731,6 +725,18 @@ pre {
   font-size: 0.78rem;
 }
 
+.footer-lockup {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.footer-computer {
+  width: clamp(3rem, 5vw, 4.5rem);
+  flex: none;
+}
+
 .site-footer a {
   color: var(--blue-deep);
   text-decoration: none;
@@ -757,10 +763,6 @@ pre {
   .hero {
     min-height: auto;
     padding-block: clamp(var(--space-xl), 8vw, var(--space-2xl));
-  }
-
-  .hero-computer {
-    width: min(42%, 260px);
   }
 
   .hero-output .terminal-screen {
@@ -835,16 +837,9 @@ pre {
     min-height: auto;
   }
 
-  .hero-computer,
   .hero-output {
     width: 100%;
     margin: 0;
-  }
-
-  .hero-computer {
-    max-width: 20rem;
-    margin-inline: auto;
-    margin-bottom: var(--space-md);
   }
 
   .hero-actions,
@@ -889,6 +884,10 @@ pre {
   .site-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .footer-computer {
+    width: 3.25rem;
   }
 }
 
