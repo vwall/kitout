@@ -16,7 +16,8 @@ if [ ! -x "$KITOUT_BIN" ]; then
   exit 1
 fi
 
-tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/kitout-smoke.XXXXXX")" || {
+tmp_parent="${TMPDIR:-/tmp}"
+tmp_root="$(mktemp -d "${tmp_parent%/}/kitout-smoke.XXXXXX")" || {
   echo "Could not create a temporary smoke-test directory." >&2
   exit 1
 }
