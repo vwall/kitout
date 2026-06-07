@@ -146,8 +146,8 @@ img {
   display: grid;
   grid-template-columns: minmax(0, 0.88fr) minmax(24rem, 1.12fr);
   gap: clamp(var(--space-lg), 5vw, 4.25rem);
-  align-items: start;
-  min-height: min(680px, calc(100svh - 82px));
+  align-items: center;
+  min-height: clamp(680px, calc(100svh - 10rem), 780px);
   padding-block: clamp(var(--space-lg), 5vw, 4.25rem) clamp(var(--space-xl), 5vw, 5rem);
 }
 
@@ -169,7 +169,6 @@ img {
 .hero-copy {
   min-width: 0;
   max-width: 36rem;
-  align-self: start;
 }
 
 .hero-visual {
