@@ -370,18 +370,12 @@ kitout apply --config ./kitout.yaml --dry-run</code></pre>
               button.textContent = "Copied";
             }
 
-            button.classList.remove("is-copied");
-            void button.offsetWidth;
-            button.classList.add("is-copied");
-
             window.setTimeout(() => {
               if (state) {
                 state.textContent = "Copy";
               } else {
                 button.textContent = initialLabel;
               }
-
-              button.classList.remove("is-copied");
             }, 1600);
           } catch {
             const state = button.querySelector(".copy-state");
@@ -394,30 +388,6 @@ kitout apply --config ./kitout.yaml --dry-run</code></pre>
           }
         });
       });
-
-      const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-      if (!motionQuery.matches && "IntersectionObserver" in window) {
-        const inspectedItems = document.querySelectorAll(
-          ".workflow-steps li, .output-panel, .safety-note, .command-block",
-        );
-
-        const inspectionObserver = new IntersectionObserver(
-          (entries, observer) => {
-            entries.forEach((entry) => {
-              if (!entry.isIntersecting) {
-                return;
-              }
-
-              entry.target.classList.add("is-inspected");
-              observer.unobserve(entry.target);
-            });
-          },
-          { rootMargin: "0px 0px -18% 0px", threshold: 0.28 },
-        );
-
-        inspectedItems.forEach((item) => inspectionObserver.observe(item));
-      }
     </script>
   </body>
 </html>
