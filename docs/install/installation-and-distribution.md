@@ -41,9 +41,9 @@ make build
 bin/kitout version
 ```
 
-## Release 1.1.0
+## Release 1.1.1
 
-The next public release target is `1.1.0` through GitHub releases and an
+The next public release target is `1.1.1` through GitHub releases and an
 external Homebrew tap.
 
 The intended Homebrew install path is:
@@ -53,9 +53,9 @@ brew tap vwall/kitout
 brew install kitout
 ```
 
-The `1.1.0` release is an additive resource release. It keeps the stable
-`version: 1` config schema from `1.0.0` and adds support for file/directory
-copies and current-user login shell management.
+The `1.1.1` release is a patch release over `1.1.0`. It keeps the stable
+`version: 1` config schema and includes status progress polish, starter config
+updates, release docs, and expanded distribution smoke coverage.
 
 ## Distribution readiness gate
 
@@ -129,11 +129,11 @@ Each release should include:
 - `kitout_<version>_checksums.txt`
 - changelog
 
-The current `1.1.0` release should publish:
+The current `1.1.1` release should publish:
 
-- `kitout_1.1.0_darwin_arm64.tar.gz`
-- `kitout_1.1.0_darwin_amd64.tar.gz`
-- `kitout_1.1.0_checksums.txt`
+- `kitout_1.1.1_darwin_arm64.tar.gz`
+- `kitout_1.1.1_darwin_amd64.tar.gz`
+- `kitout_1.1.1_checksums.txt`
 
 Future releases may include Linux builds.
 
@@ -144,7 +144,7 @@ smoke test, packages the binaries, writes checksums, and creates the GitHub
 release. If `docs/release/<version>.md` exists, where `<version>` is the tag
 without the leading `v`, the workflow uses that file as the release body. If
 not, it uses `docs/release/<tag>.md` when present, such as
-`docs/release/v1.1.0.md`. When neither file exists, the workflow publishes a
+`docs/release/v1.1.1.md`. When neither file exists, the workflow publishes a
 small generated fallback body that lists the release assets.
 
 The archive layout is stable:
@@ -161,14 +161,14 @@ between checksum generation and upload.
 To publish a release:
 
 ```sh
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.1.1
+git push origin v1.1.1
 ```
 
 After the GitHub release is created, update the tap formula from
 `packaging/homebrew/kitout.rb.template` with the generated checksums from
-`kitout_1.1.0_checksums.txt`, then publish it to `github.com/vwall/homebrew-kitout`.
-The template already points at the `v1.1.0` asset URLs and keeps checksum
+`kitout_1.1.1_checksums.txt`, then publish it to `github.com/vwall/homebrew-kitout`.
+The template already points at the `v1.1.1` asset URLs and keeps checksum
 placeholders until the release workflow publishes the final tarballs.
 
 ## Versioning
@@ -183,6 +183,7 @@ Example:
 0.1.1 safer setup-repo config discovery
 1.0.0 stable config schema and first Homebrew release
 1.1.0 additive config/resource features
+1.1.1 release polish and smoke coverage
 2.0.0 breaking config schema changes
 ```
 
@@ -214,20 +215,20 @@ github.com/vwall/kitout/internal/buildinfo.BuildDate
 The local build target injects these values automatically:
 
 ```sh
-make build VERSION=1.1.0
+make build VERSION=1.1.1
 ```
 
 Release tooling should use the same variables:
 
 ```sh
 go build -trimpath \
-  -ldflags "-s -w -X github.com/vwall/kitout/internal/buildinfo.Version=1.1.0 -X github.com/vwall/kitout/internal/buildinfo.Commit=$(git rev-parse --short HEAD) -X github.com/vwall/kitout/internal/buildinfo.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -ldflags "-s -w -X github.com/vwall/kitout/internal/buildinfo.Version=1.1.1 -X github.com/vwall/kitout/internal/buildinfo.Commit=$(git rev-parse --short HEAD) -X github.com/vwall/kitout/internal/buildinfo.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -o dist/kitout ./cmd/kitout
 ```
 
 Tagged GitHub releases strip the leading `v` from the tag before embedding the
-version. A `v1.1.0` tag therefore produces binaries whose `kitout version`
-output starts with `kitout 1.1.0`.
+version. A `v1.1.1` tag therefore produces binaries whose `kitout version`
+output starts with `kitout 1.1.1`.
 
 ## First install docs
 

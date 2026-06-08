@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.1 - Release polish and smoke coverage
+
+Kitout 1.1.1 is a patch release that tightens the 1.1.x distribution path and
+improves feedback during Homebrew status checks.
+
+### Changed
+
+- `kitout status` now shows one batched progress line for Homebrew package list
+  fetching and one for cask list fetching by default.
+- `kitout init` now keeps `~/.codex/skills` active in the starter config and
+  includes commented examples for copy and login-shell resources.
+- Updated release docs and the Homebrew formula template for `v1.1.1` macOS
+  arm64 and amd64 artifacts.
+
+### Testing
+
+- Expanded the macOS distribution smoke test to cover temporary directory copy
+  apply behavior and safe login-shell status/dry-run planning.
+
+### Notes
+
+- This is a patch release with no config schema changes.
+
 ## 1.1.0 - Copy and login shell resources
 
 Kitout 1.1.0 adds optional resource support for file/directory copies and the

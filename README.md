@@ -6,7 +6,7 @@ Kitout is inspired by Bork's assertion-based approach, but it is not a strict po
 
 ## Install
 
-The `v1.1.0` release install path is GitHub releases plus the Homebrew tap:
+The `v1.1.1` release install path is GitHub releases plus the Homebrew tap:
 
 ```sh
 brew tap vwall/kitout
@@ -110,7 +110,7 @@ symlink_groups:
 
 ## Current scope
 
-Kitout 1.1.0 is macOS-focused and covers Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, login shell management, shell commands, and a safe dry-run mode.
+Kitout 1.1.x is macOS-focused and covers Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, login shell management, shell commands, and a safe dry-run mode.
 
 Do not start with Linux support, secrets, templates, plugins, or a package manager abstraction. Those can come later.
 
