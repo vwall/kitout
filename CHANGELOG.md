@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.1.2 - Explicit config discovery
+## 1.0.0 - Stable Mac setup CLI
+
+Kitout 1.0.0 is the first stable public release for declarative macOS setup.
+
+### Added
+
+- Stable YAML config schema, `version: 1`.
+- Homebrew tap distribution target.
+- Release-note preparation tooling and tests.
+- GitHub Pages documentation site assets and publishing workflow.
 
 ### Changed
 
@@ -8,14 +17,14 @@
 - `./kitout.yaml` is still used automatically when it is the only implicit config file.
 - Added `--color` and `--no-color` output controls.
 
-### Added
-
-- Release-note preparation tooling and tests.
-- GitHub Pages documentation site assets and publishing workflow.
-
 ### Fixed
 
 - Normalized `TMPDIR` handling in the distribution smoke test.
+
+### Notes
+
+- This release includes the prepared but unpublished `0.1.2` changes.
+- Config schema `version: 1` is now considered stable.
 
 ## 0.1.1 - Local config discovery
 
