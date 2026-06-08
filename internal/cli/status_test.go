@@ -30,8 +30,8 @@ directories:
 	if !strings.Contains(stdout.String(), "Config: "+configPath) {
 		t.Fatalf("stdout = %q, want config path", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "> Checking directory: "+dir+"...") {
-		t.Fatalf("stdout = %q, want status check progress", stdout.String())
+	if strings.Contains(stdout.String(), "> Checking directory: "+dir+"...") {
+		t.Fatalf("stdout = %q, want status check progress hidden by default", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "\nResults:\n") {
 		t.Fatalf("stdout = %q, want status results heading", stdout.String())
@@ -41,6 +41,29 @@ directories:
 	}
 	if !strings.Contains(stdout.String(), "satisfied") {
 		t.Fatalf("stdout = %q, want satisfied directory message", stdout.String())
+	}
+}
+
+func TestStatusVerboseShowsCheckProgress(t *testing.T) {
+	dir := t.TempDir()
+	configPath := writeCLIConfigFile(t, `version: 1
+
+directories:
+  - `+dir+`
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath, "--verbose"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "> Checking directory: "+dir+"...") {
+		t.Fatalf("stdout = %q, want verbose status check progress", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "\nResults:\n") {
+		t.Fatalf("stdout = %q, want status results heading", stdout.String())
 	}
 }
 

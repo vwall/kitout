@@ -10,7 +10,7 @@ kitout
 
 ```txt
 --config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
---verbose           Stream subprocess output during apply
+--verbose           Show status progress and stream subprocess output during apply
 --quiet             Reduce output
 --color             Force colored output
 --no-color          Disable colored output
@@ -29,8 +29,9 @@ redirected output remains plain text by default, `--color` forces ANSI color,
 and `--no-color` disables ANSI color markers. Human output includes both
 symbols and text labels so status remains readable without color. `status`,
 `apply`, and `doctor` print a short startup line before slower checks begin so
-command startup does not look stuck. `apply` prints a progress line before each
-resource apply starts, so long-running
+command startup does not look stuck. `status --verbose` prints a progress line
+before each resource status check. `apply` prints a progress line before each
+resource status check and before each resource apply starts, so long-running
 commands such as Homebrew installs and upgrades have visible activity while
 default subprocess output stays captured and hidden. During human `kitout apply`
 runs, `--verbose` renders each subprocess command before it starts and streams
@@ -69,6 +70,7 @@ Checks configured resources.
 ```sh
 kitout status
 kitout status --json
+kitout status --verbose
 kitout status --config ./kitout.yaml
 ```
 
@@ -76,7 +78,7 @@ Current behavior:
 
 - load and validate the selected config file
 - print a startup line naming the selected config before status checks begin
-- show a progress line before each resource status check
+- with `--verbose`, show a progress line before each resource status check
 - build resources from config in stable execution order
 - check resource status through the engine planner
 - batch Homebrew installed and outdated checks across brew and cask resources during planning
@@ -92,13 +94,6 @@ Example human output:
 ```txt
 Kitout is checking your Mac setup...
 Config: /Users/example/.config/kitout/kitout.yaml
-
-> Checking brew: git...
-> Checking brew: go...
-> Checking cask: ghostty...
-> Checking directory: /Users/example/code...
-> Checking repo: /Users/example/code/app...
-> Checking shell: setup...
 
 Results:
 ✓ satisfied brew: git                    satisfied

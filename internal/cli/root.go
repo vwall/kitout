@@ -64,7 +64,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func addGlobalFlags(fs *flag.FlagSet, opts *globalOptions) {
 	fs.StringVar(&opts.configPath, "config", opts.configPath, "Path to config file")
-	fs.BoolVar(&opts.verbose, "verbose", opts.verbose, "Stream subprocess output during apply")
+	fs.BoolVar(&opts.verbose, "verbose", opts.verbose, "Show status progress and stream subprocess output during apply")
 	fs.BoolVar(&opts.quiet, "quiet", opts.quiet, "Reduce output")
 	fs.BoolVar(&opts.color, "color", opts.color, "Force colored output")
 	fs.BoolVar(&opts.noColor, "no-color", opts.noColor, "Disable colored output")
@@ -95,7 +95,7 @@ Examples:
 
 Global flags:
   --config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
-  --verbose           Stream subprocess output during apply
+  --verbose           Show status progress and stream subprocess output during apply
   --quiet             Reduce output
   --color             Force colored output
   --no-color          Disable colored output
