@@ -41,10 +41,10 @@ make build
 bin/kitout version
 ```
 
-## Current release
+## Release 1.1.0
 
-The current public release is `1.1.0` through GitHub releases and an external
-Homebrew tap.
+The next public release target is `1.1.0` through GitHub releases and an
+external Homebrew tap.
 
 The intended Homebrew install path is:
 
@@ -75,6 +75,8 @@ Before starting distribution work, fix or verify these items:
 - the generated starter keeps external-command resources commented until the
   user replaces placeholder package, repo, and dotfile values
 - risky apply actions still require confirmation unless `--yes` is passed
+- copy replacements and login-shell changes are still treated as risky apply
+  actions
 - fresh-machine prerequisite friction is documented in
   `docs/setup/first-real-run.md`
 
@@ -165,6 +167,8 @@ git push origin v1.1.0
 After the GitHub release is created, update the tap formula from
 `packaging/homebrew/kitout.rb.template` with the generated checksums from
 `kitout_1.1.0_checksums.txt`, then publish it to `github.com/vwall/homebrew-kitout`.
+The template already points at the `v1.1.0` asset URLs and keeps checksum
+placeholders until the release workflow publishes the final tarballs.
 
 ## Versioning
 

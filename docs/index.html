@@ -31,8 +31,9 @@
           <p class="system-label">Mac setup as reviewed state</p>
           <h1 id="hero-title">Your Mac. Defined.</h1>
           <p class="hero-text">
-            Kitout checks packages, apps, repos, dotfiles, folders, and defaults
-            against a YAML file before it changes anything.
+            Kitout checks packages, apps, repos, file copies, login shell,
+            folders, and defaults against a YAML file before it changes
+            anything.
           </p>
           <div class="hero-actions" aria-label="Primary actions">
             <a class="button primary" href="https://github.com/vwall/kitout"
@@ -104,6 +105,7 @@ Results:
               <span>&nbsp;&nbsp;&nbsp;&nbsp;- git</span>
               <span>repos:</span>
               <span>copies:</span>
+              <span>login_shell:</span>
             </div>
             <p>
               Create the home config, or keep <code>./kitout.yaml</code> in a
@@ -157,11 +159,12 @@ Results:
               <span>dry-run install cask ghostty</span>
               <span>dry-run clone ~/code/app</span>
               <span>dry-run copy ~/.codex/skills</span>
+              <span>dry-run set login shell</span>
               <span>no shell command will run</span>
             </div>
             <p>
-              Inspect installs, clones, copies, symlinks, defaults, and
-              approved shell commands with no filesystem changes.
+              Inspect installs, clones, copies, symlinks, login-shell changes,
+              defaults, and approved shell commands with no filesystem changes.
             </p>
           </li>
           <li>
@@ -250,6 +253,7 @@ Doctor:
             <p>
               Status never makes changes, dry-run never makes changes, and shell
               commands only run when they are listed in config and approved.
+              Copy replacements and login-shell changes are confirmation-gated.
               When <code>./kitout.yaml</code> and
               <code>~/.config/kitout/kitout.yaml</code> both exist, Kitout stops
               and asks for <code>--config</code>.

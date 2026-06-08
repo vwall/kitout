@@ -1,12 +1,12 @@
 # Kitout
 
-Kitout is a Go-based command line tool for setting up a fresh Mac with the packages, apps, repositories, dotfiles, folders, and system preferences that make it feel like home.
+Kitout is a Go-based command line tool for setting up a fresh Mac with the packages, apps, repositories, file copies, dotfiles, folders, login shell, and system preferences that make it feel like home.
 
 Kitout is inspired by Bork's assertion-based approach, but it is not a strict port. The goal is to keep the useful idea of declaring desired machine state while using a typed Go codebase, a structured config file, better test coverage, and a clearer command surface.
 
 ## Install
 
-The current public release is `v1.1.0` through GitHub releases and the Homebrew tap:
+The `v1.1.0` release install path is GitHub releases plus the Homebrew tap:
 
 ```sh
 brew tap vwall/kitout
@@ -108,9 +108,9 @@ symlink_groups:
       - .config/ghostty
 ```
 
-## Initial scope
+## Current scope
 
-The first version should focus on macOS, Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, shell commands, and a safe dry-run mode.
+Kitout 1.1.0 is macOS-focused and covers Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, login shell management, shell commands, and a safe dry-run mode.
 
 Do not start with Linux support, secrets, templates, plugins, or a package manager abstraction. Those can come later.
 

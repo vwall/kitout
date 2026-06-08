@@ -38,8 +38,8 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
 	var observer engine.PlanObserver
-	if opts.verbose && !opts.json {
-		observer = renderer
+	if !opts.json {
+		observer = newStatusPlanObserver(renderer, opts.verbose)
 	}
 	plan := engine.NewPlanner().BuildWithObserver(context.Background(), resourceList, observer)
 
@@ -63,4 +63,43 @@ func statusExitCode(plan engine.Plan) int {
 		return exitChanges
 	}
 	return exitOK
+}
+
+type statusPlanObserver struct {
+	renderer             humanRenderer
+	verbose              bool
+	fetchedBrewPackages  bool
+	fetchedHomebrewCasks bool
+}
+
+func newStatusPlanObserver(renderer humanRenderer, verbose bool) *statusPlanObserver {
+	return &statusPlanObserver{renderer: renderer, verbose: verbose}
+}
+
+func (observer *statusPlanObserver) BeforeStatus(resource engine.Resource) {
+	if observer.verbose {
+		observer.renderer.BeforeStatus(resource)
+		return
+	}
+
+	switch resource.Type() {
+	case "brew":
+		if !observer.fetchedBrewPackages {
+			observer.fetchedBrewPackages = true
+			observer.renderProgress("Fetching Homebrew package list...")
+		}
+	case "cask":
+		if !observer.fetchedHomebrewCasks {
+			observer.fetchedHomebrewCasks = true
+			observer.renderProgress("Fetching Homebrew cask list...")
+		}
+	}
+}
+
+func (observer *statusPlanObserver) renderProgress(message string) {
+	if observer.renderer.quiet {
+		return
+	}
+
+	fmt.Fprintf(observer.renderer.stdout, "%s %s\n", observer.renderer.progressMarker(), message)
 }

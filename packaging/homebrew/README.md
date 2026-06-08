@@ -26,3 +26,5 @@ brew test kitout
 ```
 
 The formula must use checksums from the exact tarballs uploaded by the GitHub release workflow.
+For `v1.1.0`, the template already contains the release version and asset URLs;
+only the checksum placeholders should be filled after publication.

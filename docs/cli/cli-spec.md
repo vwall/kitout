@@ -30,10 +30,12 @@ and `--no-color` disables ANSI color markers. Human output includes both
 symbols and text labels so status remains readable without color. `status`,
 `apply`, and `doctor` print a short startup line before slower checks begin so
 command startup does not look stuck. `status --verbose` prints a progress line
-before each resource status check. `apply` prints a progress line before each
-non-Homebrew resource status check and before each resource apply starts. For
-batched Homebrew status checks, default `apply` output prints one coarse
-inspection line for formulae and one for casks instead of per-resource
+before each resource status check. For batched Homebrew status checks, default
+`status` output prints one coarse package-list line and one cask-list line
+instead of per-resource `Checking ...` lines. `apply` prints a progress line
+before each non-Homebrew resource status check and before each resource apply
+starts. For batched Homebrew status checks, default `apply` output prints one
+coarse inspection line for formulae and one for casks instead of per-resource
 `Checking ...` lines. During human `kitout apply` runs, `--verbose` renders each
 resource status check, renders each subprocess command before it starts, and
 streams that subprocess stdout and stderr as it runs. `--verbose` does not
@@ -79,6 +81,8 @@ Current behavior:
 
 - load and validate the selected config file
 - print a startup line naming the selected config before status checks begin
+- by default, show one progress line before batched Homebrew package and cask
+  list fetches
 - with `--verbose`, show a progress line before each resource status check
 - build resources from config in stable execution order
 - check resource status through the engine planner
@@ -95,6 +99,9 @@ Example human output:
 ```txt
 Kitout is checking your Mac setup...
 Config: /Users/example/.config/kitout/kitout.yaml
+
+> Fetching Homebrew package list...
+> Fetching Homebrew cask list...
 
 Results:
 ✓ satisfied brew: git                    satisfied

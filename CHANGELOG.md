@@ -21,6 +21,11 @@ current user's macOS login shell.
 - Login-shell changes are confirmation-gated unless `--yes` is passed.
 - Copy sources reject symlinks and unsupported file types.
 
+### Distribution
+
+- Prepared the GitHub release, install docs, and Homebrew formula template for
+  `v1.1.0` macOS arm64 and amd64 artifacts.
+
 ### Notes
 
 - This is an additive `version: 1` schema release. Existing 1.0.0 configs do
