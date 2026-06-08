@@ -100,6 +100,7 @@ Config: /Users/example/.config/kitout/kitout.yaml
 > Checking repo: /Users/example/code/app...
 > Checking shell: setup...
 
+Results:
 ✓ satisfied brew: git                    satisfied
 ! changed   brew: go                     formula is outdated
 ! missing   cask: ghostty                missing

@@ -33,6 +33,7 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 
 	for _, fragment := range []string{
 		"Config: /tmp/kitout.yaml\n\n",
+		"Results:\n",
 		"✓ satisfied directory: /tmp/code satisfied",
 		"! missing   brew: git",
 		"! changed   brew: go",

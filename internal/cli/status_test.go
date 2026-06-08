@@ -33,6 +33,9 @@ directories:
 	if !strings.Contains(stdout.String(), "> Checking directory: "+dir+"...") {
 		t.Fatalf("stdout = %q, want status check progress", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "\nResults:\n") {
+		t.Fatalf("stdout = %q, want status results heading", stdout.String())
+	}
 	if !strings.Contains(stdout.String(), "directory: "+dir) {
 		t.Fatalf("stdout = %q, want directory status", stdout.String())
 	}

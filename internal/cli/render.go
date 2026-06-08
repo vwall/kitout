@@ -34,6 +34,11 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 	if path != "" {
 		fmt.Fprintf(r.stdout, "Config: %s\n\n", path)
 	}
+	if path != "" || len(plan.Items) == 0 {
+		fmt.Fprintln(r.stdout, "Results:")
+	} else {
+		fmt.Fprintln(r.stdout, "\nResults:")
+	}
 	resourceWidth := planStatusLabelWidth(plan.Items)
 	for _, item := range plan.Items {
 		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
