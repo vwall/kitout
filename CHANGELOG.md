@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.1.0 - Copy and login shell resources
+
+Kitout 1.1.0 adds optional resource support for file/directory copies and the
+current user's macOS login shell.
+
+### Added
+
+- Added `copies` config support for managing physical file and directory copies.
+- Added `login_shell` config support for managing the current user's macOS login
+  shell.
+- Added dedicated resource documentation for copies and login shell management.
+- Added CLI rendering, dry-run messages, doctor write-target checks, and tests
+  for the new resource types.
+
+### Safety
+
+- Copy replacements require `replace: true` and are confirmation-gated unless
+  `--yes` is passed.
+- Login-shell changes are confirmation-gated unless `--yes` is passed.
+- Copy sources reject symlinks and unsupported file types.
+
+### Notes
+
+- This is an additive `version: 1` schema release. Existing 1.0.0 configs do
+  not need to change.
+
 ## 1.0.0 - Stable Mac setup CLI
 
 Kitout 1.0.0 is the first stable public release for declarative macOS setup.

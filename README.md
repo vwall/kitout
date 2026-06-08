@@ -6,7 +6,7 @@ Kitout is inspired by Bork's assertion-based approach, but it is not a strict po
 
 ## Install
 
-The current public release target is `v1.0.0` through GitHub releases and a Homebrew tap:
+The current public release target is `v1.1.0` through GitHub releases and a Homebrew tap:
 
 ```sh
 brew tap vwall/kitout
