@@ -21,6 +21,7 @@ version: 1
 directories:
   - ~/code
   - ~/.config
+  - ~/.codex/skills
 
 # Uncomment and customize the examples below when you are ready to manage more
 # of your Mac. Keep placeholder paths and repo URLs out of active config.
@@ -38,10 +39,20 @@ directories:
 #     url: git@github.com:example/example.git
 #     branch: main
 #
+# copies:
+#   # Materialize Codex skills as real directories instead of symlinks.
+#   - source: ./codex/skills/nuxt-practices
+#     target: ~/.codex/skills/nuxt-practices
+#     replace: false
+#
 # symlinks:
 #   - source: ~/dotfiles/home/zshrc
 #     target: ~/.zshrc
 #     replace: false
+#
+# login_shell:
+#   path: homebrew:fish
+#   add_to_etc_shells: true
 `
 
 func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {

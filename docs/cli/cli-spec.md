@@ -63,8 +63,10 @@ Behavior:
 - refuse to overwrite existing config unless `--force` is passed
 - write a starter config that validates and can be checked by `status` without
   manual edits
-- keep only deterministic directory resources active by default; package, repo,
-  and dotfile examples are commented until the user customizes them
+- keep only deterministic directory resources active by default, including the
+  parent directory for real Codex skill copies
+- keep package, repo, copy, symlink, and login-shell examples commented until
+  the user customizes them
 
 ### `kitout status`
 

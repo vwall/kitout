@@ -58,11 +58,30 @@ func TestInitGeneratedConfigLoadsAndStatusParsesWithoutEdits(t *testing.T) {
 	if loaded.Path != configPath {
 		t.Fatalf("loaded path = %q, want %q", loaded.Path, configPath)
 	}
-	if len(loaded.Config.Directories) == 0 {
-		t.Fatalf("generated config directories = %#v, want at least one safe active directory", loaded.Config.Directories)
+	if len(loaded.Config.Directories) != 3 {
+		t.Fatalf("generated config directories = %#v, want exactly three safe active directories", loaded.Config.Directories)
 	}
 	if got, want := loaded.Config.Directories[0], filepath.Join(home, "code"); got != want {
 		t.Fatalf("first generated directory = %q, want %q", got, want)
+	}
+	if got, want := loaded.Config.Directories[2], filepath.Join(home, ".codex", "skills"); got != want {
+		t.Fatalf("third generated directory = %q, want %q", got, want)
+	}
+	if len(loaded.Config.Copies) != 0 {
+		t.Fatalf("generated config active copies = %#v, want none", loaded.Config.Copies)
+	}
+	if len(loaded.Config.Symlinks) != 0 {
+		t.Fatalf("generated config active symlinks = %#v, want none", loaded.Config.Symlinks)
+	}
+	if loaded.Config.LoginShell != nil {
+		t.Fatalf("generated config active login_shell = %#v, want nil", loaded.Config.LoginShell)
+	}
+	contents := string(mustReadFile(t, configPath))
+	if !strings.Contains(contents, "# copies:") {
+		t.Fatalf("generated config missing commented copies example")
+	}
+	if !strings.Contains(contents, "# login_shell:") {
+		t.Fatalf("generated config missing commented login_shell example")
 	}
 
 	var statusStdout bytes.Buffer
@@ -78,6 +97,17 @@ func TestInitGeneratedConfigLoadsAndStatusParsesWithoutEdits(t *testing.T) {
 	if !strings.Contains(statusStdout.String(), "directory: ~/code") {
 		t.Fatalf("status stdout = %q, want generated directory resource", statusStdout.String())
 	}
+}
+
+func mustReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	return contents
 }
 
 func TestInitRefusesToOverwriteExistingConfig(t *testing.T) {

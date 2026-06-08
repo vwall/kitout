@@ -72,8 +72,8 @@ Before starting distribution work, fix or verify these items:
   `examples/kitout.yaml` match the current command behavior and config schema
 - `kitout init` writes a starter config that validates without manual edits and
   `kitout status --config <generated-file>` can parse through it immediately
-- the generated starter keeps external-command resources commented until the
-  user replaces placeholder package, repo, and dotfile values
+- the generated starter keeps non-directory resources commented until the user
+  replaces placeholder package, repo, copy, dotfile, and login-shell values
 - risky apply actions still require confirmation unless `--yes` is passed
 - copy replacements and login-shell changes are still treated as risky apply
   actions

@@ -189,6 +189,7 @@ casks:
 directories:
   - ~/code
   - ~/.config
+  - ~/.codex/skills
 
 repos:
   - path: ~/code/example-project

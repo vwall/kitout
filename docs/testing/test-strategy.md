@@ -102,7 +102,7 @@ make smoke-distribution
 
 The target builds `bin/kitout`, creates a temporary HOME, writes a starter config
 with `kitout init --config`, runs `kitout doctor`, expects `kitout status` to
-report the missing starter `~/code` directory, and verifies
+report the missing starter directories such as `~/code`, and verifies
 `kitout apply --dry-run` exits without changing the temporary filesystem.
 
 Then test on a disposable macOS user account if possible.
