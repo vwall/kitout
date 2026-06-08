@@ -48,7 +48,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
 	var planObserver engine.PlanObserver
 	if !opts.json {
-		planObserver = renderer
+		planObserver = newApplyPlanObserver(renderer, opts.verbose)
 	}
 	plan := engine.NewPlanner().BuildWithObserver(context.Background(), resourceList, planObserver)
 
@@ -127,6 +127,47 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 
 func verboseApplyOutputEnabled(opts globalOptions, applyOpts applyOptions) bool {
 	return opts.verbose && !opts.quiet && !opts.json && !applyOpts.dryRun
+}
+
+type applyPlanObserver struct {
+	renderer              humanRenderer
+	verbose               bool
+	inspectedBrewPackages bool
+	inspectedBrewCasks    bool
+}
+
+func newApplyPlanObserver(renderer humanRenderer, verbose bool) *applyPlanObserver {
+	return &applyPlanObserver{renderer: renderer, verbose: verbose}
+}
+
+func (observer *applyPlanObserver) BeforeStatus(resource engine.Resource) {
+	if observer.verbose {
+		observer.renderer.BeforeStatus(resource)
+		return
+	}
+
+	switch resource.Type() {
+	case "brew":
+		if !observer.inspectedBrewPackages {
+			observer.inspectedBrewPackages = true
+			observer.renderProgress("Inspecting Homebrew packages...")
+		}
+	case "cask":
+		if !observer.inspectedBrewCasks {
+			observer.inspectedBrewCasks = true
+			observer.renderProgress("Inspecting Homebrew casks...")
+		}
+	default:
+		observer.renderer.BeforeStatus(resource)
+	}
+}
+
+func (observer *applyPlanObserver) renderProgress(message string) {
+	if observer.renderer.quiet {
+		return
+	}
+
+	fmt.Fprintf(observer.renderer.stdout, "%s %s\n", observer.renderer.progressMarker(), message)
 }
 
 func riskyApplyItems(plan engine.Plan) []engine.PlanItem {

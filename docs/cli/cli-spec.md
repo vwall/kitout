@@ -31,13 +31,14 @@ symbols and text labels so status remains readable without color. `status`,
 `apply`, and `doctor` print a short startup line before slower checks begin so
 command startup does not look stuck. `status --verbose` prints a progress line
 before each resource status check. `apply` prints a progress line before each
-resource status check and before each resource apply starts, so long-running
-commands such as Homebrew installs and upgrades have visible activity while
-default subprocess output stays captured and hidden. During human `kitout apply`
-runs, `--verbose` renders each subprocess command before it starts and streams
-that subprocess stdout and stderr as it runs. `--verbose` does not stream output
-for `--dry-run`, `--json`, or `--quiet` runs. `--json` and `--quiet` currently
-affect `status`, `apply`, and `doctor`.
+non-Homebrew resource status check and before each resource apply starts. For
+batched Homebrew status checks, default `apply` output prints one coarse
+inspection line for formulae and one for casks instead of per-resource
+`Checking ...` lines. During human `kitout apply` runs, `--verbose` renders each
+resource status check, renders each subprocess command before it starts, and
+streams that subprocess stdout and stderr as it runs. `--verbose` does not
+stream output for `--dry-run`, `--json`, or `--quiet` runs. `--json` and
+`--quiet` currently affect `status`, `apply`, and `doctor`.
 
 When running from a private setup repo that contains `kitout.yaml`, pass
 `--config ./kitout.yaml` if a home config also exists. Kitout prints the selected
@@ -131,7 +132,8 @@ Behavior:
 
 - load and validate config
 - print a startup line naming the selected config before status checks begin
-- show a progress line before each resource status check
+- show a progress line before each non-Homebrew resource status check
+- show one Homebrew formula inspection line and one cask inspection line for batched status checks
 - run status checks
 - build plan
 - stop before applying if the plan contains failed or unknown resources
@@ -156,7 +158,7 @@ Example output:
 [dry-run] Kitout is running in dry-run mode. No changes will be made.
 Config: /Users/example/.config/kitout/kitout.yaml
 
-> Checking cask: ghostty...
+> Inspecting Homebrew casks...
 > Checking symlink: /Users/example/.zshrc...
 
 [dry-run] Previewing planned changes:
