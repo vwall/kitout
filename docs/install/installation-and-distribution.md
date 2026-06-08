@@ -41,10 +41,10 @@ make build
 bin/kitout version
 ```
 
-## Current release target
+## Current release
 
-The current public release target is `1.1.0` through GitHub releases and an
-external Homebrew tap.
+The current public release is `1.1.0` through GitHub releases and an external
+Homebrew tap.
 
 The intended Homebrew install path is:
 
