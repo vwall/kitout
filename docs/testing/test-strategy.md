@@ -100,9 +100,12 @@ Before release, run the macOS-local smoke test:
 make smoke-distribution
 ```
 
-The target builds `bin/kitout`, creates a temporary HOME, writes a starter config
+The target builds `bin/kitout`, creates a temporary HOME, writes starter configs
 with `kitout init --config`, runs `kitout doctor`, expects `kitout status` to
-report the missing starter directories such as `~/code`, and verifies
-`kitout apply --dry-run` exits without changing the temporary filesystem.
+report the missing starter directories such as `~/code`, verifies
+`kitout apply --dry-run` exits without changing the temporary filesystem,
+applies a temp-only nested directory copy, and checks a safe login-shell
+status/dry-run plan with temporary read-only `id`/`dscl` shims, without calling
+`chsh` or editing `/etc/shells`.
 
 Then test on a disposable macOS user account if possible.

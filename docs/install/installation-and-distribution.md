@@ -66,8 +66,9 @@ Before starting distribution work, fix or verify these items:
 - release artifacts include checksums generated from the exact binaries that will
   be published
 - `go test ./...` passes from a clean checkout
-- `make smoke-distribution` passes on macOS, covering a temporary config,
-  `init`, `doctor`, `status`, and `apply --dry-run`
+- `make smoke-distribution` passes on macOS, covering temporary starter
+  configs, `init`, `doctor`, `status`, `apply --dry-run`, a temp-only
+  directory copy apply, and a safe login-shell status/dry-run plan
 - `README.md`, `docs/config/config-spec.md`, `docs/cli/cli-spec.md`, and
   `examples/kitout.yaml` match the current command behavior and config schema
 - `kitout init` writes a starter config that validates without manual edits and
