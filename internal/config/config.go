@@ -16,6 +16,7 @@ type Config struct {
 	Symlinks      []Symlink      `yaml:"symlinks,omitempty"`
 	SymlinkGroups []SymlinkGroup `yaml:"symlink_groups,omitempty"`
 	MacOSDefaults []MacOSDefault `yaml:"macos_defaults,omitempty"`
+	LoginShell    *LoginShell    `yaml:"login_shell,omitempty"`
 	Shell         []ShellCommand `yaml:"shell,omitempty"`
 }
 
@@ -99,6 +100,12 @@ type MacOSDefault struct {
 	Key    string `yaml:"key"`
 	Type   string `yaml:"type"`
 	Value  any    `yaml:"value"`
+}
+
+// LoginShell describes the current user's desired macOS login shell.
+type LoginShell struct {
+	Path           string `yaml:"path"`
+	AddToEtcShells bool   `yaml:"add_to_etc_shells,omitempty"`
 }
 
 // ShellCommand describes an explicitly configured shell command.

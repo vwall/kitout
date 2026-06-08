@@ -9,6 +9,7 @@ brew:
     - asdf
     - pnpm
     - gh
+    - fish
 
 asdf:
   plugins:
@@ -60,6 +61,10 @@ macos_defaults:
     key: AppleShowAllExtensions
     type: bool
     value: true
+
+login_shell:
+  path: homebrew:fish
+  add_to_etc_shells: true
 
 shell:
   - name: Enable Corepack

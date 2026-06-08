@@ -181,6 +181,35 @@ func TestHumanRendererAlignsDryRunAndApplyMessageColumns(t *testing.T) {
 	}
 }
 
+func TestHumanRendererShowsLoginShellDryRunMessage(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	renderer.renderDryRunPlan("/tmp/kitout.yaml", engine.Plan{
+		Items: []engine.PlanItem{
+			{
+				ResourceID: "login_shell:homebrew:fish",
+				Type:       "login_shell",
+				State:      engine.StateMissing,
+				Action:     engine.ActionApply,
+				Message:    "shell path is not listed in /etc/shells",
+				Details: map[string]string{
+					"path":                 "homebrew:fish",
+					"resolved_path":        "/opt/homebrew/bin/fish",
+					"add_to_etc_shells":    "true",
+					"listed_in_etc_shells": "false",
+				},
+			},
+		},
+		Summary: engine.PlanSummary{Total: 1, Missing: 1, ToApply: 1},
+	})
+
+	if !strings.Contains(stdout.String(), "dry-run Would allow login shell /opt/homebrew/bin/fish and set it for the current user") {
+		t.Fatalf("stdout = %q, want login shell dry-run message", stdout.String())
+	}
+}
+
 func mustUserHome(t *testing.T) string {
 	t.Helper()
 	home, err := os.UserHomeDir()

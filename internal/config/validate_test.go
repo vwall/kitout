@@ -42,6 +42,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 		Symlinks:      []Symlink{{}},
 		SymlinkGroups: []SymlinkGroup{{Paths: []string{""}}},
 		MacOSDefaults: []MacOSDefault{{}},
+		LoginShell:    &LoginShell{},
 		Shell:         []ShellCommand{{}},
 	}
 
@@ -67,6 +68,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 		"macos_defaults[0].key",
 		"macos_defaults[0].type",
 		"macos_defaults[0].value",
+		"login_shell.path",
 		"shell[0].name",
 		"shell[0].command",
 	} {
@@ -194,6 +196,31 @@ func TestValidateRejectsUnsupportedMacOSDefaultType(t *testing.T) {
 	err := Validate(cfg)
 
 	assertValidationError(t, err, "macos_defaults[0].type", "must be one of bool, int, float, string")
+}
+
+func TestValidateAcceptsLoginShellPaths(t *testing.T) {
+	for _, path := range []string{"/opt/homebrew/bin/fish", "homebrew:fish"} {
+		cfg := Config{
+			Version:    CurrentVersion,
+			LoginShell: &LoginShell{Path: path, AddToEtcShells: true},
+		}
+
+		if err := Validate(cfg); err != nil {
+			t.Fatalf("Validate(%q) returned error: %v", path, err)
+		}
+	}
+}
+
+func TestValidateRejectsInvalidLoginShellPaths(t *testing.T) {
+	for _, path := range []string{"fish", "~/bin/fish", "$(brew --prefix)/bin/fish", "`brew --prefix`/bin/fish", "homebrew:", "homebrew:../fish", "homebrew:fish;rm"} {
+		cfg := Config{
+			Version:    CurrentVersion,
+			LoginShell: &LoginShell{Path: path},
+		}
+
+		err := Validate(cfg)
+		assertValidationError(t, err, "login_shell.path", "must be an absolute path or homebrew:<binary>")
+	}
 }
 
 func TestValidationErrorsRenderSpecificMessage(t *testing.T) {

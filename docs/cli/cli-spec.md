@@ -15,7 +15,7 @@ kitout
 --color             Force colored output
 --no-color          Disable colored output
 --json              Print machine-readable JSON output
---yes               Bypass apply confirmations for shell commands and symlink replacements
+--yes               Bypass apply confirmations for risky changes
 ```
 
 These flags are currently parsed by the root command and by implemented
@@ -137,7 +137,9 @@ Behavior:
 - run status checks
 - build plan
 - stop before applying if the plan contains failed or unknown resources
-- require confirmation before implemented risky actions, currently shell commands and symlink replacements, unless `--yes` is passed
+- require confirmation before implemented risky actions, currently shell
+  commands, login-shell changes, and symlink replacements, unless `--yes` is
+  passed
 - apply missing or changed resources in stable order
 - show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
 - by default, capture subprocess output and keep the final report concise
@@ -280,6 +282,7 @@ Interactive confirmation is required for implemented risky changes unless
 Risky changes currently include:
 
 - replacing symlink targets
+- changing the current user's login shell
 - running shell commands
 
 Safe changes may apply without confirmation:

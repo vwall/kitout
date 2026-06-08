@@ -38,6 +38,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		MacOSDefaults: []config.MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
 		},
+		LoginShell: &config.LoginShell{Path: "homebrew:fish", AddToEtcShells: true},
 		Shell: []config.ShellCommand{
 			{Name: "Enable Corepack", Command: "corepack enable", When: "missing-command:pnpm"},
 		},
@@ -60,6 +61,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		"symlink:/Users/example/.gitconfig",
 		"symlink:/Users/example/.config/ghostty",
 		"macos_default:NSGlobalDomain/AppleShowAllExtensions",
+		"login_shell:homebrew:fish",
 		"shell:Enable Corepack",
 	}
 	if len(got) != len(want) {
@@ -72,5 +74,8 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 	}
 	if _, ok := resources[9].(MacOSDefaultResource); !ok {
 		t.Fatalf("resource[9] = %T, want MacOSDefaultResource", resources[9])
+	}
+	if _, ok := resources[10].(LoginShellResource); !ok {
+		t.Fatalf("resource[10] = %T, want LoginShellResource", resources[10])
 	}
 }

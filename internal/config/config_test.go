@@ -25,6 +25,7 @@ func TestConfigUsesDocumentedYAMLFields(t *testing.T) {
 		{"Symlinks", "symlinks,omitempty"},
 		{"SymlinkGroups", "symlink_groups,omitempty"},
 		{"MacOSDefaults", "macos_defaults,omitempty"},
+		{"LoginShell", "login_shell,omitempty"},
 		{"Shell", "shell,omitempty"},
 	}
 
@@ -65,6 +66,8 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Key", "key"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Type", "type"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Value", "value"},
+		{"LoginShell", reflect.TypeOf(LoginShell{}), "Path", "path"},
+		{"LoginShell", reflect.TypeOf(LoginShell{}), "AddToEtcShells", "add_to_etc_shells,omitempty"},
 		{"ShellCommand", reflect.TypeOf(ShellCommand{}), "Name", "name"},
 		{"ShellCommand", reflect.TypeOf(ShellCommand{}), "Command", "command"},
 		{"ShellCommand", reflect.TypeOf(ShellCommand{}), "When", "when,omitempty"},
@@ -110,6 +113,7 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 		MacOSDefaults: []MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
 		},
+		LoginShell: &LoginShell{Path: "homebrew:fish", AddToEtcShells: true},
 		Shell: []ShellCommand{
 			{Name: "Enable Corepack", Command: "corepack enable", When: "missing-command:pnpm"},
 		},
@@ -132,6 +136,9 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	}
 	if got, ok := cfg.MacOSDefaults[0].Value.(bool); !ok || !got {
 		t.Fatalf("macOS default value = %#v, want true bool", cfg.MacOSDefaults[0].Value)
+	}
+	if got := cfg.LoginShell.Path; got != "homebrew:fish" {
+		t.Fatalf("login shell path = %q, want homebrew:fish", got)
 	}
 }
 

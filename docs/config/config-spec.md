@@ -81,13 +81,14 @@ Resources with named fields use typed structs:
 - `symlinks`
 - `symlink_groups`
 - `macos_defaults`
+- `login_shell`
 - `shell`
 
 Current resource implementation coverage:
 
 - implemented resource packages: `brew.packages`, `asdf.plugins`,
   `asdf.tool_versions`, `casks`, `directories`, `repos`, `symlinks`,
-  `symlink_groups`, `macos_defaults`, and `shell`
+  `symlink_groups`, `macos_defaults`, `login_shell`, and `shell`
 
 ## Required fields
 
@@ -117,6 +118,7 @@ Named resources require the fields needed to identify and apply the resource:
 - `macos_defaults[].key`
 - `macos_defaults[].type`
 - `macos_defaults[].value`
+- `login_shell.path`
 - `shell[].name`
 - `shell[].command`
 
@@ -131,6 +133,10 @@ string
 
 `asdf.plugins[].versions[]` and `asdf.tool_versions[].tools` values must be
 exact versions. `latest` is rejected because it makes status mutable over time.
+
+`login_shell.path` must be either an absolute path or a `homebrew:<binary>`
+resolver. `homebrew:fish` resolves to `$(brew --prefix)/bin/fish` during
+resource status and apply checks. Arbitrary shell interpolation is rejected.
 
 `shell[].when` is optional. When omitted, the shell command resource treats the
 command as always needed. Supported conditions are:
@@ -205,6 +211,10 @@ macos_defaults:
     type: bool
     value: true
 
+login_shell:
+  path: homebrew:fish
+  add_to_etc_shells: true
+
 shell:
   - name: Enable Corepack
     command: corepack enable
@@ -243,6 +253,10 @@ The implemented path-bearing resource fields are:
 - `symlinks[].target`
 - `symlink_groups[].source_root`
 - `symlink_groups[].target_root`
+
+`login_shell.path` is intentionally stricter. It accepts only absolute paths
+and `homebrew:<binary>` resolvers so Kitout can resolve the path without
+evaluating arbitrary shell text from YAML.
 
 `symlink_groups[].paths[]` entries are relative path fragments below their
 group roots. They are cleaned internally, but they do not resolve relative to
@@ -313,6 +327,8 @@ Examples:
   and `symlink_groups`
 - same repository path twice
 - same macOS default domain/key twice
+- more than one login shell is not supported because `login_shell` is a single
+  object
 - same shell command name twice
 
 ## Unknown fields

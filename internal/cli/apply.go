@@ -179,6 +179,8 @@ func riskyApplyItems(plan engine.Plan) []engine.PlanItem {
 		switch item.Type {
 		case "shell":
 			items = append(items, item)
+		case "login_shell":
+			items = append(items, item)
 		case "symlink":
 			if item.State == engine.StateChanged {
 				items = append(items, item)

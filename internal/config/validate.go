@@ -125,6 +125,13 @@ func Validate(cfg Config) error {
 	}
 	errs.detectDuplicates(macOSDefaultKeys(cfg.MacOSDefaults))
 
+	if cfg.LoginShell != nil {
+		errs.requireString("login_shell.path", cfg.LoginShell.Path)
+		if strings.TrimSpace(cfg.LoginShell.Path) != "" && !validLoginShellPath(cfg.LoginShell.Path) {
+			errs.add("login_shell.path", "must be an absolute path or homebrew:<binary>")
+		}
+	}
+
 	for i, command := range cfg.Shell {
 		errs.requireString(fmt.Sprintf("shell[%d].name", i), command.Name)
 		errs.requireString(fmt.Sprintf("shell[%d].command", i), command.Command)
@@ -300,4 +307,30 @@ func validMacOSDefaultType(value string) bool {
 	default:
 		return false
 	}
+}
+
+func validLoginShellPath(value string) bool {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(value, "homebrew:") {
+		binary := strings.TrimPrefix(value, "homebrew:")
+		return validHomebrewBinary(binary)
+	}
+
+	return filepath.IsAbs(value) && !strings.ContainsAny(value, "$`")
+}
+
+func validHomebrewBinary(binary string) bool {
+	if binary == "" || strings.Contains(binary, "/") {
+		return false
+	}
+	for _, char := range binary {
+		if char >= 'a' && char <= 'z' ||
+			char >= 'A' && char <= 'Z' ||
+			char >= '0' && char <= '9' ||
+			strings.ContainsRune("._+-", char) {
+			continue
+		}
+		return false
+	}
+	return true
 }

@@ -455,6 +455,13 @@ func displayResourceTarget(typ, id string, details map[string]string) string {
 		if value := details["path"]; value != "" {
 			return compactPath(value)
 		}
+	case "login_shell":
+		if value := details["resolved_path"]; value != "" {
+			return compactPath(value)
+		}
+		if value := details["path"]; value != "" {
+			return compactPath(value)
+		}
 	case "symlink":
 		if value := details["target"]; value != "" {
 			return compactPath(value)
@@ -561,6 +568,11 @@ func dryRunMessage(item engine.PlanItem) string {
 		return "Would clone repository " + target
 	case "macos_default":
 		return "Would set macOS default " + target
+	case "login_shell":
+		if item.Details["listed_in_etc_shells"] == "false" && item.Details["add_to_etc_shells"] == "true" {
+			return "Would allow login shell " + target + " and set it for the current user"
+		}
+		return "Would set login shell to " + target
 	case "shell":
 		if command := item.Details["command"]; command != "" {
 			name := item.Details["name"]
@@ -610,6 +622,8 @@ func applyProgressMessage(item engine.PlanItem) string {
 		return "Cloning repository " + target + "..."
 	case "macos_default":
 		return "Setting macOS default " + target + "..."
+	case "login_shell":
+		return "Setting login shell to " + target + "..."
 	case "shell":
 		if command := item.Details["command"]; command != "" {
 			name := item.Details["name"]

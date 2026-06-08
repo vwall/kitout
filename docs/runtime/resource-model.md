@@ -135,7 +135,8 @@ Use fixed execution order:
 7. repositories
 8. symlinks
 9. macOS defaults
-10. shell commands
+10. login shell
+11. shell commands
 
 This is enough for a first version.
 

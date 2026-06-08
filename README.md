@@ -78,6 +78,10 @@ casks:
   - visual-studio-code
   - rectangle
 
+login_shell:
+  path: homebrew:fish
+  add_to_etc_shells: true
+
 directories:
   - ~/code
   - ~/.config

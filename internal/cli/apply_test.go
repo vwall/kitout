@@ -383,6 +383,24 @@ shell:
 	}
 }
 
+func TestRiskyApplyItemsIncludesLoginShell(t *testing.T) {
+	plan := engine.Plan{
+		Items: []engine.PlanItem{
+			{ResourceID: "directory:/tmp/code", Type: "directory", Action: engine.ActionApply},
+			{ResourceID: "login_shell:homebrew:fish", Type: "login_shell", Action: engine.ActionApply},
+		},
+	}
+
+	items := riskyApplyItems(plan)
+
+	if len(items) != 1 {
+		t.Fatalf("len(items) = %d, want 1: %#v", len(items), items)
+	}
+	if items[0].Type != "login_shell" {
+		t.Fatalf("risky item type = %q, want login_shell", items[0].Type)
+	}
+}
+
 func TestApplyRunsShellCommandAfterConfirmation(t *testing.T) {
 	outputPath := filepath.Join(t.TempDir(), "created")
 	configPath := writeCLIConfigFile(t, `version: 1

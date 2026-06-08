@@ -63,6 +63,9 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 	for _, item := range cfg.MacOSDefaults {
 		resources = append(resources, NewMacOSDefault(item.Domain, item.Key, item.Type, item.Value, runner))
 	}
+	if cfg.LoginShell != nil {
+		resources = append(resources, NewLoginShell(cfg.LoginShell.Path, cfg.LoginShell.AddToEtcShells, runner))
+	}
 	for _, command := range cfg.Shell {
 		resources = append(resources, NewShellCommand(command.Name, command.Command, command.When, runner))
 	}
@@ -79,7 +82,15 @@ func resourceCount(cfg config.Config) int {
 		len(cfg.Repos) +
 		len(cfg.ExpandedSymlinks()) +
 		len(cfg.MacOSDefaults) +
+		configuredLoginShellCount(cfg) +
 		len(cfg.Shell)
+}
+
+func configuredLoginShellCount(cfg config.Config) int {
+	if cfg.LoginShell == nil {
+		return 0
+	}
+	return 1
 }
 
 // UnsupportedResource reports known config sections that do not have apply support yet.
