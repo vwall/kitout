@@ -26,7 +26,7 @@ casks:
 Use:
 
 ```sh
-brew list --cask <name>
+brew list --cask --quiet
 ```
 
 Satisfied when the cask is installed.
@@ -34,6 +34,12 @@ Satisfied when the cask is installed.
 Missing when Homebrew is available but the cask is not installed.
 
 Failed when Homebrew is unavailable or the command errors unexpectedly.
+
+Kitout batches Homebrew cask installed checks for resources built from the same
+config, so `kitout status` and `kitout apply --dry-run` inspect the cask list
+once instead of running one `brew list` command per cask. During real apply
+execution, Kitout uses fresh uncached resource checks before mutating so planning
+state cannot go stale.
 
 ## Apply
 

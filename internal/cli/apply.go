@@ -101,10 +101,11 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		}
 		observer = renderer
 	}
-	applyResources := resourceList
+	applyRunner := platform.NewExecRunner()
 	if verboseApplyOutputEnabled(opts, applyOpts) && plan.Summary.ToApply > 0 {
-		applyResources = resources.Build(loaded.Config, platform.NewVerboseExecRunner(stdout, stderr))
+		applyRunner = platform.NewVerboseExecRunner(stdout, stderr)
 	}
+	applyResources := resources.BuildUncached(loaded.Config, applyRunner)
 	report := engine.NewExecutor().ApplyWithObserver(context.Background(), applyResources, plan, observer)
 	if opts.json {
 		if err := jsonRenderer.renderApplyReport(loaded.Path, report); err != nil {

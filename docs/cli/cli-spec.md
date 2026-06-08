@@ -79,7 +79,7 @@ Current behavior:
 - show a progress line before each resource status check
 - build resources from config in stable execution order
 - check resource status through the engine planner
-- batch Homebrew outdated checks across brew package resources during planning
+- batch Homebrew installed and outdated checks across brew and cask resources during planning
 - render resource details and summary counts
 - return `0` when all resources are satisfied or skipped
 - return `1` when changes are needed

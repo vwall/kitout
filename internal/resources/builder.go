@@ -10,11 +10,31 @@ import (
 
 // Build converts a validated config into executable resources in stable order.
 func Build(cfg config.Config, runner platform.Runner) []engine.Resource {
+	return build(cfg, runner, true)
+}
+
+// BuildUncached converts a validated config into resources that inspect live state
+// independently. Use it for apply execution so planning caches cannot go stale.
+func BuildUncached(cfg config.Config, runner platform.Runner) []engine.Resource {
+	return build(cfg, runner, false)
+}
+
+func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engine.Resource {
 	resources := make([]engine.Resource, 0, resourceCount(cfg))
 	brewOutdated := newBrewOutdatedCache(runner)
+	var brewInstalled brewInstalledChecker = newDirectBrewInstalledChecker(runner)
+	var caskInstalled caskInstalledChecker = newDirectCaskInstalledChecker(runner)
+	if batchHomebrew {
+		brewInstalled = newBrewInstalledCache(runner)
+		caskInstalled = newCaskInstalledCache(runner)
+	}
 
 	for _, name := range cfg.Brew.Packages {
-		resources = append(resources, newBrewPackage(name, runner, brewOutdated))
+		outdated := brewOutdated
+		if !batchHomebrew {
+			outdated = newBrewOutdatedCache(runner)
+		}
+		resources = append(resources, newBrewPackage(name, runner, brewInstalled, outdated))
 	}
 	for _, plugin := range cfg.ASDF.Plugins {
 		resources = append(resources, NewASDFPluginWithOptions(
@@ -29,7 +49,7 @@ func Build(cfg config.Config, runner platform.Runner) []engine.Resource {
 		resources = append(resources, NewASDFToolVersions(item.Path, item.Tools))
 	}
 	for _, name := range cfg.Casks {
-		resources = append(resources, NewCask(name, runner))
+		resources = append(resources, newCask(name, runner, caskInstalled))
 	}
 	for _, path := range cfg.Directories {
 		resources = append(resources, NewDirectory(path))

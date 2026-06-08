@@ -231,11 +231,92 @@ func TestBrewPackageDryRunPlanDoesNotUpgrade(t *testing.T) {
 
 func TestBrewPackageDryRunBatchesOutdatedCheckForBuiltResources(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
-		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: resultWithStdout("brew", []string{"list", "--formula", "--quiet"}, "git\ngo\n")},
 		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "go\n")},
-		{result: commandResult("brew", []string{"list", "--formula", "go"}, 0)},
 	}}
 	resources := Build(config.Config{
+		Version: config.CurrentVersion,
+		Brew: config.Brew{
+			Packages: []string{"git", "go"},
+		},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("git state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	if plan.Items[1].State != engine.StateChanged {
+		t.Fatalf("go state = %q, want %q", plan.Items[1].State, engine.StateChanged)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+	})
+}
+
+func TestBrewPackageDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"list", "--formula", "--quiet"}, "git\n")},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet"}, 0)},
+	}}
+	resources := Build(config.Config{
+		Version: config.CurrentVersion,
+		Brew: config.Brew{
+			Packages: []string{"git", "go"},
+		},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("git state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	if plan.Items[1].State != engine.StateMissing {
+		t.Fatalf("go state = %q, want %q", plan.Items[1].State, engine.StateMissing)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+	})
+}
+
+func TestBrewPackageUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet"}, 0)},
+		{err: commandError("brew", []string{"list", "--formula", "go"}, 1)},
+	}}
+	resources := BuildUncached(config.Config{
+		Version: config.CurrentVersion,
+		Brew: config.Brew{
+			Packages: []string{"git", "go"},
+		},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("git state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	if plan.Items[1].State != engine.StateMissing {
+		t.Fatalf("go state = %q, want %q", plan.Items[1].State, engine.StateMissing)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"list", "--formula", "go"}},
+	})
+}
+
+func TestBrewPackageUncachedBuildDoesNotShareOutdatedChecks(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet"}, 0)},
+		{result: commandResult("brew", []string{"list", "--formula", "go"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "go\n")},
+	}}
+	resources := BuildUncached(config.Config{
 		Version: config.CurrentVersion,
 		Brew: config.Brew{
 			Packages: []string{"git", "go"},
@@ -254,6 +335,7 @@ func TestBrewPackageDryRunBatchesOutdatedCheckForBuiltResources(t *testing.T) {
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
 		{name: "brew", args: []string{"list", "--formula", "go"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
 	})
 }
 
@@ -338,6 +420,52 @@ func TestCaskDryRunPlanDoesNotInstall(t *testing.T) {
 		t.Fatalf("Action = %q, want %q", plan.Items[0].Action, engine.ActionApply)
 	}
 	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"list", "--cask", "ghostty"}}})
+}
+
+func TestCaskDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"list", "--cask", "--quiet"}, "ghostty\n")},
+	}}
+	resources := Build(config.Config{
+		Version: config.CurrentVersion,
+		Casks:   []string{"ghostty", "rectangle"},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("ghostty state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	if plan.Items[1].State != engine.StateMissing {
+		t.Fatalf("rectangle state = %q, want %q", plan.Items[1].State, engine.StateMissing)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--cask", "--quiet"}},
+	})
+}
+
+func TestCaskUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{err: commandError("brew", []string{"list", "--cask", "rectangle"}, 1)},
+	}}
+	resources := BuildUncached(config.Config{
+		Version: config.CurrentVersion,
+		Casks:   []string{"ghostty", "rectangle"},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("ghostty state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	if plan.Items[1].State != engine.StateMissing {
+		t.Fatalf("rectangle state = %q, want %q", plan.Items[1].State, engine.StateMissing)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--cask", "ghostty"}},
+		{name: "brew", args: []string{"list", "--cask", "rectangle"}},
+	})
 }
 
 func expectStatus(t *testing.T, result engine.StatusResult, id, typ string, state engine.ResourceState, message string) {

@@ -29,7 +29,7 @@ brew:
 Use:
 
 ```sh
-brew list --formula <name>
+brew list --formula --quiet
 brew outdated --formula --quiet
 ```
 
@@ -40,9 +40,11 @@ Missing when Homebrew is available but the formula is not installed.
 Changed when the formula is installed and Homebrew reports that it is outdated.
 Human status output marks this as `changed`.
 
-Kitout batches Homebrew outdated checks for resources built from the same config,
-so `kitout status` and `kitout apply --dry-run` inspect the outdated formula list
-once instead of running one `brew outdated` command per package.
+Kitout batches Homebrew installed and outdated checks for resources built from
+the same config, so `kitout status` and `kitout apply --dry-run` inspect each
+formula list once instead of running one `brew list` and one `brew outdated`
+command per package. During real apply execution, Kitout uses fresh uncached
+resource checks before mutating so planning state cannot go stale.
 
 Some Homebrew versions return exit code 1 from `brew outdated` when no formula
 has an available update. Treat that as satisfied when the command output does

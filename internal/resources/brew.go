@@ -14,20 +14,21 @@ const brewType = "brew"
 
 // BrewPackageResource ensures a Homebrew formula is installed.
 type BrewPackageResource struct {
-	name     string
-	runner   platform.Runner
-	outdated *brewOutdatedCache
+	name      string
+	runner    platform.Runner
+	installed brewInstalledChecker
+	outdated  *brewOutdatedCache
 }
 
 var _ engine.Resource = BrewPackageResource{}
 
 // NewBrewPackage returns a resource for one Homebrew formula.
 func NewBrewPackage(name string, runner platform.Runner) BrewPackageResource {
-	return newBrewPackage(name, runner, newBrewOutdatedCache(runner))
+	return newBrewPackage(name, runner, newDirectBrewInstalledChecker(runner), newBrewOutdatedCache(runner))
 }
 
-func newBrewPackage(name string, runner platform.Runner, outdated *brewOutdatedCache) BrewPackageResource {
-	return BrewPackageResource{name: name, runner: runner, outdated: outdated}
+func newBrewPackage(name string, runner platform.Runner, installed brewInstalledChecker, outdated *brewOutdatedCache) BrewPackageResource {
+	return BrewPackageResource{name: name, runner: runner, installed: installed, outdated: outdated}
 }
 
 func (resource BrewPackageResource) ID() string {
@@ -43,8 +44,8 @@ func (resource BrewPackageResource) Status(ctx context.Context) (engine.StatusRe
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 
-	_, err := resource.runner.Run(ctx, "brew", "list", "--formula", resource.name)
-	if err == nil {
+	installed, err := resource.installed.Contains(ctx, resource.name)
+	if err == nil && installed {
 		isOutdated, err := resource.outdated.Contains(ctx, resource.name)
 		if isOutdated {
 			return resource.status(engine.StateChanged, "formula is outdated"), nil
@@ -53,6 +54,9 @@ func (resource BrewPackageResource) Status(ctx context.Context) (engine.StatusRe
 			return resource.status(engine.StateFailed, "could not inspect formula updates"), err
 		}
 		return resource.status(engine.StateSatisfied, "formula is installed"), nil
+	}
+	if err == nil {
+		return resource.status(engine.StateMissing, "formula is missing"), nil
 	}
 	if isExitCode(err, 1) {
 		return resource.status(engine.StateMissing, "formula is missing"), nil
@@ -93,6 +97,9 @@ func (resource BrewPackageResource) validate() error {
 	if resource.runner == nil {
 		return errors.New("command runner is required")
 	}
+	if resource.installed == nil {
+		return errors.New("brew installed checker is required")
+	}
 	if resource.outdated == nil {
 		return errors.New("brew outdated checker is required")
 	}
@@ -114,6 +121,62 @@ func (resource BrewPackageResource) details() map[string]string {
 func isExitCode(err error, code int) bool {
 	var commandError platform.CommandError
 	return errors.As(err, &commandError) && commandError.Result.ExitCode == code
+}
+
+type brewInstalledChecker interface {
+	Contains(ctx context.Context, name string) (bool, error)
+}
+
+type directBrewInstalledChecker struct {
+	runner platform.Runner
+}
+
+func newDirectBrewInstalledChecker(runner platform.Runner) directBrewInstalledChecker {
+	return directBrewInstalledChecker{runner: runner}
+}
+
+func (checker directBrewInstalledChecker) Contains(ctx context.Context, name string) (bool, error) {
+	_, err := checker.runner.Run(ctx, "brew", "list", "--formula", name)
+	if err == nil {
+		return true, nil
+	}
+	if isExitCode(err, 1) {
+		return false, nil
+	}
+	return false, err
+}
+
+type brewInstalledCache struct {
+	runner  platform.Runner
+	loaded  bool
+	names   map[string]struct{}
+	loadErr error
+}
+
+func newBrewInstalledCache(runner platform.Runner) *brewInstalledCache {
+	return &brewInstalledCache{runner: runner}
+}
+
+func (cache *brewInstalledCache) Contains(ctx context.Context, name string) (bool, error) {
+	if !cache.loaded {
+		cache.load(ctx)
+	}
+
+	_, ok := cache.names[name]
+	return ok, cache.loadErr
+}
+
+func (cache *brewInstalledCache) load(ctx context.Context) {
+	cache.loaded = true
+	cache.names = make(map[string]struct{})
+
+	result, err := cache.runner.Run(ctx, "brew", "list", "--formula", "--quiet")
+	for _, field := range strings.Fields(result.Stdout) {
+		cache.names[field] = struct{}{}
+	}
+	if err != nil {
+		cache.loadErr = err
+	}
 }
 
 type brewOutdatedCache struct {
