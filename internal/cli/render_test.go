@@ -210,6 +210,41 @@ func TestHumanRendererShowsLoginShellDryRunMessage(t *testing.T) {
 	}
 }
 
+func TestHumanRendererShowsCopyDryRunAndApplyMessages(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+	home := mustUserHome(t)
+
+	item := engine.PlanItem{
+		ResourceID: "copy:" + home + "/.codex/skills/nuxt-practices",
+		Type:       "copy",
+		State:      engine.StateChanged,
+		Action:     engine.ActionApply,
+		Details: map[string]string{
+			"source": home + "/dotfiles/codex/skills/nuxt-practices",
+			"target": home + "/.codex/skills/nuxt-practices",
+		},
+	}
+	renderer.renderDryRunPlan("/tmp/kitout.yaml", engine.Plan{
+		Items:   []engine.PlanItem{item},
+		Summary: engine.PlanSummary{Total: 1, Changed: 1, ToApply: 1},
+	})
+	renderer.BeforeApply(item)
+
+	for _, fragment := range []string{
+		"dry-run Would replace copy target ~/.codex/skills/nuxt-practices",
+		"> Replacing copy target ~/.codex/skills/nuxt-practices...",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
 func mustUserHome(t *testing.T) string {
 	t.Helper()
 	home, err := os.UserHomeDir()

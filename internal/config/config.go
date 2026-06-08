@@ -12,6 +12,7 @@ type Config struct {
 	ASDF          ASDF           `yaml:"asdf,omitempty"`
 	Casks         []string       `yaml:"casks,omitempty"`
 	Directories   []string       `yaml:"directories,omitempty"`
+	Copies        []Copy         `yaml:"copies,omitempty"`
 	Repos         []Repo         `yaml:"repos,omitempty"`
 	Symlinks      []Symlink      `yaml:"symlinks,omitempty"`
 	SymlinkGroups []SymlinkGroup `yaml:"symlink_groups,omitempty"`
@@ -50,6 +51,13 @@ type Repo struct {
 	Path   string `yaml:"path"`
 	URL    string `yaml:"url"`
 	Branch string `yaml:"branch,omitempty"`
+}
+
+// Copy describes one desired file or directory copy.
+type Copy struct {
+	Source  string `yaml:"source"`
+	Target  string `yaml:"target"`
+	Replace bool   `yaml:"replace,omitempty"`
 }
 
 // Symlink describes one desired symbolic link.

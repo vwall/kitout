@@ -25,6 +25,9 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		Repos: []config.Repo{
 			{Path: "/Users/example/code/kitout", URL: "git@example.com:kitout.git", Branch: "main"},
 		},
+		Copies: []config.Copy{
+			{Source: "/Users/example/dotfiles/codex/skills/nuxt-practices", Target: "/Users/example/.codex/skills/nuxt-practices", Replace: false},
+		},
 		Symlinks: []config.Symlink{
 			{Source: "/Users/example/dotfiles/zshrc", Target: "/Users/example/.zshrc", Replace: true},
 		},
@@ -57,6 +60,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		"cask:ghostty",
 		"directory:/Users/example/code",
 		"repo:/Users/example/code/kitout",
+		"copy:/Users/example/.codex/skills/nuxt-practices",
 		"symlink:/Users/example/.zshrc",
 		"symlink:/Users/example/.gitconfig",
 		"symlink:/Users/example/.config/ghostty",
@@ -72,10 +76,10 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 			t.Fatalf("resource[%d] = %q, want %q; all = %#v", i, got[i], want[i], got)
 		}
 	}
-	if _, ok := resources[9].(MacOSDefaultResource); !ok {
-		t.Fatalf("resource[9] = %T, want MacOSDefaultResource", resources[9])
+	if _, ok := resources[10].(MacOSDefaultResource); !ok {
+		t.Fatalf("resource[10] = %T, want MacOSDefaultResource", resources[10])
 	}
-	if _, ok := resources[10].(LoginShellResource); !ok {
-		t.Fatalf("resource[10] = %T, want LoginShellResource", resources[10])
+	if _, ok := resources[11].(LoginShellResource); !ok {
+		t.Fatalf("resource[11] = %T, want LoginShellResource", resources[11])
 	}
 }

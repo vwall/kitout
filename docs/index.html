@@ -103,6 +103,7 @@ Results:
               <span>&nbsp;&nbsp;packages:</span>
               <span>&nbsp;&nbsp;&nbsp;&nbsp;- git</span>
               <span>repos:</span>
+              <span>copies:</span>
             </div>
             <p>
               Create the home config, or keep <code>./kitout.yaml</code> in a
@@ -139,7 +140,7 @@ Results:
             <div class="workflow-art status-art" aria-hidden="true">
               <span><strong>ok</strong> brew: git</span>
               <span><strong>miss</strong> cask: ghostty</span>
-              <span><strong>chg</strong> symlink: ~/.zshrc</span>
+              <span><strong>chg</strong> copy: ~/.codex/skills</span>
             </div>
             <p>
               See satisfied, missing, changed, skipped, and failed resources in
@@ -155,11 +156,12 @@ Results:
             <div class="workflow-art dryrun-art" aria-hidden="true">
               <span>dry-run install cask ghostty</span>
               <span>dry-run clone ~/code/app</span>
+              <span>dry-run copy ~/.codex/skills</span>
               <span>no shell command will run</span>
             </div>
             <p>
-              Inspect installs, clones, symlinks, defaults, and approved shell
-              commands with no filesystem changes.
+              Inspect installs, clones, copies, symlinks, defaults, and
+              approved shell commands with no filesystem changes.
             </p>
           </li>
           <li>

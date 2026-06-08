@@ -85,10 +85,16 @@ login_shell:
 directories:
   - ~/code
   - ~/.config
+  - ~/.codex/skills
 
 repos:
   - path: ~/code/example-project
     url: git@github.com:example/example-project.git
+
+copies:
+  - source: ./codex/skills/nuxt-practices
+    target: ~/.codex/skills/nuxt-practices
+    replace: false
 
 symlinks:
   - source: ~/dotfiles/home/zshrc
@@ -104,7 +110,7 @@ symlink_groups:
 
 ## Initial scope
 
-The first version should focus on macOS, Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, symlinks, shell commands, and a safe dry-run mode.
+The first version should focus on macOS, Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, shell commands, and a safe dry-run mode.
 
 Do not start with Linux support, secrets, templates, plugins, or a package manager abstraction. Those can come later.
 

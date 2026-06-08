@@ -261,6 +261,30 @@ repos:
 	}
 }
 
+func TestLoadFileResolvesRelativeCopyPathsFromConfigDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := writeConfigFileInDir(t, configDir, `version: 1
+
+copies:
+  - source: codex/skills/nuxt-practices
+    target: home/.codex/skills/nuxt-practices
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	wantSource := filepath.Join(configDir, "codex", "skills", "nuxt-practices")
+	if got := loaded.Config.Copies[0].Source; got != wantSource {
+		t.Fatalf("copy source = %q, want %q", got, wantSource)
+	}
+	wantTarget := filepath.Join(configDir, "home", ".codex", "skills", "nuxt-practices")
+	if got := loaded.Config.Copies[0].Target; got != wantTarget {
+		t.Fatalf("copy target = %q, want %q", got, wantTarget)
+	}
+}
+
 func TestLoadFileResolvesRelativeSymlinkPathsFromConfigDirectory(t *testing.T) {
 	configDir := t.TempDir()
 	configPath := writeConfigFileInDir(t, configDir, `version: 1

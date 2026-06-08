@@ -78,6 +78,7 @@ Resources with named fields use typed structs:
 - `asdf.plugins`
 - `asdf.tool_versions`
 - `repos`
+- `copies`
 - `symlinks`
 - `symlink_groups`
 - `macos_defaults`
@@ -87,7 +88,7 @@ Resources with named fields use typed structs:
 Current resource implementation coverage:
 
 - implemented resource packages: `brew.packages`, `asdf.plugins`,
-  `asdf.tool_versions`, `casks`, `directories`, `repos`, `symlinks`,
+  `asdf.tool_versions`, `casks`, `directories`, `repos`, `copies`, `symlinks`,
   `symlink_groups`, `macos_defaults`, `login_shell`, and `shell`
 
 ## Required fields
@@ -109,6 +110,9 @@ Named resources require the fields needed to identify and apply the resource:
 - `asdf.tool_versions[].tools`
 - `repos[].path`
 - `repos[].url`
+- `copies[].source`
+- `copies[].target`
+- `copies[].replace` is optional
 - `symlinks[].source`
 - `symlinks[].target`
 - `symlink_groups[].source_root`
@@ -191,6 +195,11 @@ repos:
     url: git@github.com:example/example-project.git
     branch: main
 
+copies:
+  - source: ./codex/skills/nuxt-practices
+    target: ~/.codex/skills/nuxt-practices
+    replace: false
+
 symlinks:
   - source: ~/dotfiles/home/zshrc
     target: ~/.zshrc
@@ -249,6 +258,8 @@ The implemented path-bearing resource fields are:
 - `directories[]`
 - `asdf.tool_versions[].path`
 - `repos[].path`
+- `copies[].source`
+- `copies[].target`
 - `symlinks[].source`
 - `symlinks[].target`
 - `symlink_groups[].source_root`
@@ -322,6 +333,7 @@ Examples:
 - same asdf tool-versions path twice
 - same cask twice
 - same directory twice
+- same copy target twice
 - same target symlink twice
 - same expanded symlink target twice, including conflicts between `symlinks`
   and `symlink_groups`

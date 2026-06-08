@@ -57,6 +57,9 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 	for _, repo := range cfg.Repos {
 		resources = append(resources, NewRepo(repo.Path, repo.URL, repo.Branch, runner))
 	}
+	for _, copy := range cfg.Copies {
+		resources = append(resources, NewCopy(copy.Source, copy.Target, copy.Replace))
+	}
 	for _, symlink := range cfg.ExpandedSymlinks() {
 		resources = append(resources, NewSymlink(symlink.Source, symlink.Target, symlink.Replace))
 	}
@@ -80,6 +83,7 @@ func resourceCount(cfg config.Config) int {
 		len(cfg.Casks) +
 		len(cfg.Directories) +
 		len(cfg.Repos) +
+		len(cfg.Copies) +
 		len(cfg.ExpandedSymlinks()) +
 		len(cfg.MacOSDefaults) +
 		configuredLoginShellCount(cfg) +

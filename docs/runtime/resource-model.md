@@ -11,6 +11,7 @@ Examples:
 - `asdf_tool_versions:~/.tool-versions`
 - `cask:ghostty`
 - `directory:~/code`
+- `copy:~/.codex/skills/nuxt-practices`
 - `symlink:~/.zshrc`
 - `repo:~/code/example-project`
 - `macos_default:NSGlobalDomain/AppleShowAllExtensions`
@@ -94,6 +95,7 @@ asdf_plugin:ruby
 asdf_tool_versions:/Users/example/.tool-versions
 cask:visual-studio-code
 directory:/Users/example/code
+copy:/Users/example/.codex/skills/nuxt-practices
 symlink:/Users/example/.zshrc
 repo:/Users/example/code/example-project
 macos_default:NSGlobalDomain/AppleShowAllExtensions
@@ -133,10 +135,11 @@ Use fixed execution order:
 5. casks
 6. directories
 7. repositories
-8. symlinks
-9. macOS defaults
-10. login shell
-11. shell commands
+8. copies
+9. symlinks
+10. macOS defaults
+11. login shell
+12. shell commands
 
 This is enough for a first version.
 
@@ -156,6 +159,7 @@ Dry-run should not:
 - install packages
 - clone repositories
 - create directories
+- copy files
 - create symlinks
 - run shell commands
 - write files

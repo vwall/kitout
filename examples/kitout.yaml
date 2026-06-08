@@ -36,11 +36,17 @@ casks:
 directories:
   - ~/code
   - ~/.config
+  - ~/.codex/skills
 
 repos:
   - path: ~/code/example-project
     url: git@github.com:example/example-project.git
     branch: main
+
+copies:
+  - source: ./codex/skills/nuxt-practices
+    target: ~/.codex/skills/nuxt-practices
+    replace: false
 
 symlinks:
   - source: ~/dotfiles/home/zshrc

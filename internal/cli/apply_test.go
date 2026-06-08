@@ -615,6 +615,80 @@ symlinks:
 	}
 }
 
+func TestApplyRequiresConfirmationForCopyReplacement(t *testing.T) {
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "source")
+	targetPath := filepath.Join(dir, "target")
+	if err := os.WriteFile(sourcePath, []byte("source\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	if err := os.WriteFile(targetPath, []byte("existing\n"), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+copies:
+  - source: `+sourcePath+`
+    target: `+targetPath+`
+    replace: true
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath}, strings.NewReader("no\n"), &stdout, &stderr)
+	if code != exitValidation {
+		t.Fatalf("exit code = %d, want %d", code, exitValidation)
+	}
+	if !strings.Contains(stderr.String(), "copy copy:"+targetPath) {
+		t.Fatalf("stderr = %q, want copy replacement detail", stderr.String())
+	}
+	content, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%q) error = %v", targetPath, err)
+	}
+	if string(content) != "existing\n" {
+		t.Fatalf("target content = %q, want existing file preserved", string(content))
+	}
+}
+
+func TestApplyYesSkipsCopyReplacementConfirmation(t *testing.T) {
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "source")
+	targetPath := filepath.Join(dir, "target")
+	if err := os.WriteFile(sourcePath, []byte("source\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	if err := os.WriteFile(targetPath, []byte("existing\n"), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+copies:
+  - source: `+sourcePath+`
+    target: `+targetPath+`
+    replace: true
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "Risky apply actions require confirmation") {
+		t.Fatalf("stderr = %q, want no confirmation prompt", stderr.String())
+	}
+	content, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%q) error = %v", targetPath, err)
+	}
+	if string(content) != "source\n" {
+		t.Fatalf("target content = %q, want source", string(content))
+	}
+}
+
 func TestRiskyApplyItemsExcludesMacOSDefaults(t *testing.T) {
 	plan := engine.Plan{
 		Items: []engine.PlanItem{

@@ -93,9 +93,9 @@ For very new machines, get prerequisites such as Homebrew, Git, and asdf onto
 
 ## Use repo-relative dotfile paths intentionally
 
-Path fields such as symlink sources, symlink group roots, directories, repos, and
-`.tool-versions` paths support relative paths. Relative paths resolve from the
-directory containing the selected config file.
+Path fields such as symlink sources, symlink group roots, copy sources and
+targets, directories, repos, and `.tool-versions` paths support relative paths.
+Relative paths resolve from the directory containing the selected config file.
 
 For a setup repo like:
 

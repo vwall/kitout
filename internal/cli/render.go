@@ -462,7 +462,7 @@ func displayResourceTarget(typ, id string, details map[string]string) string {
 		if value := details["path"]; value != "" {
 			return compactPath(value)
 		}
-	case "symlink":
+	case "copy", "symlink":
 		if value := details["target"]; value != "" {
 			return compactPath(value)
 		}
@@ -559,6 +559,11 @@ func dryRunMessage(item engine.PlanItem) string {
 		return "Would install cask " + target
 	case "directory":
 		return "Would create directory " + target
+	case "copy":
+		if item.State == engine.StateChanged {
+			return "Would replace copy target " + target
+		}
+		return "Would copy to " + target
 	case "symlink":
 		if item.State == engine.StateChanged {
 			return "Would replace symlink " + target
@@ -613,6 +618,11 @@ func applyProgressMessage(item engine.PlanItem) string {
 		return "Installing cask " + target + "..."
 	case "directory":
 		return "Creating directory " + target + "..."
+	case "copy":
+		if item.State == engine.StateChanged {
+			return "Replacing copy target " + target + "..."
+		}
+		return "Copying to " + target + "..."
 	case "symlink":
 		if item.State == engine.StateChanged {
 			return "Replacing symlink " + target + "..."

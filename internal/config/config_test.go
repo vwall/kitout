@@ -21,6 +21,7 @@ func TestConfigUsesDocumentedYAMLFields(t *testing.T) {
 		{"ASDF", "asdf,omitempty"},
 		{"Casks", "casks,omitempty"},
 		{"Directories", "directories,omitempty"},
+		{"Copies", "copies,omitempty"},
 		{"Repos", "repos,omitempty"},
 		{"Symlinks", "symlinks,omitempty"},
 		{"SymlinkGroups", "symlink_groups,omitempty"},
@@ -55,6 +56,9 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		{"Repo", reflect.TypeOf(Repo{}), "Path", "path"},
 		{"Repo", reflect.TypeOf(Repo{}), "URL", "url"},
 		{"Repo", reflect.TypeOf(Repo{}), "Branch", "branch,omitempty"},
+		{"Copy", reflect.TypeOf(Copy{}), "Source", "source"},
+		{"Copy", reflect.TypeOf(Copy{}), "Target", "target"},
+		{"Copy", reflect.TypeOf(Copy{}), "Replace", "replace,omitempty"},
 		{"Symlink", reflect.TypeOf(Symlink{}), "Source", "source"},
 		{"Symlink", reflect.TypeOf(Symlink{}), "Target", "target"},
 		{"Symlink", reflect.TypeOf(Symlink{}), "Replace", "replace,omitempty"},
@@ -103,6 +107,9 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 		Directories: []string{"~/code", "~/.config"},
 		Repos: []Repo{
 			{Path: "~/code/example-project", URL: "git@github.com:example/example-project.git", Branch: "main"},
+		},
+		Copies: []Copy{
+			{Source: "./codex/skills/nuxt-practices", Target: "~/.codex/skills/nuxt-practices", Replace: false},
 		},
 		Symlinks: []Symlink{
 			{Source: "~/dotfiles/home/zshrc", Target: "~/.zshrc", Replace: false},

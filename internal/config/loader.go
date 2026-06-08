@@ -164,6 +164,11 @@ func resolveResourcePaths(baseDir string, cfg Config) Config {
 		cfg.Repos[i].Path = resolveResourcePath(baseDir, repo.Path)
 	}
 
+	for i, copy := range cfg.Copies {
+		cfg.Copies[i].Source = resolveResourcePath(baseDir, copy.Source)
+		cfg.Copies[i].Target = resolveResourcePath(baseDir, copy.Target)
+	}
+
 	for i, symlink := range cfg.Symlinks {
 		cfg.Symlinks[i].Source = resolveResourcePath(baseDir, symlink.Source)
 		cfg.Symlinks[i].Target = resolveResourcePath(baseDir, symlink.Target)

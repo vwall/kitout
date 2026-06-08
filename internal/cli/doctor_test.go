@@ -114,6 +114,9 @@ func TestDoctorCheckerReportsWritableConfiguredPaths(t *testing.T) {
 		"repos:\n"+
 		"  - path: "+filepath.Join(dir, "repo")+"\n"+
 		"    url: git@example.com:me/repo.git\n"+
+		"copies:\n"+
+		"  - source: "+filepath.Join(dir, "dotfiles", "codex", "skills", "nuxt-practices")+"\n"+
+		"    target: "+filepath.Join(dir, "home", ".codex", "skills", "nuxt-practices")+"\n"+
 		"symlinks:\n"+
 		"  - source: "+filepath.Join(dir, "dotfile")+"\n"+
 		"    target: "+filepath.Join(dir, "link")+"\n"+
@@ -130,7 +133,7 @@ func TestDoctorCheckerReportsWritableConfiguredPaths(t *testing.T) {
 	if report.HasFailures() {
 		t.Fatalf("HasFailures() = true, want false: %+v", report)
 	}
-	assertDoctorItem(t, report, "Path permissions", doctorOK, "5 configured write target(s) look writable")
+	assertDoctorItem(t, report, "Path permissions", doctorOK, "6 configured write target(s) look writable")
 }
 
 func TestDoctorCheckerReportsUnwritableConfiguredPaths(t *testing.T) {

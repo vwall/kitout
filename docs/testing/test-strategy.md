@@ -87,6 +87,7 @@ Add explicit tests that prove:
 - status does not apply changes
 - dry-run does not apply changes
 - symlink replacement defaults to false
+- copy replacement defaults to false and does not follow symlinked sources
 - asdf dry-run plans do not add plugins, install versions, or write `.tool-versions`
 - shell command resources require explicit config
 - unknown config fields fail validation

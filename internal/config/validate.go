@@ -93,6 +93,12 @@ func Validate(cfg Config) error {
 	}
 	errs.detectDuplicates(repoPathKeys(cfg.Repos))
 
+	for i, copy := range cfg.Copies {
+		errs.requireString(fmt.Sprintf("copies[%d].source", i), copy.Source)
+		errs.requireString(fmt.Sprintf("copies[%d].target", i), copy.Target)
+	}
+	errs.detectDuplicates(copyTargetKeys(cfg.Copies))
+
 	for i, symlink := range cfg.Symlinks {
 		errs.requireString(fmt.Sprintf("symlinks[%d].source", i), symlink.Source)
 		errs.requireString(fmt.Sprintf("symlinks[%d].target", i), symlink.Target)
@@ -209,6 +215,17 @@ func repoPathKeys(repos []Repo) []duplicateKey {
 		keys = append(keys, duplicateKey{
 			Field: fmt.Sprintf("repos[%d].path", i),
 			Value: repo.Path,
+		})
+	}
+	return keys
+}
+
+func copyTargetKeys(copies []Copy) []duplicateKey {
+	keys := make([]duplicateKey, 0, len(copies))
+	for i, copy := range copies {
+		keys = append(keys, duplicateKey{
+			Field: fmt.Sprintf("copies[%d].target", i),
+			Value: copy.Target,
 		})
 	}
 	return keys

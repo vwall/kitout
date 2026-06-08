@@ -451,7 +451,7 @@ type pathPermissionTarget struct {
 
 func configuredWriteTargets(cfg config.Config) []pathPermissionTarget {
 	targets := make([]pathPermissionTarget, 0,
-		len(cfg.Directories)+len(cfg.ASDF.ToolVersions)+len(cfg.Repos)+len(cfg.ExpandedSymlinks()))
+		len(cfg.Directories)+len(cfg.ASDF.ToolVersions)+len(cfg.Repos)+len(cfg.Copies)+len(cfg.ExpandedSymlinks()))
 
 	for _, path := range cfg.Directories {
 		targets = append(targets, pathPermissionTarget{Kind: "directory", Path: path})
@@ -461,6 +461,9 @@ func configuredWriteTargets(cfg config.Config) []pathPermissionTarget {
 	}
 	for _, repo := range cfg.Repos {
 		targets = append(targets, pathPermissionTarget{Kind: "repo", Path: repo.Path})
+	}
+	for _, copy := range cfg.Copies {
+		targets = append(targets, pathPermissionTarget{Kind: "copy", Path: copy.Target})
 	}
 	for _, symlink := range cfg.ExpandedSymlinks() {
 		targets = append(targets, pathPermissionTarget{Kind: "symlink", Path: symlink.Target})

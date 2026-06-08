@@ -138,8 +138,8 @@ Behavior:
 - build plan
 - stop before applying if the plan contains failed or unknown resources
 - require confirmation before implemented risky actions, currently shell
-  commands, login-shell changes, and symlink replacements, unless `--yes` is
-  passed
+  commands, login-shell changes, copy replacements, and symlink replacements,
+  unless `--yes` is passed
 - apply missing or changed resources in stable order
 - show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
 - by default, capture subprocess output and keep the final report concise
@@ -161,10 +161,12 @@ Example output:
 Config: /Users/example/.config/kitout/kitout.yaml
 
 > Inspecting Homebrew casks...
+> Checking copy: /Users/example/.codex/skills/nuxt-practices...
 > Checking symlink: /Users/example/.zshrc...
 
 [dry-run] Previewing planned changes:
 dry-run Would install cask ghostty
+dry-run Would copy to /Users/example/.codex/skills/nuxt-practices
 dry-run Would replace symlink /Users/example/.zshrc
 
 [dry-run] No changes made because --dry-run was used.
@@ -281,6 +283,7 @@ Interactive confirmation is required for implemented risky changes unless
 
 Risky changes currently include:
 
+- replacing copy targets
 - replacing symlink targets
 - changing the current user's login shell
 - running shell commands
@@ -289,6 +292,7 @@ Safe changes may apply without confirmation:
 
 - installing a missing package
 - creating a missing directory
+- creating a missing copy target
 - cloning a missing repo
 
 Dry-run only renders the plan, so it does not ask for confirmation.

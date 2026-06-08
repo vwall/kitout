@@ -66,6 +66,7 @@ Examples:
 - asdf tool versions
 - cask
 - directory
+- copy
 - symlink
 - Git repository
 - macOS default
@@ -112,6 +113,7 @@ internal/resources/
   brew.go
   cask.go
   directory.go
+  copy.go
   symlink.go
   repo.go
   macos_default.go
