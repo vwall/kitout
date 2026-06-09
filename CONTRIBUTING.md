@@ -4,7 +4,7 @@
 
 ```sh
 go mod download
-go test ./...
+make test
 go run ./cmd/kitout version
 make build
 ```
@@ -17,6 +17,12 @@ Run:
 go test ./...
 go vet ./...
 gofmt -w .
+```
+
+Before cutting a release on macOS, run:
+
+```sh
+make release-check
 ```
 
 ## Pull request expectations

@@ -16,8 +16,10 @@ Homebrew maps `brew tap vwall/kitout` to `github.com/vwall/homebrew-kitout`.
 1. Tag and publish the next `vX.Y.Z` release from the main repository.
 2. Download or inspect `kitout_X.Y.Z_checksums.txt` from the GitHub release.
 3. Copy `kitout.rb.template` to `github.com/vwall/homebrew-kitout` as `Formula/kitout.rb`.
-4. Replace `ARM64_SHA256_FROM_RELEASE` and `AMD64_SHA256_FROM_RELEASE` with the matching checksums from the release assets.
-5. Run:
+4. Update the template version and asset URLs to `vX.Y.Z` if they still point
+   at an older release.
+5. Replace `ARM64_SHA256_FROM_RELEASE` and `AMD64_SHA256_FROM_RELEASE` with the matching checksums from the release assets.
+6. Run:
 
 ```sh
 brew audit --strict --online kitout
@@ -26,5 +28,5 @@ brew test kitout
 ```
 
 The formula must use checksums from the exact tarballs uploaded by the GitHub release workflow.
-For `v1.1.1`, the template already contains the release version and asset URLs;
-only the checksum placeholders should be filled after publication.
+The checked-in template may point at the latest prepared release, so update it
+for the release being published before filling checksum placeholders.

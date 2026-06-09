@@ -6,7 +6,7 @@ Kitout is inspired by Bork's assertion-based approach, but it is not a strict po
 
 ## Install
 
-The `v1.1.1` release install path is GitHub releases plus the Homebrew tap:
+The public release install path is GitHub releases plus the Homebrew tap:
 
 ```sh
 brew tap vwall/kitout
@@ -159,7 +159,7 @@ go run ./cmd/kitout apply --dry-run
 Run tests with:
 
 ```sh
-go test ./...
+make test
 ```
 
 Build a local binary with embedded version metadata:
@@ -167,6 +167,12 @@ Build a local binary with embedded version metadata:
 ```sh
 make build
 bin/kitout version
+```
+
+Before cutting a release on macOS, run the full release gate:
+
+```sh
+make release-check
 ```
 
 ## Working principles

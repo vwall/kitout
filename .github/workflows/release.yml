@@ -56,11 +56,8 @@ jobs:
 
           printf "version=%s\ncommit=%s\nbuilt=%s\n" "${version}" "${commit}" "${build_date}"
 
-      - name: Run tests
-        run: go test ./...
-
-      - name: Run distribution smoke test
-        run: make smoke-distribution VERSION="${VERSION}" COMMIT="${COMMIT}" BUILD_DATE="${BUILD_DATE}"
+      - name: Run release gate
+        run: make release-check VERSION="${VERSION}" COMMIT="${COMMIT}" BUILD_DATE="${BUILD_DATE}"
 
       - name: Build release binaries
         shell: bash
