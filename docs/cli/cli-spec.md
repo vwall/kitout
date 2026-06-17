@@ -152,7 +152,8 @@ Behavior:
   unless `--yes` is passed
 - apply missing or changed resources in stable order
 - show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
-- by default, capture subprocess output and keep the final report concise
+- by default, capture subprocess output and include a compact stderr/stdout
+  summary when a subprocess fails
 - with `--verbose`, render each subprocess command and stream its stdout and stderr while it runs
 - render summary
 - return `0` when apply completed successfully

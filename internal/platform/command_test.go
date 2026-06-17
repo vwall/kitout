@@ -101,8 +101,61 @@ func TestExecRunnerReportsNonZeroExitWithOutput(t *testing.T) {
 	if strings.TrimSpace(result.Stderr) != "helper failed" {
 		t.Fatalf("Stderr = %q, want helper failure output", result.Stderr)
 	}
-	if !strings.Contains(err.Error(), os.Args[0]+" exited with status") {
+	if !strings.Contains(err.Error(), renderCommand(os.Args[0], helperProcessArgs("failure"))+" exited with status") {
 		t.Fatalf("error = %q, want command status", err.Error())
+	}
+	if strings.Contains(err.Error(), ": exit status") {
+		t.Fatalf("error = %q, want no duplicated exit status text", err.Error())
+	}
+	if !strings.Contains(err.Error(), "stderr:\nhelper failed") {
+		t.Fatalf("error = %q, want stderr summary", err.Error())
+	}
+}
+
+func TestCommandErrorSummarizesOutputTail(t *testing.T) {
+	result := CommandResult{
+		Name:     "asdf",
+		Args:     []string{"install", "ruby", "3.3.6"},
+		Stdout:   "downloaded ruby source\n",
+		Stderr:   "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine\nten\neleven\n",
+		ExitCode: 1,
+	}
+	err := CommandError{Result: result, Err: errors.New("exit status 1")}
+
+	got := err.Error()
+	for _, fragment := range []string{
+		"asdf install ruby 3.3.6 failed after exit status 1: exit status 1",
+		"stderr:\n... 1 earlier lines omitted\ntwo",
+		"eleven",
+		"stdout:\ndownloaded ruby source",
+	} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("error = %q, want fragment %q", got, fragment)
+		}
+	}
+	if strings.Contains(got, "\none\n") {
+		t.Fatalf("error = %q, want earliest stderr line omitted", got)
+	}
+}
+
+func TestCommandErrorPreservesNonExitErrorsWithProcessState(t *testing.T) {
+	err := CommandError{
+		Result: CommandResult{
+			Name:     "kitout-helper",
+			Args:     []string{"run"},
+			ExitCode: 0,
+		},
+		Err: errors.New("copy stdout: broken pipe"),
+	}
+
+	got := err.Error()
+	for _, fragment := range []string{
+		"kitout-helper run failed after exit status 0",
+		"copy stdout: broken pipe",
+	} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("error = %q, want fragment %q", got, fragment)
+		}
 	}
 }
 

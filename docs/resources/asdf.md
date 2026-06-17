@@ -83,6 +83,9 @@ plugin is already installed, and at least one configured version is missing.
 If `asdf install <name> <version>` reports that the version was not found,
 Kitout surfaces the plugin and version and suggests either running
 `asdf plugin update <name>` or setting `update_before_install: true`.
+Other install failures include a compact stderr/stdout summary from the failed
+`asdf install` command. For long Ruby build failures, rerun with `--verbose` to
+stream the full compiler and ruby-build output.
 
 `.tool-versions` apply writes only configured tool entries. Unrelated entries
 and comments are preserved.

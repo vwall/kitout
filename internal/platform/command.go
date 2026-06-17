@@ -124,13 +124,82 @@ type CommandError struct {
 }
 
 func (err CommandError) Error() string {
+	message := err.message()
+	if output := commandOutputSummary(err.Result); output != "" {
+		return message + "\n" + output
+	}
+	return message
+}
+
+func (err CommandError) message() string {
+	command := renderCommand(err.Result.Name, err.Result.Args)
+	var exitError *exec.ExitError
+	if err.Result.ExitCode >= 0 && errors.As(err.Err, &exitError) {
+		return fmt.Sprintf("%s exited with status %d", command, err.Result.ExitCode)
+	}
 	if err.Result.ExitCode >= 0 {
-		return fmt.Sprintf("%s exited with status %d: %v", err.Result.Name, err.Result.ExitCode, err.Err)
+		return fmt.Sprintf("%s failed after exit status %d: %v", command, err.Result.ExitCode, err.Err)
 	}
 
-	return fmt.Sprintf("%s failed: %v", err.Result.Name, err.Err)
+	return fmt.Sprintf("%s failed: %v", command, err.Err)
 }
 
 func (err CommandError) Unwrap() error {
 	return err.Err
+}
+
+const (
+	commandOutputMaxLines      = 10
+	commandOutputMaxLineLength = 240
+)
+
+func commandOutputSummary(result CommandResult) string {
+	sections := make([]string, 0, 2)
+	if section := commandOutputSection("stderr", result.Stderr); section != "" {
+		sections = append(sections, section)
+	}
+	if section := commandOutputSection("stdout", result.Stdout); section != "" {
+		sections = append(sections, section)
+	}
+	return strings.Join(sections, "\n")
+}
+
+func commandOutputSection(label, output string) string {
+	lines := commandOutputLines(output)
+	if len(lines) == 0 {
+		return ""
+	}
+
+	omitted := len(lines) - commandOutputMaxLines
+	if omitted > 0 {
+		lines = append([]string{fmt.Sprintf("... %d earlier lines omitted", omitted)}, lines[omitted:]...)
+	}
+
+	return label + ":\n" + strings.Join(lines, "\n")
+}
+
+func commandOutputLines(output string) []string {
+	output = strings.TrimRight(output, "\r\n")
+	if strings.TrimSpace(output) == "" {
+		return nil
+	}
+
+	rawLines := strings.Split(output, "\n")
+	lines := make([]string, 0, len(rawLines))
+	for _, line := range rawLines {
+		line = strings.TrimRight(line, "\r")
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		lines = append(lines, truncateCommandOutputLine(line))
+	}
+	return lines
+}
+
+func truncateCommandOutputLine(line string) string {
+	runes := []rune(line)
+	if len(runes) <= commandOutputMaxLineLength {
+		return line
+	}
+	return string(runes[:commandOutputMaxLineLength]) + "..."
 }

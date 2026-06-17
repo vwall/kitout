@@ -222,7 +222,7 @@ func asdfInstallFailureMessage(plugin, version string, result platform.CommandRe
 	if isASDFVersionNotFound(result, err) {
 		return fmt.Sprintf("asdf version %s %s was not found; run `asdf plugin update %s` and retry, or set `update_before_install: true` for this plugin", plugin, version, plugin)
 	}
-	return "could not install asdf version"
+	return fmt.Sprintf("could not install asdf version %s %s", plugin, version)
 }
 
 func isASDFVersionNotFound(result platform.CommandResult, err error) bool {

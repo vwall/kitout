@@ -221,7 +221,10 @@ func TestASDFPluginApplyPreservesGenericInstallFailureMessage(t *testing.T) {
 		t.Fatal("Apply returned nil error, want install failure")
 	}
 
-	expectApply(t, result, resource.ID(), asdfPluginType, "install", false, "could not install asdf version")
+	expectApply(t, result, resource.ID(), asdfPluginType, "install", false, "could not install asdf version ruby 3.3.6")
+	if !containsError(err, "stderr:\nnetwork unavailable") {
+		t.Fatalf("Apply error = %q, want asdf stderr summary", err.Error())
+	}
 }
 
 func TestASDFPluginDryRunPlanDoesNotInstall(t *testing.T) {

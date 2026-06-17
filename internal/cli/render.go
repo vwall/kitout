@@ -44,7 +44,7 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
 		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.statusMarker(item), paddedWidth(resourceWidth, label), label, statusMessage(item))
 		if item.Error != "" {
-			fmt.Fprintf(r.stdout, "%-*s error: %s\n", statusLeftWidth, "", item.Error)
+			renderIndentedDetail(r.stdout, strings.Repeat(" ", statusLeftWidth), "error", item.Error)
 		}
 	}
 	fmt.Fprintf(r.stdout, "\nSummary: %s\n", statusSummary(plan.Summary))
@@ -78,7 +78,7 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 		case engine.ActionFail:
 			fmt.Fprintf(r.stdout, "%s Cannot apply %s: %s\n", r.failSymbol(), displayResourceLabel(item.Type, item.ResourceID, item.Details), item.Message)
 			if item.Error != "" {
-				fmt.Fprintf(r.stdout, "    error: %s\n", item.Error)
+				renderIndentedDetail(r.stdout, "    ", "error", item.Error)
 			}
 		case engine.ActionSkip:
 			fmt.Fprintf(r.stdout, "%s Skipping %s: %s\n", r.skipSymbol(), displayResourceLabel(item.Type, item.ResourceID, item.Details), item.Message)
@@ -130,10 +130,20 @@ func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport)
 		label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
 		fmt.Fprintf(r.stdout, "%s %-*s %s\n", r.applyMarker(item), paddedWidth(resourceWidth, label), label, item.Message)
 		if item.Error != "" {
-			fmt.Fprintf(r.stdout, "    error: %s\n", item.Error)
+			renderIndentedDetail(r.stdout, "    ", "error", item.Error)
 		}
 	}
 	fmt.Fprintf(r.stdout, "\nSummary: %s\n", applySummary(report.Summary))
+}
+
+func renderIndentedDetail(writer io.Writer, indent, label, text string) {
+	lines := strings.Split(text, "\n")
+	fmt.Fprintf(writer, "%s%s: %s\n", indent, label, lines[0])
+
+	continuationIndent := indent + strings.Repeat(" ", len(label)+2)
+	for _, line := range lines[1:] {
+		fmt.Fprintf(writer, "%s%s\n", continuationIndent, line)
+	}
 }
 
 func (r humanRenderer) BeforeStatus(resource engine.Resource) {

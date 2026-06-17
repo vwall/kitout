@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Failed external commands now include a compact stderr/stdout summary in human
+  and JSON reports, so failures such as `asdf install ruby ...` show the
+  underlying build error instead of only `exit status 1`.
+
 ## 1.1.2 - Fresh-machine apply continuation
 
 Kitout 1.1.2 is a patch release that makes `kitout apply` more useful during
