@@ -236,6 +236,49 @@ directories:
 	}
 }
 
+func TestApplyContinuesWhenAnotherResourceCannotBePlanned(t *testing.T) {
+	dir := t.TempDir()
+	missingDir := filepath.Join(dir, "code")
+	missingCopySource := filepath.Join(dir, "missing-source")
+	copyTarget := filepath.Join(dir, "copied")
+	configPath := writeCLIConfigFile(t, `version: 1
+
+directories:
+  - `+missingDir+`
+
+copies:
+  - source: `+missingCopySource+`
+    target: `+copyTarget+`
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath}, nil, &stdout, &stderr)
+	if code != exitApplyFailure {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitApplyFailure, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "created directory") {
+		t.Fatalf("stdout = %q, want directory apply result", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "copy source is missing") {
+		t.Fatalf("stdout = %q, want failed copy result", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Summary: 1 changed, 1 failed") {
+		t.Fatalf("stdout = %q, want partial failure summary", stdout.String())
+	}
+	info, err := os.Stat(missingDir)
+	if err != nil {
+		t.Fatalf("Stat(%q) returned error: %v", missingDir, err)
+	}
+	if !info.IsDir() {
+		t.Fatalf("Stat(%q).IsDir() = false, want true", missingDir)
+	}
+	if _, err := os.Stat(copyTarget); !os.IsNotExist(err) {
+		t.Fatalf("Stat(%q) error = %v, want copy target to remain missing", copyTarget, err)
+	}
+}
+
 func TestApplyPlanObserverShowsBatchedHomebrewProgressByDefault(t *testing.T) {
 	var stdout bytes.Buffer
 	renderer := newHumanRenderer(&stdout, &bytes.Buffer{}, globalOptions{})

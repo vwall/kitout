@@ -72,8 +72,11 @@ Examples:
 - repo resources that use SSH URLs need Git and working SSH authentication before
   status can fully inspect or clone them.
 
-`kitout apply` stops before changing anything when the plan contains failed or
-unknown resources. On a fresh machine, use one of these small-pass approaches:
+`kitout apply` leaves failed or unknown resources unapplied, but it still applies
+other missing or changed resources from the same plan. On a fresh machine, that
+usually means prerequisite resources can install in one pass, then dependent
+resources become available on the next run. If many resources depend on the same
+missing prerequisite, use one of these small-pass approaches:
 
 - install the prerequisite manually, then rerun `doctor` and `status`
 - temporarily comment out dependent sections until the prerequisite exists

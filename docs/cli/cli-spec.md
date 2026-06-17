@@ -145,7 +145,8 @@ Behavior:
 - show one Homebrew formula inspection line and one cask inspection line for batched status checks
 - run status checks
 - build plan
-- stop before applying if the plan contains failed or unknown resources
+- leave failed or unknown resources unapplied, but continue with other planned
+  missing or changed resources
 - require confirmation before implemented risky actions, currently shell
   commands, login-shell changes, copy replacements, and symlink replacements,
   unless `--yes` is passed
@@ -156,8 +157,8 @@ Behavior:
 - render summary
 - return `0` when apply completed successfully
 - return `2` for validation, parse, unknown-field, or flag errors
-- return `3` for config read failures or pre-apply plan failures
-- return `4` for partial apply failures
+- return `3` for config read failures
+- return `4` for failed/unknown resources or partial apply failures
 
 ### `kitout apply --dry-run`
 

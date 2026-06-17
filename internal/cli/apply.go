@@ -71,19 +71,6 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		return exitOK
 	}
 
-	if plan.HasFailures() {
-		if opts.json {
-			if err := jsonRenderer.renderPlan("apply", loaded.Path, plan, false); err != nil {
-				fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
-				return exitRuntimeError
-			}
-			return exitRuntimeError
-		}
-
-		renderer.renderStatusPlan("", plan)
-		return exitRuntimeError
-	}
-
 	riskyItems := riskyApplyItems(plan)
 	if len(riskyItems) > 0 && !opts.yes {
 		if err := confirmRiskyApply(stdin, stderr, riskyItems); err != nil {
