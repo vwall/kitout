@@ -44,7 +44,7 @@ bin/kitout version
 ## Release baseline
 
 Kitout is distributed through GitHub releases and an external Homebrew tap. The
-project is now past the `v1.1.1` patch release and remains in the stable
+project is now past the `v1.1.2` patch release and remains in the stable
 `version: 1` config schema line.
 
 The intended Homebrew install path is:
@@ -186,6 +186,7 @@ Example:
 1.0.0 stable config schema and first Homebrew release
 1.1.0 additive config/resource features
 1.1.1 release polish and smoke coverage
+1.1.2 fresh-machine apply continuation
 2.0.0 breaking config schema changes
 ```
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.1.2 - Fresh-machine apply continuation
+
+Kitout 1.1.2 is a patch release that makes `kitout apply` more useful during
+fresh-machine bootstrap runs.
+
+### Fixed
+
+- `kitout apply` now continues applying independent missing or changed resources
+  even when another resource cannot be planned because a prerequisite is not
+  available yet.
+- Failed or unknown plan items are still reported in the final apply results and
+  cause exit code `4`, but they no longer prevent unrelated safe resources from
+  installing.
+
+### Documentation
+
+- Updated first-run and asdf guidance to explain the new partial-apply behavior.
+- Updated the Homebrew formula template for `v1.1.2` macOS arm64 and amd64
+  artifacts.
+
+### Notes
+
+- This is a patch release with no config schema changes.
+
 ## 1.1.1 - Release polish and smoke coverage
 
 Kitout 1.1.1 is a patch release that tightens the 1.1.x distribution path and
