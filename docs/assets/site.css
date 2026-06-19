@@ -102,7 +102,7 @@ img {
 .install-chip,
 .step-index,
 .step-command,
-.workflow-art,
+.workflow-example,
 .command-block p,
 .site-footer {
   font-family: var(--mono);
@@ -483,8 +483,12 @@ p code {
 
 .workflow-steps {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-md);
+  grid-template-areas:
+    "define define"
+    "check preview"
+    "apply apply";
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(var(--space-sm), 2vw, var(--space-md));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -494,7 +498,6 @@ p code {
   position: relative;
   display: grid;
   min-width: 0;
-  min-height: 21rem;
   align-content: start;
   padding: clamp(var(--space-sm), 1.8vw, var(--space-md));
   border: 1px solid var(--line);
@@ -502,34 +505,32 @@ p code {
   background: oklch(100% 0 0 / 0.78);
 }
 
+.workflow-steps p:last-child {
+  margin-bottom: 0;
+}
+
 .workflow-steps li:hover {
   background: var(--panel);
 }
 
-.workflow-steps li:nth-child(-n + 3) {
-  grid-column: span 2;
+.define-step {
+  grid-area: define;
+  padding: clamp(var(--space-md), 2.4vw, var(--space-lg));
+  background:
+    linear-gradient(145deg, oklch(100% 0 0 / 0.88), oklch(95% 0.016 255 / 0.88)),
+    var(--panel);
 }
 
-.workflow-steps li:nth-child(n + 4) {
-  display: grid;
-  grid-column: span 3;
-  grid-template-columns: minmax(0, 1fr) minmax(9rem, 0.62fr);
-  column-gap: var(--space-lg);
-  min-height: 16.5rem;
-  align-items: start;
+.check-step {
+  grid-area: check;
 }
 
-.workflow-steps li:nth-child(n + 4) .step-kicker,
-.workflow-steps li:nth-child(n + 4) .step-command,
-.workflow-steps li:nth-child(n + 4) p {
-  grid-column: 1;
+.preview-step {
+  grid-area: preview;
 }
 
-.workflow-steps li:nth-child(n + 4) .workflow-art {
-  grid-column: 2;
-  grid-row: 1 / span 3;
-  align-self: center;
-  margin: 0;
+.apply-step {
+  grid-area: apply;
 }
 
 .step-kicker {
@@ -552,15 +553,58 @@ p code {
   letter-spacing: 0;
 }
 
-.step-command {
-  display: block;
-  min-height: 2.8rem;
+.step-commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-bottom: var(--space-md);
-  color: var(--muted);
-  font-size: 0.9rem;
+}
+
+.step-command {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 2.35rem;
+  max-width: 100%;
+  align-items: center;
+  padding: 0.48rem 0.6rem;
+  border: 1px solid oklch(82% 0.026 255);
+  border-radius: var(--radius);
+  color: var(--blue-deep);
+  background: oklch(98% 0.006 255);
+  font-size: 0.82rem;
   font-variant-ligatures: none;
-  line-height: 1.35;
+  line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+pre.workflow-example {
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 var(--space-md);
+  overflow: auto;
+  padding: 0.95rem 1rem;
+  border: 1px solid oklch(26% 0.045 258);
+  border-radius: var(--radius);
+  color: oklch(91% 0.025 255);
+  background:
+    radial-gradient(circle at 8% 0%, oklch(68% 0.17 150 / 0.12), transparent 32%),
+    linear-gradient(180deg, oklch(16% 0.04 258), oklch(12% 0.035 258));
+  font-size: 0.78rem;
+  font-variant-ligatures: none;
+  line-height: 1.52;
+  tab-size: 2;
+  text-shadow: 0 0 12px oklch(68% 0.17 150 / 0.08);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.config-example {
+  color: oklch(94% 0.022 255);
+}
+
+.check-step .workflow-example,
+.preview-step .workflow-example {
+  height: 20rem;
 }
 
 .config-rule {
@@ -574,132 +618,6 @@ p code {
   font-size: 0.78rem !important;
   font-weight: 700;
   line-height: 1.45 !important;
-}
-
-.workflow-art {
-  display: grid;
-  width: min(100%, 14rem);
-  min-height: 7.4rem;
-  align-content: center;
-  justify-self: start;
-  margin-block: 0 var(--space-md);
-  padding: 0.85rem;
-  border: 1px solid oklch(78% 0.025 255);
-  border-radius: var(--radius);
-  color: oklch(38% 0.045 258);
-  background: oklch(98% 0.006 255);
-  font-size: 0.72rem;
-  line-height: 1.55;
-}
-
-.yaml-art {
-  position: relative;
-  aspect-ratio: 0.76;
-  width: 6.2rem;
-  min-height: 0;
-  padding-top: 1.1rem;
-  border-color: oklch(76% 0.11 255 / 0.6);
-  color: var(--blue-deep);
-  background:
-    linear-gradient(135deg, transparent 0 14%, oklch(91% 0.026 255) 14% 23%, transparent 23%),
-    var(--panel);
-}
-
-.yaml-art span:nth-child(n + 2) {
-  color: oklch(58% 0.14 255);
-}
-
-.check-art {
-  gap: 0.45rem;
-}
-
-.check-art span,
-.status-art span,
-.dryrun-art span,
-.apply-art span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.check-art b {
-  display: inline-grid;
-  width: 0.86rem;
-  aspect-ratio: 1;
-  place-items: center;
-  margin-right: 0.48rem;
-  border: 1px solid var(--green);
-  border-radius: 50%;
-  vertical-align: -0.12rem;
-}
-
-.check-art b::before {
-  width: 0.28rem;
-  height: 0.48rem;
-  border-right: 1.5px solid var(--green);
-  border-bottom: 1.5px solid var(--green);
-  content: "";
-  transform: rotate(40deg) translateY(-0.05rem);
-}
-
-.status-art {
-  gap: 0.36rem;
-  padding-top: 1.7rem;
-  background:
-    linear-gradient(oklch(91% 0.01 255) 0 1.2rem, transparent 1.2rem),
-    var(--panel);
-}
-
-.status-art strong {
-  display: inline-block;
-  width: 2.2rem;
-  margin-right: 0.35rem;
-  color: var(--green);
-  font-weight: 700;
-}
-
-.status-art span:nth-child(2) strong {
-  color: var(--yellow);
-}
-
-.status-art span:nth-child(3) strong {
-  color: var(--blue);
-}
-
-.dryrun-art {
-  gap: 0.4rem;
-  color: var(--blue-deep);
-}
-
-.dryrun-art span::before {
-  margin-right: 0.4rem;
-  color: var(--green);
-  content: "+";
-  font-weight: 700;
-}
-
-.dryrun-art span:last-child::before {
-  color: var(--red);
-  content: "!";
-}
-
-.apply-art {
-  gap: 0.55rem;
-  color: var(--green);
-  font-weight: 700;
-}
-
-.progress-track {
-  display: block;
-  height: 0.68rem;
-  border: 1px solid oklch(73% 0.14 150 / 0.55);
-  background:
-    linear-gradient(90deg, oklch(75% 0.16 150) 0 92%, transparent 92%),
-    oklch(92% 0.055 150);
-}
-
-.progress-track b {
-  display: block;
-  height: 100%;
 }
 
 .output-grid {
@@ -871,22 +789,16 @@ pre {
 
   .workflow-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "define define"
+      "check preview"
+      "apply apply";
   }
 
   .workflow-steps li,
-  .workflow-steps li:nth-child(-n + 3),
-  .workflow-steps li:nth-child(n + 4) {
-    grid-column: auto;
-    grid-template-columns: 1fr;
-    min-height: 19rem;
-  }
-
-  .workflow-steps li:nth-child(n + 4) .step-kicker,
-  .workflow-steps li:nth-child(n + 4) .step-command,
-  .workflow-steps li:nth-child(n + 4) p,
-  .workflow-steps li:nth-child(n + 4) .workflow-art {
-    grid-column: auto;
-    grid-row: auto;
+  .define-step,
+  .apply-step {
+    min-height: auto;
   }
 
   .safety-note {
@@ -964,6 +876,11 @@ pre {
 
   .workflow-steps {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "define"
+      "check"
+      "preview"
+      "apply";
   }
 
   .terminal-screen {
@@ -988,10 +905,6 @@ pre {
   .hero-text,
   .safety-note p {
     font-size: 1rem;
-  }
-
-  .workflow-art {
-    justify-self: start;
   }
 
   .site-footer {

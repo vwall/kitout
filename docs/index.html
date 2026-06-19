@@ -61,22 +61,25 @@
                 <span class="terminal-title">kitout apply</span>
               </div>
               <pre class="terminal-screen"><code>Kitout is planning changes for your Mac setup...
-Config: ~/setup/kitout.yaml
+Config: ./kitout.yaml
+
+<span class="terminal-skip">&gt;</span> Inspecting Homebrew packages...
+<span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
+<span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
+<span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
+Applying changes:
+<span class="terminal-skip">&gt;</span> Installing cask ghostty...
+<span class="terminal-skip">&gt;</span> Cloning repository ~/code/example-project...
+<span class="terminal-skip">&gt;</span> Replacing symlink ~/.zshrc...
 
 Results:
-<span class="terminal-ok">✓ ok   </span> brew: asdf installed
-<span class="terminal-ok">✓ ok   </span> brew: git installed
-<span class="terminal-ok">✓ ok   </span> brew: fish installed
-<span class="terminal-ok">✓ ok   </span> brew: pnpm installed
-<span class="terminal-ok">✓ ok   </span> brew: go installed
-<span class="terminal-ok">✓ ok   </span> brew: gh installed
-<span class="terminal-ok">✓ ok   </span> brew: kitout installed
-<span class="terminal-ok">✓ ok   </span> asdf: ruby ready
-<span class="terminal-ok">✓ ok   </span> asdf: nodejs ready
-<span class="terminal-ok">✓ ok   </span> tool-versions correct
-<span class="terminal-ok">✓ ok   </span> directory: ~/.config exists
+<span class="terminal-ok">✓ ok   </span> brew: git formula is installed
+<span class="terminal-ok">✓ ok   </span> directory: ~/.config directory exists
+<span class="terminal-ok">✓ done </span> cask: ghostty installed cask
+<span class="terminal-ok">✓ done </span> repo: ~/code/example-project cloned repository
+<span class="terminal-ok">✓ done </span> symlink: ~/.zshrc replaced symlink
 
-<span class="terminal-summary">Summary: 11 unchanged</span></code></pre>
+<span class="terminal-summary">Summary: 3 changed, 2 unchanged</span></code></pre>
             </div>
             <figcaption>
               `kitout apply` against an explicitly selected config, rendered as
@@ -92,21 +95,40 @@ Results:
           <h2 id="workflow-title">Define, check, preview, apply.</h2>
         </div>
         <ol class="workflow-steps">
-          <li>
+          <li class="workflow-step define-step">
             <div class="step-kicker">
               <span class="step-index">1.</span>
               <h3>Define</h3>
             </div>
-            <code class="step-command">kitout init</code>
-            <div class="workflow-art yaml-art" aria-hidden="true">
-              <span>version: 1</span>
-              <span>brew:</span>
-              <span>&nbsp;&nbsp;packages:</span>
-              <span>&nbsp;&nbsp;&nbsp;&nbsp;- git</span>
-              <span>repos:</span>
-              <span>copies:</span>
-              <span>login_shell:</span>
+            <div class="step-commands">
+              <code class="step-command">kitout init</code>
             </div>
+            <pre class="workflow-example config-example"><code>version: 1
+
+brew:
+  packages:
+    - git
+    - asdf
+    - pnpm
+    - gh
+
+casks:
+  - ghostty
+  - visual-studio-code
+
+repos:
+  - path: ~/code/example-project
+    url: git@github.com:example/example-project.git
+    branch: main
+
+symlinks:
+  - source: ~/dotfiles/home/zshrc
+    target: ~/.zshrc
+    replace: true
+
+login_shell:
+  path: homebrew:fish
+  add_to_etc_shells: true</code></pre>
             <p>
               Create the home config, or keep <code>./kitout.yaml</code> in a
               setup repo. If both config files exist, bring
@@ -116,71 +138,104 @@ Results:
               Kitout refuses ambiguous config paths until you choose one.
             </p>
           </li>
-          <li>
+          <li class="workflow-step check-step">
             <div class="step-kicker">
               <span class="step-index">2.</span>
               <h3>Check</h3>
             </div>
-            <code class="step-command">kitout doctor</code>
-            <div class="workflow-art check-art" aria-hidden="true">
-              <span><b></b>macOS</span>
-              <span><b></b>Homebrew</span>
-              <span><b></b>Git</span>
-              <span><b></b>config</span>
+            <div class="step-commands">
+              <code class="step-command">kitout doctor</code>
+              <code class="step-command">kitout status</code>
             </div>
+            <pre class="workflow-example"><code>Kitout is checking local prerequisites...
+Config: ./kitout.yaml
+
+Doctor:
+<span class="terminal-ok">ok:  </span> macOS                      running on macOS
+<span class="terminal-ok">ok:  </span> CPU architecture           running on Apple Silicon
+<span class="terminal-ok">ok:  </span> Xcode Command Line Tools   /Library/Developer/CommandLineTools
+<span class="terminal-ok">ok:  </span> Homebrew                   Homebrew 4.0.0
+<span class="terminal-ok">ok:  </span> Homebrew path              Homebrew prefix is /opt/homebrew
+<span class="terminal-ok">ok:  </span> Git                        git version 2.45.0
+<span class="terminal-ok">ok:  </span> Shell environment          SHELL and PATH look usable
+<span class="terminal-ok">ok:  </span> Config                     config is valid
+<span class="terminal-ok">ok:  </span> Path permissions           2 configured write target(s) look writable
+
+9 total, 9 ok, 0 warnings, 0 failed
+
+Kitout is checking your Mac setup...
+Config: ./kitout.yaml
+
+<span class="terminal-skip">&gt;</span> Fetching Homebrew package list...
+<span class="terminal-skip">&gt;</span> Fetching Homebrew cask list...
+
+Results:
+<span class="terminal-ok">✓ satisfied</span> brew: git satisfied
+<span class="terminal-warn">! missing  </span> cask: ghostty missing
+<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc symlink points elsewhere
+
+<span class="terminal-summary">Summary: 1 satisfied, 1 missing, 1 changed
+2 resources need attention</span></code></pre>
             <p>
-              Confirm Homebrew, Git, shell environment, config validity, and
-              path permissions before touching resources.
+              Confirm prerequisites, then read satisfied, missing, changed,
+              skipped, and failed resources before touching the filesystem.
             </p>
           </li>
-          <li>
+          <li class="workflow-step preview-step">
             <div class="step-kicker">
               <span class="step-index">3.</span>
-              <h3>Inspect</h3>
-            </div>
-            <code class="step-command">kitout status</code>
-            <div class="workflow-art status-art" aria-hidden="true">
-              <span><strong>ok</strong> brew: git</span>
-              <span><strong>miss</strong> cask: ghostty</span>
-              <span><strong>chg</strong> copy: ~/.codex/skills</span>
-            </div>
-            <p>
-              See satisfied, missing, changed, skipped, and failed resources in
-              one structured report.
-            </p>
-          </li>
-          <li>
-            <div class="step-kicker">
-              <span class="step-index">4.</span>
               <h3>Preview</h3>
             </div>
-            <code class="step-command">kitout apply --dry-run</code>
-            <div class="workflow-art dryrun-art" aria-hidden="true">
-              <span>dry-run install cask ghostty</span>
-              <span>dry-run clone ~/code/app</span>
-              <span>dry-run copy ~/.codex/skills</span>
-              <span>dry-run set login shell</span>
-              <span>no shell command will run</span>
+            <div class="step-commands">
+              <code class="step-command">kitout apply --dry-run</code>
             </div>
+            <pre class="workflow-example"><code><span class="terminal-skip">[dry-run]</span> Kitout is running in dry-run mode. No changes will be made.
+Config: ./kitout.yaml
+
+<span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
+<span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
+<span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
+<span class="terminal-skip">[dry-run]</span> Previewing planned changes:
+<span class="terminal-warn">dry-run </span> Would install cask ghostty
+<span class="terminal-warn">dry-run </span> Would clone repository ~/code/example-project
+<span class="terminal-warn">dry-run </span> Would replace symlink ~/.zshrc
+
+<span class="terminal-summary">[dry-run] No changes made because --dry-run was used.</span>
+No shell commands will run without explicit approval.</code></pre>
             <p>
               Inspect installs, clones, copies, symlinks, login-shell changes,
               defaults, and approved shell commands with no filesystem changes.
             </p>
           </li>
-          <li>
+          <li class="workflow-step apply-step">
             <div class="step-kicker">
-              <span class="step-index">5.</span>
+              <span class="step-index">4.</span>
               <h3>Apply</h3>
             </div>
-            <code class="step-command">kitout apply</code>
-            <div class="workflow-art apply-art" aria-hidden="true">
-              <span>Applying...</span>
-              <span class="progress-track"><b></b></span>
-              <span>Complete</span>
+            <div class="step-commands">
+              <code class="step-command">kitout apply</code>
             </div>
+            <pre class="workflow-example apply-example"><code>Kitout is planning changes for your Mac setup...
+Config: ./kitout.yaml
+
+<span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
+<span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
+<span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
+Applying changes:
+<span class="terminal-skip">&gt;</span> Installing cask ghostty...
+<span class="terminal-skip">&gt;</span> Cloning repository ~/code/example-project...
+<span class="terminal-skip">&gt;</span> Replacing symlink ~/.zshrc...
+
+Results:
+<span class="terminal-ok">✓ ok   </span> brew: git formula is installed
+<span class="terminal-ok">✓ done </span> cask: ghostty installed cask
+<span class="terminal-ok">✓ done </span> repo: ~/code/example-project cloned repository
+<span class="terminal-ok">✓ done </span> symlink: ~/.zshrc replaced symlink
+
+<span class="terminal-summary">Summary: 3 changed, 1 unchanged</span></code></pre>
             <p>
-              Kitout applies only missing or changed resources. Rerun status and
-              the Mac matches the declared state.
+              Kitout applies only missing or changed resources. When apply
+              succeeds, rerun status and the Mac matches the declared state.
             </p>
           </li>
         </ol>
@@ -201,16 +256,19 @@ Results:
                 <span class="terminal-title">kitout status</span>
               </div>
               <pre class="terminal-screen"><code>Kitout is checking your Mac setup...
-Config: ~/setup/kitout.yaml
+Config: ./kitout.yaml
 
-<span class="terminal-ok">✓ satisfied</span> brew: git ready
-<span class="terminal-ok">✓ satisfied</span> brew: asdf ready
-<span class="terminal-warn">! missing  </span> cask: ghostty install needed
-<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc points elsewhere
-<span class="terminal-skip">- skip     </span> shell: Corepack pnpm already present
-<span class="terminal-fail">× fail     </span> repo: ~/code/app git unavailable
+<span class="terminal-skip">&gt;</span> Fetching Homebrew package list...
+<span class="terminal-skip">&gt;</span> Fetching Homebrew cask list...
 
-<span class="terminal-summary">Summary: 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
+Results:
+<span class="terminal-ok">✓ satisfied</span> brew: git satisfied
+<span class="terminal-ok">✓ satisfied</span> brew: asdf satisfied
+<span class="terminal-warn">! missing  </span> cask: ghostty missing
+<span class="terminal-fail">× fail     </span> repo: ~/code/app failed: could not inspect repository path
+<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc symlink points elsewhere
+
+<span class="terminal-summary">Summary: 2 satisfied, 1 missing, 1 changed, 1 failed
 3 resources need attention</span></code></pre>
             </div>
             <figcaption>
@@ -227,21 +285,20 @@ Config: ~/setup/kitout.yaml
                 <span class="terminal-title">kitout doctor</span>
               </div>
               <pre class="terminal-screen"><code>Kitout is checking local prerequisites...
-Config: ~/setup/kitout.yaml
+Config: ./kitout.yaml
 
 Doctor:
-<span class="terminal-ok">ok:  </span> macOS running on macOS
-<span class="terminal-ok">ok:  </span> CPU architecture Apple Silicon
-<span class="terminal-ok">ok:  </span> Xcode tools installed
-<span class="terminal-ok">ok:  </span> Homebrew 5.1.15
-<span class="terminal-warn">warn:</span> Homebrew path /usr/local, expected /opt/homebrew
-    fix: update PATH before running Kitout.
-<span class="terminal-ok">ok:  </span> Git version 2.54.0
-<span class="terminal-ok">ok:  </span> Shell environment usable
-<span class="terminal-ok">ok:  </span> Config valid
-<span class="terminal-ok">ok:  </span> Path permissions writable
+<span class="terminal-ok">ok:  </span> macOS                      running on macOS
+<span class="terminal-ok">ok:  </span> CPU architecture           running on Apple Silicon
+<span class="terminal-ok">ok:  </span> Xcode Command Line Tools   /Library/Developer/CommandLineTools
+<span class="terminal-ok">ok:  </span> Homebrew                   Homebrew 4.0.0
+<span class="terminal-ok">ok:  </span> Homebrew path              Homebrew prefix is /opt/homebrew
+<span class="terminal-ok">ok:  </span> Git                        git version 2.45.0
+<span class="terminal-ok">ok:  </span> Shell environment          SHELL and PATH look usable
+<span class="terminal-ok">ok:  </span> Config                     config is valid
+<span class="terminal-ok">ok:  </span> Path permissions           2 configured write target(s) look writable
 
-<span class="terminal-summary">9 total, 8 ok, 1 warnings, 0 failed</span></code></pre>
+<span class="terminal-summary">9 total, 9 ok, 0 warnings, 0 failed</span></code></pre>
             </div>
             <figcaption>
               `kitout doctor` checks the local prerequisites.
@@ -253,7 +310,9 @@ Doctor:
             <p>
               Status never makes changes, dry-run never makes changes, and shell
               commands only run when they are listed in config and approved.
-              Copy replacements and login-shell changes are confirmation-gated.
+              Shell commands, copy replacements, symlink replacements, and
+              login-shell changes are confirmation-gated unless
+              <code>--yes</code> is passed.
               When <code>./kitout.yaml</code> and
               <code>~/.config/kitout/kitout.yaml</code> both exist, Kitout stops
               and asks for <code>--config</code>.
