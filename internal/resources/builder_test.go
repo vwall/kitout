@@ -10,6 +10,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 	cfg := config.Config{
 		Version: config.CurrentVersion,
 		Brew: config.Brew{
+			Taps:     []string{"vwall/kitout"},
 			Packages: []string{"asdf"},
 		},
 		ASDF: config.ASDF{
@@ -54,6 +55,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		got = append(got, resource.ID())
 	}
 	want := []string{
+		"brew_tap:vwall/kitout",
 		"brew:asdf",
 		"asdf_plugin:ruby",
 		"asdf_tool_versions:/Users/example/.tool-versions",
@@ -76,10 +78,10 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 			t.Fatalf("resource[%d] = %q, want %q; all = %#v", i, got[i], want[i], got)
 		}
 	}
-	if _, ok := resources[10].(MacOSDefaultResource); !ok {
-		t.Fatalf("resource[10] = %T, want MacOSDefaultResource", resources[10])
+	if _, ok := resources[11].(MacOSDefaultResource); !ok {
+		t.Fatalf("resource[11] = %T, want MacOSDefaultResource", resources[11])
 	}
-	if _, ok := resources[11].(LoginShellResource); !ok {
-		t.Fatalf("resource[11] = %T, want LoginShellResource", resources[11])
+	if _, ok := resources[12].(LoginShellResource); !ok {
+		t.Fatalf("resource[12] = %T, want LoginShellResource", resources[12])
 	}
 }

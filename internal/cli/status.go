@@ -68,6 +68,7 @@ func statusExitCode(plan engine.Plan) int {
 type statusPlanObserver struct {
 	renderer             humanRenderer
 	verbose              bool
+	fetchedHomebrewTaps  bool
 	fetchedBrewPackages  bool
 	fetchedHomebrewCasks bool
 }
@@ -83,6 +84,11 @@ func (observer *statusPlanObserver) BeforeStatus(resource engine.Resource) {
 	}
 
 	switch resource.Type() {
+	case "brew_tap":
+		if !observer.fetchedHomebrewTaps {
+			observer.fetchedHomebrewTaps = true
+			observer.renderProgress("Fetching Homebrew tap list...")
+		}
 	case "brew":
 		if !observer.fetchedBrewPackages {
 			observer.fetchedBrewPackages = true

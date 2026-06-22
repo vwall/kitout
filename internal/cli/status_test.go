@@ -72,6 +72,8 @@ func TestStatusPlanObserverShowsBatchedHomebrewProgressByDefault(t *testing.T) {
 	renderer := newHumanRenderer(&stdout, &bytes.Buffer{}, globalOptions{})
 	observer := newStatusPlanObserver(renderer, false)
 
+	observer.BeforeStatus(fakeCLIResource{id: "brew_tap:vwall/kitout", typ: "brew_tap"})
+	observer.BeforeStatus(fakeCLIResource{id: "brew_tap:homebrew/cask-fonts", typ: "brew_tap"})
 	observer.BeforeStatus(fakeCLIResource{id: "brew:asdf", typ: "brew"})
 	observer.BeforeStatus(fakeCLIResource{id: "brew:git", typ: "brew"})
 	observer.BeforeStatus(fakeCLIResource{id: "cask:ghostty", typ: "cask"})
@@ -79,13 +81,16 @@ func TestStatusPlanObserverShowsBatchedHomebrewProgressByDefault(t *testing.T) {
 	observer.BeforeStatus(fakeCLIResource{id: "/tmp/code", typ: "directory"})
 
 	output := stdout.String()
+	if count := strings.Count(output, "> Fetching Homebrew tap list..."); count != 1 {
+		t.Fatalf("stdout = %q, want one Homebrew tap list progress line, got %d", output, count)
+	}
 	if count := strings.Count(output, "> Fetching Homebrew package list..."); count != 1 {
 		t.Fatalf("stdout = %q, want one Homebrew package list progress line, got %d", output, count)
 	}
 	if count := strings.Count(output, "> Fetching Homebrew cask list..."); count != 1 {
 		t.Fatalf("stdout = %q, want one Homebrew cask list progress line, got %d", output, count)
 	}
-	if strings.Contains(output, "> Checking brew: asdf...") || strings.Contains(output, "> Checking cask: ghostty...") {
+	if strings.Contains(output, "> Checking brew_tap: vwall/kitout...") || strings.Contains(output, "> Checking brew: asdf...") || strings.Contains(output, "> Checking cask: ghostty...") {
 		t.Fatalf("stdout = %q, want per-Homebrew checking lines hidden by default", output)
 	}
 	if strings.Contains(output, "> Checking directory: /tmp/code...") {
@@ -98,10 +103,14 @@ func TestStatusPlanObserverVerboseShowsPerResourceProgress(t *testing.T) {
 	renderer := newHumanRenderer(&stdout, &bytes.Buffer{}, globalOptions{})
 	observer := newStatusPlanObserver(renderer, true)
 
+	observer.BeforeStatus(fakeCLIResource{id: "brew_tap:vwall/kitout", typ: "brew_tap"})
 	observer.BeforeStatus(fakeCLIResource{id: "brew:asdf", typ: "brew"})
 	observer.BeforeStatus(fakeCLIResource{id: "cask:ghostty", typ: "cask"})
 
 	output := stdout.String()
+	if !strings.Contains(output, "> Checking brew_tap: vwall/kitout...") {
+		t.Fatalf("stdout = %q, want verbose brew tap status progress", output)
+	}
 	if !strings.Contains(output, "> Checking brew: asdf...") {
 		t.Fatalf("stdout = %q, want verbose brew status progress", output)
 	}

@@ -7,6 +7,10 @@ The cask resource ensures a Homebrew cask application is installed.
 ## Config
 
 ```yaml
+brew:
+  taps:
+    - homebrew/cask-fonts
+
 casks:
   - ghostty
   - visual-studio-code
@@ -48,6 +52,9 @@ Use:
 ```sh
 brew install --cask <name>
 ```
+
+If a cask comes from a non-default tap, declare the tap under `brew.taps`.
+Kitout applies Homebrew taps before casks.
 
 ## Safety
 

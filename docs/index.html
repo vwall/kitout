@@ -63,23 +63,26 @@
               <pre class="terminal-screen"><code>Kitout is planning changes for your Mac setup...
 Config: ./kitout.yaml
 
+<span class="terminal-skip">&gt;</span> Inspecting Homebrew taps...
 <span class="terminal-skip">&gt;</span> Inspecting Homebrew packages...
 <span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
 <span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
 <span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
 Applying changes:
+<span class="terminal-skip">&gt;</span> Adding Homebrew tap vwall/kitout...
 <span class="terminal-skip">&gt;</span> Installing cask ghostty...
 <span class="terminal-skip">&gt;</span> Cloning repository ~/code/example-project...
 <span class="terminal-skip">&gt;</span> Replacing symlink ~/.zshrc...
 
 Results:
+<span class="terminal-ok">✓ done </span> brew_tap: vwall/kitout added tap
 <span class="terminal-ok">✓ ok   </span> brew: git formula is installed
 <span class="terminal-ok">✓ ok   </span> directory: ~/.config directory exists
 <span class="terminal-ok">✓ done </span> cask: ghostty installed cask
 <span class="terminal-ok">✓ done </span> repo: ~/code/example-project cloned repository
 <span class="terminal-ok">✓ done </span> symlink: ~/.zshrc replaced symlink
 
-<span class="terminal-summary">Summary: 3 changed, 2 unchanged</span></code></pre>
+<span class="terminal-summary">Summary: 4 changed, 2 unchanged</span></code></pre>
             </div>
             <figcaption>
               `kitout apply` against an explicitly selected config, rendered as
@@ -106,6 +109,8 @@ Results:
             <pre class="workflow-example config-example"><code>version: 1
 
 brew:
+  taps:
+    - vwall/kitout
   packages:
     - git
     - asdf
@@ -166,15 +171,17 @@ Doctor:
 Kitout is checking your Mac setup...
 Config: ./kitout.yaml
 
+<span class="terminal-skip">&gt;</span> Fetching Homebrew tap list...
 <span class="terminal-skip">&gt;</span> Fetching Homebrew package list...
 <span class="terminal-skip">&gt;</span> Fetching Homebrew cask list...
 
 Results:
+<span class="terminal-ok">✓ satisfied</span> brew_tap: vwall/kitout satisfied
 <span class="terminal-ok">✓ satisfied</span> brew: git satisfied
 <span class="terminal-warn">! missing  </span> cask: ghostty missing
 <span class="terminal-warn">! changed  </span> symlink: ~/.zshrc symlink points elsewhere
 
-<span class="terminal-summary">Summary: 1 satisfied, 1 missing, 1 changed
+<span class="terminal-summary">Summary: 2 satisfied, 1 missing, 1 changed
 2 resources need attention</span></code></pre>
             <p>
               Confirm prerequisites, then read satisfied, missing, changed,
@@ -192,10 +199,12 @@ Results:
             <pre class="workflow-example"><code><span class="terminal-skip">[dry-run]</span> Kitout is running in dry-run mode. No changes will be made.
 Config: ./kitout.yaml
 
+<span class="terminal-skip">&gt;</span> Inspecting Homebrew taps...
 <span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
 <span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
 <span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
 <span class="terminal-skip">[dry-run]</span> Previewing planned changes:
+<span class="terminal-warn">dry-run </span> Would add Homebrew tap vwall/kitout
 <span class="terminal-warn">dry-run </span> Would install cask ghostty
 <span class="terminal-warn">dry-run </span> Would clone repository ~/code/example-project
 <span class="terminal-warn">dry-run </span> Would replace symlink ~/.zshrc
@@ -218,21 +227,24 @@ No shell commands will run without explicit approval.</code></pre>
             <pre class="workflow-example apply-example"><code>Kitout is planning changes for your Mac setup...
 Config: ./kitout.yaml
 
+<span class="terminal-skip">&gt;</span> Inspecting Homebrew taps...
 <span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
 <span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
 <span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
 Applying changes:
+<span class="terminal-skip">&gt;</span> Adding Homebrew tap vwall/kitout...
 <span class="terminal-skip">&gt;</span> Installing cask ghostty...
 <span class="terminal-skip">&gt;</span> Cloning repository ~/code/example-project...
 <span class="terminal-skip">&gt;</span> Replacing symlink ~/.zshrc...
 
 Results:
+<span class="terminal-ok">✓ done </span> brew_tap: vwall/kitout added tap
 <span class="terminal-ok">✓ ok   </span> brew: git formula is installed
 <span class="terminal-ok">✓ done </span> cask: ghostty installed cask
 <span class="terminal-ok">✓ done </span> repo: ~/code/example-project cloned repository
 <span class="terminal-ok">✓ done </span> symlink: ~/.zshrc replaced symlink
 
-<span class="terminal-summary">Summary: 3 changed, 1 unchanged</span></code></pre>
+<span class="terminal-summary">Summary: 4 changed, 1 unchanged</span></code></pre>
             <p>
               Kitout applies only missing or changed resources. When apply
               succeeds, rerun status and the Mac matches the declared state.

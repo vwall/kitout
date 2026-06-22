@@ -7,6 +7,7 @@ A resource represents one desired piece of machine state.
 Examples:
 
 - `brew:git`
+- `brew_tap:vwall/kitout`
 - `asdf_plugin:ruby`
 - `asdf_tool_versions:~/.tool-versions`
 - `cask:ghostty`
@@ -91,6 +92,7 @@ Examples:
 
 ```txt
 brew:git
+brew_tap:vwall/kitout
 asdf_plugin:ruby
 asdf_tool_versions:/Users/example/.tool-versions
 cask:visual-studio-code
@@ -129,17 +131,18 @@ Do not build a full dependency graph in the MVP.
 Use fixed execution order:
 
 1. doctor prerequisites
-2. Homebrew packages
-3. asdf plugins and versions
-4. asdf `.tool-versions` entries
-5. casks
-6. directories
-7. repositories
-8. copies
-9. symlinks
-10. macOS defaults
-11. login shell
-12. shell commands
+2. Homebrew taps
+3. Homebrew packages
+4. asdf plugins and versions
+5. asdf `.tool-versions` entries
+6. casks
+7. directories
+8. repositories
+9. copies
+10. symlinks
+11. macOS defaults
+12. login shell
+13. shell commands
 
 This is enough for a first version.
 
@@ -156,6 +159,7 @@ Dry-run should:
 
 Dry-run should not:
 
+- add Homebrew taps
 - install packages
 - clone repositories
 - create directories

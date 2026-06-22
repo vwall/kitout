@@ -71,6 +71,7 @@ Scalar resource lists remain scalar in Go:
 
 - `casks` is `[]string`
 - `directories` is `[]string`
+- `brew.taps` is `[]string`
 - `brew.packages` is `[]string`
 
 Resources with named fields use typed structs:
@@ -87,7 +88,7 @@ Resources with named fields use typed structs:
 
 Current resource implementation coverage:
 
-- implemented resource packages: `brew.packages`, `asdf.plugins`,
+- implemented resource packages: `brew.taps`, `brew.packages`, `asdf.plugins`,
   `asdf.tool_versions`, `casks`, `directories`, `repos`, `copies`, `symlinks`,
   `symlink_groups`, `macos_defaults`, `login_shell`, and `shell`
 
@@ -97,6 +98,7 @@ The root `version` field is required.
 
 Scalar resource entries must not be empty:
 
+- `brew.taps[]`
 - `brew.packages[]`
 - `casks[]`
 - `directories[]`
@@ -158,6 +160,8 @@ missing:PATH
 version: 1
 
 brew:
+  taps:
+    - vwall/kitout
   packages:
     - git
     - asdf
@@ -328,6 +332,7 @@ The validator should reject duplicate resources.
 
 Examples:
 
+- same brew tap twice
 - same brew package twice
 - same asdf plugin name twice
 - same asdf version twice within a plugin

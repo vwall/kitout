@@ -12,6 +12,161 @@ import (
 	"github.com/vwall/kitout/internal/platform"
 )
 
+func TestBrewTapStatusSatisfiedWhenTapIsInstalled(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\nvwall/kitout\n")},
+	}}
+	resource := NewBrewTap("vwall/kitout", runner)
+
+	result, err := resource.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+
+	expectStatus(t, result, resource.ID(), brewTapType, engine.StateSatisfied, "tap is installed")
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"tap"}}})
+}
+
+func TestBrewTapStatusMissingWhenTapIsNotInstalled(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\n")},
+	}}
+	resource := NewBrewTap("vwall/kitout", runner)
+
+	result, err := resource.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+
+	expectStatus(t, result, resource.ID(), brewTapType, engine.StateMissing, "tap is missing")
+}
+
+func TestBrewTapStatusFailsWhenTapListFails(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{err: commandError("brew", []string{"tap"}, 1)},
+	}}
+	resource := NewBrewTap("vwall/kitout", runner)
+
+	result, err := resource.Status(context.Background())
+	if err == nil {
+		t.Fatal("Status returned nil error, want tap list failure")
+	}
+
+	expectStatus(t, result, resource.ID(), brewTapType, engine.StateFailed, "could not inspect tap")
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"tap"}}})
+}
+
+func TestBrewTapApplyAddsMissingTap(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\n")},
+		{result: commandResult("brew", []string{"tap", "vwall/kitout"}, 0)},
+	}}
+	resource := NewBrewTap("vwall/kitout", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err != nil {
+		t.Fatalf("Apply returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), brewTapType, "tap", true, "added tap")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"tap"}},
+		{name: "brew", args: []string{"tap", "vwall/kitout"}},
+	})
+}
+
+func TestBrewTapApplyIsIdempotentWhenInstalled(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "vwall/kitout\n")},
+	}}
+	resource := NewBrewTap("vwall/kitout", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err != nil {
+		t.Fatalf("Apply returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), brewTapType, "noop", false, "tap already installed")
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"tap"}}})
+}
+
+func TestBrewTapApplyReportsTapFailure(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\n")},
+		{err: commandError("brew", []string{"tap", "vwall/kitout"}, 1)},
+	}}
+	resource := NewBrewTap("vwall/kitout", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err == nil {
+		t.Fatal("Apply returned nil error, want tap failure")
+	}
+
+	expectApply(t, result, resource.ID(), brewTapType, "tap", false, "could not add tap")
+}
+
+func TestBrewTapDryRunPlanDoesNotTap(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\n")},
+	}}
+	resource := NewBrewTap("vwall/kitout", runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), []engine.Resource{resource})
+
+	if plan.Items[0].Action != engine.ActionApply {
+		t.Fatalf("Action = %q, want %q", plan.Items[0].Action, engine.ActionApply)
+	}
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"tap"}}})
+}
+
+func TestBrewTapDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\nvwall/kitout\n")},
+	}}
+	resources := Build(config.Config{
+		Version: config.CurrentVersion,
+		Brew: config.Brew{
+			Taps: []string{"vwall/kitout", "homebrew/cask-fonts"},
+		},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("vwall/kitout state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	if plan.Items[1].State != engine.StateMissing {
+		t.Fatalf("homebrew/cask-fonts state = %q, want %q", plan.Items[1].State, engine.StateMissing)
+	}
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"tap"}}})
+}
+
+func TestBrewTapUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\nvwall/kitout\n")},
+		{result: resultWithStdout("brew", []string{"tap"}, "homebrew/core\n")},
+	}}
+	resources := BuildUncached(config.Config{
+		Version: config.CurrentVersion,
+		Brew: config.Brew{
+			Taps: []string{"vwall/kitout", "homebrew/cask-fonts"},
+		},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("vwall/kitout state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	if plan.Items[1].State != engine.StateMissing {
+		t.Fatalf("homebrew/cask-fonts state = %q, want %q", plan.Items[1].State, engine.StateMissing)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"tap"}},
+		{name: "brew", args: []string{"tap"}},
+	})
+}
+
 func TestBrewPackageStatusSatisfiedWhenFormulaIsInstalled(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},

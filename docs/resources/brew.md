@@ -1,13 +1,16 @@
-# Brew Package Resource
+# Brew Resources
 
 ## Purpose
 
-The brew package resource ensures a Homebrew formula is installed.
+The brew tap resource ensures a Homebrew tap is available. The brew package
+resource ensures a Homebrew formula is installed.
 
 ## Config
 
 ```yaml
 brew:
+  taps:
+    - vwall/kitout
   packages:
     - git
     - ruby
@@ -18,13 +21,35 @@ Future expanded form:
 
 ```yaml
 brew:
+  taps:
+    - name: vwall/kitout
   packages:
     - name: git
     - name: ruby
       version: latest
 ```
 
-## Status check
+## Tap status check
+
+Use:
+
+```sh
+brew tap
+```
+
+Satisfied when the tap appears in Homebrew's tapped repository list.
+
+Missing when Homebrew is available but the tap is not listed.
+
+Failed when Homebrew is unavailable or the command errors unexpectedly.
+
+Kitout batches tap list checks for resources built from the same config, so
+`kitout status` and `kitout apply --dry-run` inspect the tap list once instead
+of running one `brew tap` command per tap. During real apply execution, Kitout
+uses fresh uncached resource checks before mutating so planning state cannot go
+stale.
+
+## Package status check
 
 Use:
 
@@ -57,15 +82,19 @@ Failed when Homebrew is unavailable or the command errors unexpectedly.
 Use:
 
 ```sh
+brew tap <name>
 brew install <name>
 brew upgrade <name>
 ```
 
+Missing taps are added before formulae are installed.
+
 Missing formulae are installed. Outdated formulae are upgraded.
 
-Human `kitout apply` output prints a progress line before starting each install
-or upgrade, for example `Upgrading formula go...`, because Homebrew can be slow
-or quiet while it is working.
+Human `kitout apply` output prints a progress line before starting each tap
+addition, install, or upgrade, for example `Adding Homebrew tap vwall/kitout...`
+or `Upgrading formula go...`, because Homebrew can be slow or quiet while it is
+working.
 
 ## Notes
 
@@ -79,8 +108,9 @@ kitout apply --brew-update
 
 ## Implementation status
 
-Implemented as `resources.BrewPackageResource`. Status and apply both use the
-shared command runner interface so tests do not call real Homebrew.
+Implemented as `resources.BrewTapResource` and `resources.BrewPackageResource`.
+Status and apply both use the shared command runner interface so tests do not
+call real Homebrew.
 
 ## Shared expectations
 

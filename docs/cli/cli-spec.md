@@ -31,12 +31,13 @@ symbols and text labels so status remains readable without color. `status`,
 `apply`, and `doctor` print a short startup line before slower checks begin so
 command startup does not look stuck. `status --verbose` prints a progress line
 before each resource status check. For batched Homebrew status checks, default
-`status` output prints one coarse package-list line and one cask-list line
-instead of per-resource `Checking ...` lines. `apply` prints a progress line
-before each non-Homebrew resource status check and before each resource apply
-starts. For batched Homebrew status checks, default `apply` output prints one
-coarse inspection line for formulae and one for casks instead of per-resource
-`Checking ...` lines. During human `kitout apply` runs, `--verbose` renders each
+`status` output prints one coarse tap-list line, one package-list line, and one
+cask-list line instead of per-resource `Checking ...` lines. `apply` prints a
+progress line before each non-Homebrew resource status check and before each
+resource apply starts. For batched Homebrew status checks, default `apply`
+output prints one coarse inspection line for taps, one for formulae, and one for
+casks instead of per-resource `Checking ...` lines. During human `kitout apply`
+runs, `--verbose` renders each
 resource status check, renders each subprocess command before it starts, and
 streams that subprocess stdout and stderr as it runs. `--verbose` does not
 stream output for `--dry-run`, `--json`, or `--quiet` runs. `--json` and
@@ -83,12 +84,12 @@ Current behavior:
 
 - load and validate the selected config file
 - print a startup line naming the selected config before status checks begin
-- by default, show one progress line before batched Homebrew package and cask
-  list fetches
+- by default, show one progress line before batched Homebrew tap, package, and
+  cask list fetches
 - with `--verbose`, show a progress line before each resource status check
 - build resources from config in stable execution order
 - check resource status through the engine planner
-- batch Homebrew installed and outdated checks across brew and cask resources during planning
+- batch Homebrew tap, installed, and outdated checks across Homebrew resources during planning
 - render resource details and summary counts
 - return `0` when all resources are satisfied or skipped
 - return `1` when changes are needed
@@ -102,10 +103,12 @@ Example human output:
 Kitout is checking your Mac setup...
 Config: /Users/example/.config/kitout/kitout.yaml
 
+> Fetching Homebrew tap list...
 > Fetching Homebrew package list...
 > Fetching Homebrew cask list...
 
 Results:
+✓ satisfied brew_tap: vwall/kitout        satisfied
 ✓ satisfied brew: git                    satisfied
 ! changed   brew: go                     formula is outdated
 ! missing   cask: ghostty                missing
@@ -113,7 +116,7 @@ Results:
 - skip      repo: /Users/example/code/app skipped by config
 × fail      shell: setup                 failed: command failed
 
-Summary: 2 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
+Summary: 3 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
 3 resources need attention
 ```
 
@@ -142,7 +145,7 @@ Behavior:
 - load and validate config
 - print a startup line naming the selected config before status checks begin
 - show a progress line before each non-Homebrew resource status check
-- show one Homebrew formula inspection line and one cask inspection line for batched status checks
+- show one Homebrew tap, formula, and cask inspection line for batched status checks
 - run status checks
 - build plan
 - leave failed or unknown resources unapplied, but continue with other planned
@@ -171,11 +174,13 @@ Example output:
 [dry-run] Kitout is running in dry-run mode. No changes will be made.
 Config: /Users/example/.config/kitout/kitout.yaml
 
+> Inspecting Homebrew taps...
 > Inspecting Homebrew casks...
 > Checking copy: /Users/example/.codex/skills/nuxt-practices...
 > Checking symlink: /Users/example/.zshrc...
 
 [dry-run] Previewing planned changes:
+dry-run Would add Homebrew tap vwall/kitout
 dry-run Would install cask ghostty
 dry-run Would copy to /Users/example/.codex/skills/nuxt-practices
 dry-run Would replace symlink /Users/example/.zshrc

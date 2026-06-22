@@ -45,6 +45,7 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		tag   string
 	}{
 		{"Brew", reflect.TypeOf(Brew{}), "Packages", "packages,omitempty"},
+		{"Brew", reflect.TypeOf(Brew{}), "Taps", "taps,omitempty"},
 		{"ASDF", reflect.TypeOf(ASDF{}), "Plugins", "plugins,omitempty"},
 		{"ASDF", reflect.TypeOf(ASDF{}), "ToolVersions", "tool_versions,omitempty"},
 		{"ASDFPlugin", reflect.TypeOf(ASDFPlugin{}), "Name", "name"},
@@ -88,6 +89,7 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
 		Brew: Brew{
+			Taps:     []string{"vwall/kitout"},
 			Packages: []string{"git", "ruby", "node", "pnpm", "gh"},
 		},
 		ASDF: ASDF{

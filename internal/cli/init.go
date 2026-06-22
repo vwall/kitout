@@ -27,6 +27,8 @@ directories:
 # of your Mac. Keep placeholder paths and repo URLs out of active config.
 #
 # brew:
+#   taps:
+#     - vwall/kitout
 #   packages:
 #     - git
 #     - gh

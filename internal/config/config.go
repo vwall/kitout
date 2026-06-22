@@ -21,8 +21,9 @@ type Config struct {
 	Shell         []ShellCommand `yaml:"shell,omitempty"`
 }
 
-// Brew describes Homebrew packages managed by Kitout.
+// Brew describes Homebrew taps and packages managed by Kitout.
 type Brew struct {
+	Taps     []string `yaml:"taps,omitempty"`
 	Packages []string `yaml:"packages,omitempty"`
 }
 

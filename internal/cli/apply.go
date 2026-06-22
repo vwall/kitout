@@ -119,6 +119,7 @@ func verboseApplyOutputEnabled(opts globalOptions, applyOpts applyOptions) bool 
 type applyPlanObserver struct {
 	renderer              humanRenderer
 	verbose               bool
+	inspectedBrewTaps     bool
 	inspectedBrewPackages bool
 	inspectedBrewCasks    bool
 }
@@ -134,6 +135,11 @@ func (observer *applyPlanObserver) BeforeStatus(resource engine.Resource) {
 	}
 
 	switch resource.Type() {
+	case "brew_tap":
+		if !observer.inspectedBrewTaps {
+			observer.inspectedBrewTaps = true
+			observer.renderProgress("Inspecting Homebrew taps...")
+		}
 	case "brew":
 		if !observer.inspectedBrewPackages {
 			observer.inspectedBrewPackages = true

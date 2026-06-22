@@ -287,6 +287,44 @@ func TestHumanRendererApplyProgressOutput(t *testing.T) {
 	}
 }
 
+func TestHumanRendererBrewTapMessages(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	renderer.renderDryRunPlan("", engine.Plan{
+		Items: []engine.PlanItem{
+			{
+				ResourceID: "brew_tap:vwall/kitout",
+				Type:       "brew_tap",
+				State:      engine.StateMissing,
+				Action:     engine.ActionApply,
+				Details:    map[string]string{"name": "vwall/kitout"},
+			},
+		},
+		Summary: engine.PlanSummary{Total: 1, Missing: 1, ToApply: 1},
+	})
+	renderer.BeforeApply(engine.PlanItem{
+		ResourceID: "brew_tap:vwall/kitout",
+		Type:       "brew_tap",
+		State:      engine.StateMissing,
+		Action:     engine.ActionApply,
+		Details:    map[string]string{"name": "vwall/kitout"},
+	})
+
+	for _, fragment := range []string{
+		"Would add Homebrew tap vwall/kitout",
+		"> Adding Homebrew tap vwall/kitout...",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
 func TestHumanRendererStartupOutput(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

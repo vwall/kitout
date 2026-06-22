@@ -48,10 +48,12 @@ func Validate(cfg Config) error {
 		errs.add("version", fmt.Sprintf("must be %d", CurrentVersion))
 	}
 
+	errs.requireStrings("brew.taps", cfg.Brew.Taps)
 	errs.requireStrings("brew.packages", cfg.Brew.Packages)
 	errs.requireStrings("casks", cfg.Casks)
 	errs.requireStrings("directories", cfg.Directories)
 
+	errs.detectDuplicateStrings("brew.taps", cfg.Brew.Taps)
 	errs.detectDuplicateStrings("brew.packages", cfg.Brew.Packages)
 	errs.detectDuplicateStrings("casks", cfg.Casks)
 	errs.detectDuplicateStrings("directories", cfg.Directories)

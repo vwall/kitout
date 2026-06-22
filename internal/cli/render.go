@@ -450,7 +450,7 @@ func displayResourceLabel(typ, id string, details map[string]string) string {
 
 func displayResourceTarget(typ, id string, details map[string]string) string {
 	switch typ {
-	case "brew", "cask", "shell":
+	case "brew_tap", "brew", "cask", "shell":
 		if value := details["name"]; value != "" {
 			return value
 		}
@@ -560,6 +560,8 @@ func dryRunMessage(item engine.PlanItem) string {
 	}
 	target := displayResourceTarget(typ, item.ResourceID, item.Details)
 	switch typ {
+	case "brew_tap":
+		return "Would add Homebrew tap " + target
 	case "brew":
 		if item.State == engine.StateChanged {
 			return "Would upgrade formula " + target
@@ -619,6 +621,8 @@ func applyProgressMessage(item engine.PlanItem) string {
 	}
 	target := displayResourceTarget(typ, item.ResourceID, item.Details)
 	switch typ {
+	case "brew_tap":
+		return "Adding Homebrew tap " + target + "..."
 	case "brew":
 		if item.State == engine.StateChanged {
 			return "Upgrading formula " + target + "..."

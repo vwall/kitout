@@ -56,6 +56,8 @@ fresh-machine friction.
 version: 1
 
 brew:
+  taps:
+    - vwall/kitout
   packages:
     - git
     - asdf

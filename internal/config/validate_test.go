@@ -29,7 +29,7 @@ func TestValidateRejectsUnsupportedVersion(t *testing.T) {
 func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
-		Brew:    Brew{Packages: []string{""}},
+		Brew:    Brew{Taps: []string{""}, Packages: []string{""}},
 		ASDF: ASDF{
 			Plugins: []ASDFPlugin{{Versions: []string{""}}},
 			ToolVersions: []ASDFToolVersion{
@@ -50,6 +50,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 	err := Validate(cfg)
 
 	for _, field := range []string{
+		"brew.taps[0]",
 		"brew.packages[0]",
 		"asdf.plugins[0].name",
 		"asdf.plugins[0].url",
@@ -82,7 +83,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 func TestValidateRejectsDuplicateResources(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
-		Brew:    Brew{Packages: []string{"git", "git"}},
+		Brew:    Brew{Taps: []string{"vwall/kitout", "vwall/kitout"}, Packages: []string{"git", "git"}},
 		ASDF: ASDF{
 			Plugins: []ASDFPlugin{
 				{Name: "ruby", URL: "https://github.com/asdf-vm/asdf-ruby.git", Versions: []string{"3.3.6", "3.3.6"}},
@@ -124,6 +125,7 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 	err := Validate(cfg)
 
 	for _, field := range []string{
+		"brew.taps[1]",
 		"brew.packages[1]",
 		"asdf.plugins[0].versions[1]",
 		"asdf.plugins[1].name",
