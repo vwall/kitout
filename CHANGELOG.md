@@ -2,11 +2,34 @@
 
 ## Unreleased
 
+## 1.2.0 - Homebrew tap resources
+
+Kitout 1.2.0 adds first-class Homebrew tap management while keeping the stable
+`version: 1` config schema.
+
+### Added
+
+- Added `brew.taps` resources for checking and adding Homebrew taps before
+  dependent formulae are installed.
+
 ### Changed
 
 - Failed external commands now include a compact stderr/stdout summary in human
   and JSON reports, so failures such as `asdf install ruby ...` show the
   underlying build error instead of only `exit status 1`.
+- Homebrew package checks now handle fully-qualified formula names such as
+  `owner/repo/formula`, making tapped formula configs more explicit.
+- Refreshed the docs workflow UI and examples for the current resource set.
+
+### Documentation
+
+- Updated brew resource docs, config docs, CLI examples, and the Homebrew
+  formula template for `v1.2.0` macOS arm64 and amd64 artifacts.
+
+### Notes
+
+- This is an additive `version: 1` schema release. Existing `1.1.x` configs do
+  not need to change.
 
 ## 1.1.2 - Fresh-machine apply continuation
 
