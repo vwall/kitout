@@ -103,6 +103,10 @@ Scalar resource entries must not be empty:
 - `casks[]`
 - `directories[]`
 
+`brew.packages[]` entries may be simple formula names such as `git` or
+fully-qualified tapped formula names such as `owner/repo/formula` when a tap
+needs to be selected explicitly.
+
 Named resources require the fields needed to identify and apply the resource:
 
 - `asdf.plugins[].name`
