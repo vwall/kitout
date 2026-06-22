@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
@@ -35,11 +36,16 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 		resources = append(resources, newBrewTap(name, runner, brewTapInstalled))
 	}
 	for _, name := range cfg.Brew.Packages {
-		outdated := brewOutdated
+		installed := brewInstalled
+		var outdated brewOutdatedChecker = brewOutdated
 		if !batchHomebrew {
 			outdated = newBrewOutdatedCache(runner)
 		}
-		resources = append(resources, newBrewPackage(name, runner, brewInstalled, outdated))
+		if isFullyQualifiedBrewFormula(name) {
+			installed = newDirectBrewInstalledChecker(runner)
+			outdated = newDirectBrewOutdatedChecker(runner)
+		}
+		resources = append(resources, newBrewPackage(name, runner, installed, outdated))
 	}
 	for _, plugin := range cfg.ASDF.Plugins {
 		resources = append(resources, NewASDFPluginWithOptions(
@@ -101,6 +107,10 @@ func configuredLoginShellCount(cfg config.Config) int {
 		return 0
 	}
 	return 1
+}
+
+func isFullyQualifiedBrewFormula(name string) bool {
+	return strings.Count(strings.Trim(name, "/"), "/") >= 2
 }
 
 // UnsupportedResource reports known config sections that do not have apply support yet.

@@ -436,6 +436,52 @@ func TestBrewPackageDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
 	})
 }
 
+func TestBrewPackageDryRunUsesDirectChecksForFullyQualifiedBuiltFormula(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "owner/repo/example"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet", "owner/repo/example"}, 0)},
+	}}
+	resources := Build(config.Config{
+		Version: config.CurrentVersion,
+		Brew: config.Brew{
+			Packages: []string{"owner/repo/example"},
+		},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("owner/repo/example state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "owner/repo/example"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "owner/repo/example"}},
+	})
+}
+
+func TestBrewPackageDryRunChecksFullyQualifiedBuiltFormulaOutdatedDirectly(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "owner/repo/example"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "owner/repo/example"}, "example\n")},
+	}}
+	resources := Build(config.Config{
+		Version: config.CurrentVersion,
+		Brew: config.Brew{
+			Packages: []string{"owner/repo/example"},
+		},
+	}, runner)
+
+	plan := engine.NewPlanner().Build(context.Background(), resources)
+
+	if plan.Items[0].State != engine.StateChanged {
+		t.Fatalf("owner/repo/example state = %q, want %q", plan.Items[0].State, engine.StateChanged)
+	}
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "owner/repo/example"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "owner/repo/example"}},
+	})
+}
+
 func TestBrewPackageUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},

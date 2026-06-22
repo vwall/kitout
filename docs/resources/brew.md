@@ -13,6 +13,7 @@ brew:
     - vwall/kitout
   packages:
     - git
+    - vwall/kitout/kitout
     - ruby
     - node
 ```
@@ -90,6 +91,9 @@ brew upgrade <name>
 Missing taps are added before formulae are installed.
 
 Missing formulae are installed. Outdated formulae are upgraded.
+
+Use fully-qualified formula names such as `owner/repo/formula` when a tapped
+formula needs to be selected explicitly.
 
 Human `kitout apply` output prints a progress line before starting each tap
 addition, install, or upgrade, for example `Adding Homebrew tap vwall/kitout...`

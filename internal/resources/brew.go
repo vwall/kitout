@@ -17,7 +17,7 @@ type BrewPackageResource struct {
 	name      string
 	runner    platform.Runner
 	installed brewInstalledChecker
-	outdated  *brewOutdatedCache
+	outdated  brewOutdatedChecker
 }
 
 var _ engine.Resource = BrewPackageResource{}
@@ -27,7 +27,7 @@ func NewBrewPackage(name string, runner platform.Runner) BrewPackageResource {
 	return newBrewPackage(name, runner, newDirectBrewInstalledChecker(runner), newBrewOutdatedCache(runner))
 }
 
-func newBrewPackage(name string, runner platform.Runner, installed brewInstalledChecker, outdated *brewOutdatedCache) BrewPackageResource {
+func newBrewPackage(name string, runner platform.Runner, installed brewInstalledChecker, outdated brewOutdatedChecker) BrewPackageResource {
 	return BrewPackageResource{name: name, runner: runner, installed: installed, outdated: outdated}
 }
 
@@ -186,6 +186,10 @@ type brewOutdatedCache struct {
 	loadErr error
 }
 
+type brewOutdatedChecker interface {
+	Contains(ctx context.Context, name string) (bool, error)
+}
+
 func newBrewOutdatedCache(runner platform.Runner) *brewOutdatedCache {
 	return &brewOutdatedCache{runner: runner}
 }
@@ -210,4 +214,23 @@ func (cache *brewOutdatedCache) load(ctx context.Context) {
 	if err != nil && !isExitCode(err, 1) {
 		cache.loadErr = err
 	}
+}
+
+type directBrewOutdatedChecker struct {
+	runner platform.Runner
+}
+
+func newDirectBrewOutdatedChecker(runner platform.Runner) directBrewOutdatedChecker {
+	return directBrewOutdatedChecker{runner: runner}
+}
+
+func (checker directBrewOutdatedChecker) Contains(ctx context.Context, name string) (bool, error) {
+	result, err := checker.runner.Run(ctx, "brew", "outdated", "--formula", "--quiet", name)
+	if strings.TrimSpace(result.Stdout) != "" {
+		return true, nil
+	}
+	if err == nil || isExitCode(err, 1) {
+		return false, nil
+	}
+	return false, err
 }
