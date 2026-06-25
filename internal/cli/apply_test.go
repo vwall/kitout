@@ -453,6 +453,28 @@ func TestRiskyApplyItemsIncludesLoginShell(t *testing.T) {
 	}
 }
 
+func TestRiskyApplyItemsIncludesSecurityAndSSHKeys(t *testing.T) {
+	plan := engine.Plan{
+		Items: []engine.PlanItem{
+			{ResourceID: "security:firewall", Type: "security", Action: engine.ActionApply},
+			{ResourceID: "system:rosetta", Type: "system", Action: engine.ActionApply},
+			{ResourceID: "ssh_key:/Users/example/.ssh/id_ed25519", Type: "ssh_key", Action: engine.ActionApply},
+		},
+	}
+
+	items := riskyApplyItems(plan)
+
+	if len(items) != 2 {
+		t.Fatalf("len(items) = %d, want 2: %#v", len(items), items)
+	}
+	if items[0].Type != "security" {
+		t.Fatalf("risky item[0] type = %q, want security", items[0].Type)
+	}
+	if items[1].Type != "ssh_key" {
+		t.Fatalf("risky item[1] type = %q, want ssh_key", items[1].Type)
+	}
+}
+
 func TestApplyRunsShellCommandAfterConfirmation(t *testing.T) {
 	outputPath := filepath.Join(t.TempDir(), "created")
 	configPath := writeCLIConfigFile(t, `version: 1

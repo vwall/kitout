@@ -185,6 +185,10 @@ func resolveResourcePaths(baseDir string, cfg Config) Config {
 		}
 	}
 
+	for i, key := range cfg.SSH.Keys {
+		cfg.SSH.Keys[i].Path = resolveResourcePath(baseDir, key.Path)
+	}
+
 	return cfg
 }
 

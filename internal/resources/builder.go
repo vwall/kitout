@@ -32,6 +32,15 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 		caskInstalled = newCaskInstalledCache(runner)
 	}
 
+	if requiredSettingEnabled(cfg.Security.FileVault) {
+		resources = append(resources, NewFileVaultRequirement(runner))
+	}
+	if requiredSettingEnabled(cfg.System.XcodeCommandLineTools) {
+		resources = append(resources, NewXcodeCommandLineToolsRequirement(runner))
+	}
+	if requiredSettingEnabled(cfg.System.Rosetta) {
+		resources = append(resources, NewRosettaRequirement(runner))
+	}
 	for _, name := range cfg.Brew.Taps {
 		resources = append(resources, newBrewTap(name, runner, brewTapInstalled))
 	}
@@ -77,6 +86,15 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 	for _, item := range cfg.MacOSDefaults {
 		resources = append(resources, NewMacOSDefault(item.Domain, item.Key, item.Type, item.Value, runner))
 	}
+	if cfg.Security.Firewall != nil && cfg.Security.Firewall.Enabled != nil {
+		resources = append(resources, NewFirewall(*cfg.Security.Firewall.Enabled, runner))
+		if cfg.Security.Firewall.StealthMode != nil {
+			resources = append(resources, NewFirewallStealthMode(*cfg.Security.Firewall.StealthMode, runner))
+		}
+	}
+	for _, key := range cfg.SSH.Keys {
+		resources = append(resources, NewSSHKey(key.Path, key.Type, key.Comment, runner))
+	}
 	if cfg.LoginShell != nil {
 		resources = append(resources, NewLoginShell(cfg.LoginShell.Path, cfg.LoginShell.AddToEtcShells, runner))
 	}
@@ -98,6 +116,11 @@ func resourceCount(cfg config.Config) int {
 		len(cfg.Copies) +
 		len(cfg.ExpandedSymlinks()) +
 		len(cfg.MacOSDefaults) +
+		configuredRequiredSettingCount(cfg.Security.FileVault) +
+		configuredFirewallCount(cfg.Security.Firewall) +
+		configuredRequiredSettingCount(cfg.System.XcodeCommandLineTools) +
+		configuredRequiredSettingCount(cfg.System.Rosetta) +
+		len(cfg.SSH.Keys) +
 		configuredLoginShellCount(cfg) +
 		len(cfg.Shell)
 }
@@ -107,6 +130,28 @@ func configuredLoginShellCount(cfg config.Config) int {
 		return 0
 	}
 	return 1
+}
+
+func configuredRequiredSettingCount(setting *config.RequiredSetting) int {
+	if requiredSettingEnabled(setting) {
+		return 1
+	}
+	return 0
+}
+
+func requiredSettingEnabled(setting *config.RequiredSetting) bool {
+	return setting != nil && setting.Required != nil && *setting.Required
+}
+
+func configuredFirewallCount(firewall *config.Firewall) int {
+	if firewall == nil || firewall.Enabled == nil {
+		return 0
+	}
+	count := 1
+	if firewall.StealthMode != nil {
+		count++
+	}
+	return count
 }
 
 func isFullyQualifiedBrewFormula(name string) bool {

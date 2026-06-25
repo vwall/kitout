@@ -83,6 +83,9 @@ Resources with named fields use typed structs:
 - `symlinks`
 - `symlink_groups`
 - `macos_defaults`
+- `security`
+- `system`
+- `ssh.keys`
 - `login_shell`
 - `shell`
 
@@ -90,7 +93,9 @@ Current resource implementation coverage:
 
 - implemented resource packages: `brew.taps`, `brew.packages`, `brew.casks`,
   `asdf.plugins`, `asdf.tool_versions`, `directories`, `repos`, `copies`,
-  `symlinks`, `symlink_groups`, `macos_defaults`, `login_shell`, and `shell`
+  `symlinks`, `symlink_groups`, `macos_defaults`, `security.filevault`,
+  `security.firewall`, `system.xcode_command_line_tools`, `system.rosetta`,
+  `ssh.keys`, `login_shell`, and `shell`
 
 ## Compatibility
 
@@ -136,6 +141,15 @@ Named resources require the fields needed to identify and apply the resource:
 - `macos_defaults[].key`
 - `macos_defaults[].type`
 - `macos_defaults[].value`
+- `security.filevault.required` must be `true` when `filevault` is configured
+- `security.firewall.enabled`
+- `security.firewall.stealth_mode` is optional and requires
+  `security.firewall.enabled: true`
+- `system.xcode_command_line_tools.required` must be `true` when configured
+- `system.rosetta.required` must be `true` when configured
+- `ssh.keys[].path`
+- `ssh.keys[].type`
+- `ssh.keys[].comment` is optional
 - `login_shell.path`
 - `shell[].name`
 - `shell[].command`
@@ -151,6 +165,11 @@ string
 
 `asdf.plugins[].versions[]` and `asdf.tool_versions[].tools` values must be
 exact versions. `latest` is rejected because it makes status mutable over time.
+
+`ssh.keys[].type` must be `ed25519` in the first implementation. Kitout
+generates missing SSH keys with an empty passphrase so `apply` stays
+non-interactive. Do not store private key material or passphrases in Kitout
+config.
 
 `login_shell.path` must be either an absolute path or a `homebrew:<binary>`
 resolver. `homebrew:fish` resolves to `$(brew --prefix)/bin/fish` during
@@ -236,6 +255,25 @@ macos_defaults:
     type: bool
     value: true
 
+security:
+  filevault:
+    required: true
+  firewall:
+    enabled: true
+    stealth_mode: true
+
+system:
+  xcode_command_line_tools:
+    required: true
+  rosetta:
+    required: true
+
+ssh:
+  keys:
+    - path: ~/.ssh/id_ed25519
+      type: ed25519
+      comment: user@example.com
+
 login_shell:
   path: homebrew:fish
   add_to_etc_shells: true
@@ -280,6 +318,7 @@ The implemented path-bearing resource fields are:
 - `symlinks[].target`
 - `symlink_groups[].source_root`
 - `symlink_groups[].target_root`
+- `ssh.keys[].path`
 
 `login_shell.path` is intentionally stricter. It accepts only absolute paths
 and `homebrew:<binary>` resolvers so Kitout can resolve the path without

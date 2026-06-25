@@ -65,6 +65,83 @@ func TestExecutorReportsApplyFailures(t *testing.T) {
 	}
 }
 
+func TestExecutorSkipsRemainingApplyActionsAfterBlockingFailure(t *testing.T) {
+	blocker := &fakeResource{
+		id:          "security:filevault",
+		typ:         "security",
+		state:       StateMissing,
+		applyErr:    errors.New("enable FileVault manually"),
+		blocksApply: true,
+	}
+	directory := &fakeResource{id: "directory:/tmp/code", typ: "directory", state: StateMissing}
+	noop := &fakeResource{id: "brew:git", typ: "brew", state: StateSatisfied}
+	plan := Plan{
+		Items: []PlanItem{
+			{ResourceID: "security:filevault", Type: "security", State: StateMissing, Action: ActionApply},
+			{ResourceID: "directory:/tmp/code", Type: "directory", State: StateMissing, Action: ActionApply},
+			{ResourceID: "brew:git", Type: "brew", State: StateSatisfied, Action: ActionNoop, Message: "formula is installed"},
+		},
+	}
+
+	report := NewExecutor().Apply(context.Background(), []Resource{blocker, directory, noop}, plan)
+
+	if blocker.applyCalls != 1 {
+		t.Fatalf("blocker.applyCalls = %d, want 1", blocker.applyCalls)
+	}
+	if directory.applyCalls != 0 {
+		t.Fatalf("directory.applyCalls = %d, want 0", directory.applyCalls)
+	}
+	if len(report.Items) != 3 {
+		t.Fatalf("len(report.Items) = %d, want 3", len(report.Items))
+	}
+	if report.Items[0].Error != "enable FileVault manually" {
+		t.Fatalf("blocker error = %q, want manual FileVault error", report.Items[0].Error)
+	}
+	if report.Items[1].Action != "skip" || report.Items[1].Message != "blocked by security:filevault" {
+		t.Fatalf("blocked item = %+v, want skip blocked by security:filevault", report.Items[1])
+	}
+	if report.Items[2].Action != "noop" {
+		t.Fatalf("noop item action = %q, want noop", report.Items[2].Action)
+	}
+	if report.Summary.Failed != 1 || report.Summary.Skipped != 1 {
+		t.Fatalf("summary = %+v, want 1 failed and 1 skipped", report.Summary)
+	}
+}
+
+func TestExecutorSkipsRemainingApplyActionsAfterBlockingPlanFailure(t *testing.T) {
+	blocker := &fakeResource{
+		id:          "security:filevault",
+		typ:         "security",
+		state:       StateFailed,
+		blocksApply: true,
+	}
+	directory := &fakeResource{id: "directory:/tmp/code", typ: "directory", state: StateMissing}
+	plan := Plan{
+		Items: []PlanItem{
+			{ResourceID: "security:filevault", Type: "security", State: StateFailed, Action: ActionFail, Message: "could not inspect FileVault", Error: "fdesetup failed"},
+			{ResourceID: "directory:/tmp/code", Type: "directory", State: StateMissing, Action: ActionApply},
+		},
+	}
+
+	report := NewExecutor().Apply(context.Background(), []Resource{blocker, directory}, plan)
+
+	if blocker.applyCalls != 0 {
+		t.Fatalf("blocker.applyCalls = %d, want 0", blocker.applyCalls)
+	}
+	if directory.applyCalls != 0 {
+		t.Fatalf("directory.applyCalls = %d, want 0", directory.applyCalls)
+	}
+	if len(report.Items) != 2 {
+		t.Fatalf("len(report.Items) = %d, want 2", len(report.Items))
+	}
+	if report.Items[0].Action != "fail" {
+		t.Fatalf("blocker action = %q, want fail", report.Items[0].Action)
+	}
+	if report.Items[1].Action != "skip" || report.Items[1].Message != "blocked by security:filevault" {
+		t.Fatalf("blocked item = %+v, want skip blocked by security:filevault", report.Items[1])
+	}
+}
+
 func TestExecutorReportsProgressBeforeApply(t *testing.T) {
 	resource := &fakeResource{id: "brew:go", typ: "brew", state: StateChanged}
 	observer := &recordingApplyObserver{

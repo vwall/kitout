@@ -71,8 +71,8 @@ Behavior:
   manual edits
 - keep only deterministic directory resources active by default, including the
   parent directory for real Codex skill copies
-- keep package, repo, copy, symlink, and login-shell examples commented until
-  the user customizes them
+- keep package, repo, copy, symlink, security, system, SSH key, and login-shell
+  examples commented until the user customizes them
 
 ### `kitout status`
 
@@ -153,11 +153,13 @@ Behavior:
 - show one Homebrew tap, formula, and cask inspection line for batched status checks
 - run status checks
 - build plan
+- stop later apply actions when a blocking prerequisite, currently FileVault,
+  cannot be satisfied
 - leave failed or unknown resources unapplied, but continue with other planned
-  missing or changed resources
-- require confirmation before implemented risky actions, currently shell
-  commands, login-shell changes, copy replacements, and symlink replacements,
-  unless `--yes` is passed
+  missing or changed resources when they are not blocked by a prerequisite
+- require confirmation before implemented risky actions, currently security
+  changes, SSH key generation, shell commands, login-shell changes, copy
+  replacements, and symlink replacements, unless `--yes` is passed
 - apply missing or changed resources in stable order
 - show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
 - by default, capture subprocess output and include a compact stderr/stdout
@@ -306,6 +308,8 @@ Risky changes currently include:
 
 - replacing copy targets
 - replacing symlink targets
+- changing security settings
+- generating SSH keys
 - changing the current user's login shell
 - running shell commands
 

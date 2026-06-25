@@ -2,408 +2,430 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kitout | Your Mac. Defined.</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Kitout | Declarative Mac setup</title>
     <meta
       name="description"
-      content="Kitout is a Go CLI for declaring, checking, and applying the Mac setup that makes a machine feel like home."
+      content="Kitout is a Go CLI for declaring, checking, previewing, and applying a Mac setup from YAML."
     />
     <link rel="stylesheet" href="assets/site.css" />
   </head>
   <body>
     <header class="site-header" aria-label="Site header">
       <a class="brand" href="./" aria-label="Kitout home">
-        <span class="brand-mark">KITOUT</span>
-        <span class="brand-line">Declarative setup for your Mac</span>
+        <span class="brand-mark">Kitout</span>
+        <span class="brand-line">Mac setup as declared state</span>
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
-        <a class="nav-link" href="#outputs">Output</a>
-        <a class="nav-link" href="#install">Install</a>
-        <a class="github-link" href="https://github.com/vwall/kitout"
-          >View on GitHub</a
+        <a href="#commands">Runbook</a>
+        <a href="#schema">Config</a>
+        <a href="#output">Plan</a>
+        <a href="#install">Install</a>
+        <a class="nav-strong" href="https://github.com/vwall/kitout"
+          >GitHub</a
         >
       </nav>
     </header>
 
     <main>
       <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="system-label">Mac setup as reviewed state</p>
-          <h1 id="hero-title">Your Mac. Defined.</h1>
-          <p class="hero-text">
-            Kitout checks packages, apps, repos, file copies, login shell,
-            folders, and defaults against a YAML file before it changes
-            anything.
-          </p>
-          <div class="hero-actions" aria-label="Primary actions">
-            <a class="button primary" href="https://github.com/vwall/kitout"
-              >Open GitHub</a
-            >
-            <button
-              class="install-chip"
-              type="button"
-              data-copy-text="brew tap vwall/kitout&#10;brew install kitout"
-              aria-label="Copy install command"
-            >
-              <code>brew tap vwall/kitout</code>
-              <span class="copy-state" aria-live="polite">Copy</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="hero-visual">
-          <figure class="hero-output">
-            <div class="terminal-preview">
-              <div class="terminal-titlebar" aria-hidden="true">
-                <span class="terminal-dot red"></span>
-                <span class="terminal-dot yellow"></span>
-                <span class="terminal-dot green"></span>
-                <span class="terminal-title">kitout apply</span>
-              </div>
-              <pre class="terminal-screen"><code>Kitout is planning changes for your Mac setup...
-Config: ./kitout.yaml
-
-<span class="terminal-skip">&gt;</span> Inspecting Homebrew taps...
-<span class="terminal-skip">&gt;</span> Inspecting Homebrew packages...
-<span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
-<span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
-<span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
-Applying changes:
-<span class="terminal-skip">&gt;</span> Adding Homebrew tap vwall/kitout...
-<span class="terminal-skip">&gt;</span> Installing cask ghostty...
-<span class="terminal-skip">&gt;</span> Cloning repository ~/code/example-project...
-<span class="terminal-skip">&gt;</span> Replacing symlink ~/.zshrc...
-
-Results:
-<span class="terminal-ok">✓ done </span> brew_tap: vwall/kitout added tap
-<span class="terminal-ok">✓ ok   </span> brew: git formula is installed
-<span class="terminal-ok">✓ ok   </span> directory: ~/.config directory exists
-<span class="terminal-ok">✓ done </span> cask: ghostty installed cask
-<span class="terminal-ok">✓ done </span> repo: ~/code/example-project cloned repository
-<span class="terminal-ok">✓ done </span> symlink: ~/.zshrc replaced symlink
-
-<span class="terminal-summary">Summary: 4 changed, 2 unchanged</span></code></pre>
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow">Review before apply</p>
+            <h1 id="hero-title">Kitout</h1>
+            <p class="hero-text">
+              Declare your Mac setup in YAML, pick the config you intend to
+              trust, and read the plan before Kitout writes anything.
+            </p>
+            <div class="hero-actions" aria-label="Primary links">
+              <a class="button primary" href="#commands">Start runbook</a>
+              <a class="button secondary" href="config/config-spec.md"
+                >Config schema</a
+              >
+              <a class="button tertiary" href="#install">Install</a>
             </div>
-            <figcaption>
-              `kitout apply` against an explicitly selected config, rendered as
-              selectable terminal text.
+            <div class="hero-command" aria-label="Safe first pass commands">
+              <span class="prompt">$</span>
+              <code>kitout apply --config ./kitout.yaml --dry-run</code>
+              <button
+                type="button"
+                aria-label="Copy first pass commands"
+                data-copy-text="kitout doctor --config ./kitout.yaml&#10;kitout status --config ./kitout.yaml&#10;kitout apply --config ./kitout.yaml --dry-run"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+          <figure
+            class="kitout-artifact"
+            aria-labelledby="artifact-title"
+            aria-describedby="artifact-caption"
+          >
+            <div class="artifact-shell">
+              <div class="artifact-titlebar">
+                <span id="artifact-title">kitout apply --dry-run</span>
+                <strong>review first</strong>
+              </div>
+              <div class="artifact-flow">
+                <div class="artifact-manifest" aria-label="Declared resources">
+                  <span class="artifact-label">manifest</span>
+<pre><code>brew:
+  packages: [git, gh]
+  casks:
+    - ghostty
+repos:
+  - ~/code/example
+symlinks:
+  - ~/.zshrc</code></pre>
+                </div>
+                <div
+                  class="artifact-proof"
+                  aria-label="First pass commands and plan output"
+                >
+                  <ol class="artifact-commands" aria-label="First pass commands">
+                    <li><code>kitout doctor --config ./kitout.yaml</code></li>
+                    <li><code>kitout status --config ./kitout.yaml</code></li>
+                    <li><code>kitout apply --config ./kitout.yaml --dry-run</code></li>
+                  </ol>
+                  <table class="artifact-ledger" aria-label="Apply plan ledger">
+                    <thead>
+                      <tr>
+                        <th scope="col">Resource</th>
+                        <th scope="col">Output</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><code>cask: ghostty</code></td>
+                        <td>Would install cask ghostty</td>
+                      </tr>
+                      <tr>
+                        <td><code>brew: gh</code></td>
+                        <td>Would install formula gh</td>
+                      </tr>
+                      <tr>
+                        <td><code>repo: ~/code/example</code></td>
+                        <td>Would clone repository ~/code/example</td>
+                      </tr>
+                      <tr>
+                        <td><code>symlink: ~/.zshrc</code></td>
+                        <td>Would replace symlink ~/.zshrc</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="artifact-footer">
+                <span>Review the plan before changing the Mac.</span>
+                <span>No shell commands will run without explicit approval.</span>
+              </div>
+            </div>
+            <figcaption id="artifact-caption">
+              The useful artifact is the plan: run
+              <code>kitout doctor --config ./kitout.yaml</code> and
+              <code>kitout status --config ./kitout.yaml</code>, then read
+              <code>kitout apply --config ./kitout.yaml --dry-run</code> before
+              apply.
             </figcaption>
           </figure>
         </div>
       </section>
 
-      <section class="workflow" aria-labelledby="workflow-title">
-        <div class="section-heading">
-          <p class="system-label">Workflow</p>
-          <h2 id="workflow-title">Define, check, preview, apply.</h2>
+      <section id="commands" class="command-loop" aria-labelledby="commands-title">
+        <div class="section-intro">
+          <h2 id="commands-title">First run, no guesswork.</h2>
+          <p>
+            This page carries the minimum runbook. The source docs stay linked
+            for detail, but the safe path is visible before you leave.
+          </p>
         </div>
-        <ol class="workflow-steps">
-          <li class="workflow-step define-step">
-            <div class="step-kicker">
-              <span class="step-index">1.</span>
-              <h3>Define</h3>
+        <ol class="runbook-list" aria-label="Recommended first-run sequence">
+          <li>
+            <span class="step-number">1</span>
+            <div>
+              <h3>Select the config</h3>
+              <p>
+                Pick the setup repo config whenever a repo file and home config
+                could both exist.
+              </p>
             </div>
-            <div class="step-commands">
-              <code class="step-command">kitout init</code>
+            <code>./kitout.yaml</code>
+          </li>
+          <li>
+            <span class="step-number">2</span>
+            <div>
+              <h3>Run doctor</h3>
+              <p>Check macOS, Homebrew, Git, shell, config validity, and paths.</p>
             </div>
-            <pre class="workflow-example config-example"><code>version: 1
+            <code>kitout doctor --config ./kitout.yaml</code>
+          </li>
+          <li>
+            <span class="step-number">3</span>
+            <div>
+              <h3>Read status</h3>
+              <p>See satisfied, missing, changed, skipped, and failed resources.</p>
+            </div>
+            <code>kitout status --config ./kitout.yaml</code>
+          </li>
+          <li>
+            <span class="step-number">4</span>
+            <div>
+              <h3>Preview before apply</h3>
+              <p>Preview changes without filesystem writes or shell execution.</p>
+            </div>
+            <code>kitout apply --config ./kitout.yaml --dry-run</code>
+          </li>
+        </ol>
+        <p class="source-note">
+          Preview command:
+          <code>kitout apply --config ./kitout.yaml --dry-run</code>
+          ·
+          Phase 0 source doc:
+          <a href="setup/first-real-run.md">first real run</a>
+        </p>
+      </section>
+
+      <section id="schema" class="schema-section" aria-labelledby="schema-title">
+        <div class="section-intro">
+          <h2 id="schema-title">YAML that explains itself.</h2>
+          <p>
+            The MVP keeps resources explicit: packages, casks, directories,
+            symlinks, repositories, macOS defaults, security checks, system
+            prerequisites, SSH keys, and approved shell commands.
+          </p>
+        </div>
+        <div class="schema-grid">
+          <div class="code-panel">
+            <div class="panel-bar">
+              <span>kitout.yaml</span>
+              <button type="button" data-copy-target="starter-config">Copy</button>
+            </div>
+            <pre><code id="starter-config">version: 1
 
 brew:
   taps:
     - vwall/kitout
   packages:
     - git
-    - asdf
-    - pnpm
     - gh
+    - asdf
+  casks:
+    - ghostty
+    - visual-studio-code
 
-casks:
-  - ghostty
-  - visual-studio-code
+directories:
+  - ~/.config
 
 repos:
-  - path: ~/code/example-project
-    url: git@github.com:example/example-project.git
+  - path: ~/code/example
+    url: git@github.com:example/example.git
     branch: main
 
 symlinks:
-  - source: ~/dotfiles/home/zshrc
+  - source: ~/dotfiles/zshrc
     target: ~/.zshrc
     replace: true
 
-login_shell:
-  path: homebrew:fish
-  add_to_etc_shells: true</code></pre>
-            <p>
-              Create the home config, or keep <code>./kitout.yaml</code> in a
-              setup repo. If both config files exist, bring
-              <code>--config</code>.
-            </p>
-            <p class="config-rule">
-              Kitout refuses ambiguous config paths until you choose one.
-            </p>
-          </li>
-          <li class="workflow-step check-step">
-            <div class="step-kicker">
-              <span class="step-index">2.</span>
-              <h3>Check</h3>
-            </div>
-            <div class="step-commands">
-              <code class="step-command">kitout doctor</code>
-              <code class="step-command">kitout status</code>
-            </div>
-            <pre class="workflow-example"><code>Kitout is checking local prerequisites...
-Config: ./kitout.yaml
+security:
+  filevault:
+    required: true
+  firewall:
+    enabled: true
 
-Doctor:
-<span class="terminal-ok">ok:  </span> macOS                      running on macOS
-<span class="terminal-ok">ok:  </span> CPU architecture           running on Apple Silicon
-<span class="terminal-ok">ok:  </span> Xcode Command Line Tools   /Library/Developer/CommandLineTools
-<span class="terminal-ok">ok:  </span> Homebrew                   Homebrew 4.0.0
-<span class="terminal-ok">ok:  </span> Homebrew path              Homebrew prefix is /opt/homebrew
-<span class="terminal-ok">ok:  </span> Git                        git version 2.45.0
-<span class="terminal-ok">ok:  </span> Shell environment          SHELL and PATH look usable
-<span class="terminal-ok">ok:  </span> Config                     config is valid
-<span class="terminal-ok">ok:  </span> Path permissions           2 configured write target(s) look writable
-
-9 total, 9 ok, 0 warnings, 0 failed
-
-Kitout is checking your Mac setup...
-Config: ./kitout.yaml
-
-<span class="terminal-skip">&gt;</span> Fetching Homebrew tap list...
-<span class="terminal-skip">&gt;</span> Fetching Homebrew package list...
-<span class="terminal-skip">&gt;</span> Fetching Homebrew cask list...
-
-Results:
-<span class="terminal-ok">✓ satisfied</span> brew_tap: vwall/kitout satisfied
-<span class="terminal-ok">✓ satisfied</span> brew: git satisfied
-<span class="terminal-warn">! missing  </span> cask: ghostty missing
-<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc symlink points elsewhere
-
-<span class="terminal-summary">Summary: 2 satisfied, 1 missing, 1 changed
-2 resources need attention</span></code></pre>
-            <p>
-              Confirm prerequisites, then read satisfied, missing, changed,
-              skipped, and failed resources before touching the filesystem.
-            </p>
-          </li>
-          <li class="workflow-step preview-step">
-            <div class="step-kicker">
-              <span class="step-index">3.</span>
-              <h3>Preview</h3>
-            </div>
-            <div class="step-commands">
-              <code class="step-command">kitout apply --dry-run</code>
-            </div>
-            <pre class="workflow-example"><code><span class="terminal-skip">[dry-run]</span> Kitout is running in dry-run mode. No changes will be made.
-Config: ./kitout.yaml
-
-<span class="terminal-skip">&gt;</span> Inspecting Homebrew taps...
-<span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
-<span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
-<span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
-<span class="terminal-skip">[dry-run]</span> Previewing planned changes:
-<span class="terminal-warn">dry-run </span> Would add Homebrew tap vwall/kitout
-<span class="terminal-warn">dry-run </span> Would install cask ghostty
-<span class="terminal-warn">dry-run </span> Would clone repository ~/code/example-project
-<span class="terminal-warn">dry-run </span> Would replace symlink ~/.zshrc
-
-<span class="terminal-summary">[dry-run] No changes made because --dry-run was used.</span>
-No shell commands will run without explicit approval.</code></pre>
-            <p>
-              Inspect installs, clones, copies, symlinks, login-shell changes,
-              defaults, and approved shell commands with no filesystem changes.
-            </p>
-          </li>
-          <li class="workflow-step apply-step">
-            <div class="step-kicker">
-              <span class="step-index">4.</span>
-              <h3>Apply</h3>
-            </div>
-            <div class="step-commands">
-              <code class="step-command">kitout apply</code>
-            </div>
-            <pre class="workflow-example apply-example"><code>Kitout is planning changes for your Mac setup...
-Config: ./kitout.yaml
-
-<span class="terminal-skip">&gt;</span> Inspecting Homebrew taps...
-<span class="terminal-skip">&gt;</span> Inspecting Homebrew casks...
-<span class="terminal-skip">&gt;</span> Checking repo: ~/code/example-project...
-<span class="terminal-skip">&gt;</span> Checking symlink: ~/.zshrc...
-Applying changes:
-<span class="terminal-skip">&gt;</span> Adding Homebrew tap vwall/kitout...
-<span class="terminal-skip">&gt;</span> Installing cask ghostty...
-<span class="terminal-skip">&gt;</span> Cloning repository ~/code/example-project...
-<span class="terminal-skip">&gt;</span> Replacing symlink ~/.zshrc...
-
-Results:
-<span class="terminal-ok">✓ done </span> brew_tap: vwall/kitout added tap
-<span class="terminal-ok">✓ ok   </span> brew: git formula is installed
-<span class="terminal-ok">✓ done </span> cask: ghostty installed cask
-<span class="terminal-ok">✓ done </span> repo: ~/code/example-project cloned repository
-<span class="terminal-ok">✓ done </span> symlink: ~/.zshrc replaced symlink
-
-<span class="terminal-summary">Summary: 4 changed, 1 unchanged</span></code></pre>
-            <p>
-              Kitout applies only missing or changed resources. When apply
-              succeeds, rerun status and the Mac matches the declared state.
-            </p>
-          </li>
-        </ol>
+ssh:
+  keys:
+    - path: ~/.ssh/id_ed25519
+      type: ed25519</code></pre>
+          </div>
+          <div class="resource-stack" aria-label="Supported resource examples">
+            <article>
+              <span>brew</span>
+              <p>Install packages after checking the current Homebrew state.</p>
+            </article>
+            <article>
+              <span>cask</span>
+              <p>Confirm app presence before installing desktop software.</p>
+            </article>
+            <article>
+              <span>repo</span>
+              <p>Clone or verify repositories at declared local paths.</p>
+            </article>
+            <article>
+              <span>symlink</span>
+              <p>Replace links only when config explicitly allows it.</p>
+            </article>
+            <article>
+              <span>security</span>
+              <p>Require FileVault and manage firewall state with typed checks.</p>
+            </article>
+            <article>
+              <span>ssh</span>
+              <p>Generate declared SSH keypairs without shell setup blocks.</p>
+            </article>
+            <article>
+              <span>shell</span>
+              <p>Run only commands that are explicitly listed in YAML.</p>
+            </article>
+          </div>
+        </div>
       </section>
 
-      <section id="outputs" class="outputs" aria-labelledby="outputs-title">
-        <div class="section-heading">
-          <p class="system-label">Real output</p>
-          <h2 id="outputs-title">Selected config. Output you can audit.</h2>
+      <section id="output" class="output-section" aria-labelledby="output-title">
+        <div class="section-intro">
+          <h2 id="output-title">The plan is the artifact.</h2>
+          <p>
+            Apply output is deliberately plain: selected config, progress,
+            colored result rows, and a summary.
+          </p>
         </div>
-        <div class="output-grid">
-          <figure class="output-panel wide">
-            <div class="terminal-preview">
-              <div class="terminal-titlebar" aria-hidden="true">
-                <span class="terminal-dot red"></span>
-                <span class="terminal-dot yellow"></span>
-                <span class="terminal-dot green"></span>
-                <span class="terminal-title">kitout status</span>
-              </div>
-              <pre class="terminal-screen"><code>Kitout is checking your Mac setup...
+        <div class="output-proof">
+          <div class="run-terminal">
+            <div class="terminal-bar" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+              <strong>kitout apply --dry-run</strong>
+            </div>
+            <pre><code><span class="term-prompt">$</span> kitout apply --config ./kitout.yaml --dry-run
+
+[dry-run] Kitout is running in dry-run mode. No changes will be made.
 Config: ./kitout.yaml
 
-<span class="terminal-skip">&gt;</span> Fetching Homebrew tap list...
-<span class="terminal-skip">&gt;</span> Fetching Homebrew package list...
-<span class="terminal-skip">&gt;</span> Fetching Homebrew cask list...
+<span class="term-progress">&gt;</span> Inspecting Homebrew packages...
+<span class="term-progress">&gt;</span> Checking repo: ~/code/example...
+<span class="term-progress">&gt;</span> Checking symlink: ~/.zshrc...
 
-Results:
-<span class="terminal-ok">✓ satisfied</span> brew_tap: vwall/kitout satisfied
-<span class="terminal-ok">✓ satisfied</span> brew: git satisfied
-<span class="terminal-ok">✓ satisfied</span> brew: asdf satisfied
-<span class="terminal-warn">! missing  </span> cask: ghostty missing
-<span class="terminal-fail">× fail     </span> repo: ~/code/app failed: could not inspect repository path
-<span class="terminal-warn">! changed  </span> symlink: ~/.zshrc symlink points elsewhere
+[dry-run] Previewing planned changes:
+<span class="term-warn">dry-run </span> Would install formula gh
+<span class="term-warn">dry-run </span> Would clone repository ~/code/example
+<span class="term-warn">dry-run </span> Would replace symlink ~/.zshrc
 
-<span class="terminal-summary">Summary: 3 satisfied, 1 missing, 1 changed, 1 failed
-3 resources need attention</span></code></pre>
-            </div>
-            <figcaption>
-              `kitout status` reports current resource state from the selected
-              config.
-            </figcaption>
-          </figure>
-          <figure class="output-panel doctor-panel">
-            <div class="terminal-preview">
-              <div class="terminal-titlebar" aria-hidden="true">
-                <span class="terminal-dot red"></span>
-                <span class="terminal-dot yellow"></span>
-                <span class="terminal-dot green"></span>
-                <span class="terminal-title">kitout doctor</span>
-              </div>
-              <pre class="terminal-screen"><code>Kitout is checking local prerequisites...
-Config: ./kitout.yaml
-
-Doctor:
-<span class="terminal-ok">ok:  </span> macOS                      running on macOS
-<span class="terminal-ok">ok:  </span> CPU architecture           running on Apple Silicon
-<span class="terminal-ok">ok:  </span> Xcode Command Line Tools   /Library/Developer/CommandLineTools
-<span class="terminal-ok">ok:  </span> Homebrew                   Homebrew 4.0.0
-<span class="terminal-ok">ok:  </span> Homebrew path              Homebrew prefix is /opt/homebrew
-<span class="terminal-ok">ok:  </span> Git                        git version 2.45.0
-<span class="terminal-ok">ok:  </span> Shell environment          SHELL and PATH look usable
-<span class="terminal-ok">ok:  </span> Config                     config is valid
-<span class="terminal-ok">ok:  </span> Path permissions           2 configured write target(s) look writable
-
-<span class="terminal-summary">9 total, 9 ok, 0 warnings, 0 failed</span></code></pre>
-            </div>
-            <figcaption>
-              `kitout doctor` checks the local prerequisites.
-            </figcaption>
-          </figure>
-          <div class="safety-note">
-            <p class="system-label">Safety model</p>
-            <h3>Preview first. Apply after review.</h3>
+<span class="term-ok">[dry-run] No changes made because --dry-run was used.</span></code></pre>
+          </div>
+          <div class="output-notes" aria-label="Output guide">
+            <article>
+              <h3>Status names the current state</h3>
+              <p>Every resource reports satisfied, missing, changed, skipped, or failed.</p>
+            </article>
+            <article>
+              <h3>Apply starts from the same plan</h3>
+              <p>Only resources that need work are applied, and risky changes ask first.</p>
+            </article>
+            <article>
+              <h3>Doctor explains blockers</h3>
+              <p>Prerequisites fail early, before resource checks become noisy.</p>
+            </article>
+          </div>
+        </div>
+        <div class="recovery-strip" aria-label="Doctor recovery examples">
+          <div class="recovery-row">
+            <span>fail: Homebrew</span>
+            <code>Homebrew is not available</code>
             <p>
-              Status never makes changes, dry-run never makes changes, and shell
-              commands only run when they are listed in config and approved.
-              Shell commands, copy replacements, symlink replacements, and
-              login-shell changes are confirmation-gated unless
-              <code>--yes</code> is passed.
-              When <code>./kitout.yaml</code> and
-              <code>~/.config/kitout/kitout.yaml</code> both exist, Kitout stops
-              and asks for <code>--config</code>.
+              fix: Install Homebrew, then rerun
+              <code>kitout doctor</code>.
+            </p>
+          </div>
+          <div class="recovery-row">
+            <span>fail: Path permissions</span>
+            <code>1 configured write target(s) may not be writable</code>
+            <p>
+              fix: Fix ownership or permissions for the listed paths, then rerun
+              <code>kitout doctor</code>.
             </p>
           </div>
         </div>
       </section>
 
-      <section id="install" class="install" aria-labelledby="install-title">
-        <div>
-          <p class="system-label">Install</p>
-          <h2 id="install-title">
-            Start with the same commands in the README.
-          </h2>
+      <section class="safety-section" aria-labelledby="safety-title">
+        <div class="safety-copy">
+          <h2 id="safety-title">Safety rules by default.</h2>
+          <p>
+            Kitout keeps inspection and mutation separate, so each risky action
+            stays visible before it touches the machine.
+          </p>
+        </div>
+        <ul class="safety-list">
+          <li>
+            <strong>status</strong>
+            <span>Never makes changes.</span>
+          </li>
+          <li>
+            <strong>preview</strong>
+            <span>Never writes to the filesystem.</span>
+          </li>
+          <li>
+            <strong>shell</strong>
+            <span>Runs only commands explicitly listed in config.</span>
+          </li>
+          <li>
+            <strong>homebrew</strong>
+            <span>Is never auto-installed without an explicit choice.</span>
+          </li>
+          <li>
+            <strong>config</strong>
+            <span>Ambiguous paths require an explicit choice.</span>
+          </li>
+          <li>
+            <strong>files</strong>
+            <span>Are never deleted or overwritten unless config allows it.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section id="install" class="install-section" aria-labelledby="install-title">
+        <div class="section-intro">
+          <h2 id="install-title">Install after the runbook is clear.</h2>
+          <p>
+            The public install path is short. The first useful run still goes
+            through doctor, status, and apply after the preview step is clear.
+          </p>
         </div>
         <div class="install-grid">
-          <div class="command-block">
-            <div class="command-block-header">
-              <p>Public release path</p>
-              <button
-                class="copy-command"
-                type="button"
-                data-copy-target="install-public"
-              >
-                Copy command
-              </button>
+          <div class="code-panel">
+            <div class="panel-bar">
+              <span>Homebrew</span>
+              <button type="button" data-copy-target="install-homebrew">Copy</button>
             </div>
-            <pre><code id="install-public">brew tap vwall/kitout
+            <pre><code id="install-homebrew">brew tap vwall/kitout
 brew install kitout</code></pre>
           </div>
-          <div class="command-block">
-            <div class="command-block-header">
-              <p>Build from source</p>
-              <button
-                class="copy-command"
-                type="button"
-                data-copy-target="install-source"
-              >
-                Copy command
-              </button>
+          <div class="code-panel">
+            <div class="panel-bar">
+              <span>Source</span>
+              <button type="button" data-copy-target="install-source">Copy</button>
             </div>
             <pre><code id="install-source">go install ./cmd/kitout</code></pre>
           </div>
-          <div class="command-block">
-            <div class="command-block-header">
-              <p>Setup repo first pass</p>
-              <button
-                class="copy-command"
-                type="button"
-                data-copy-target="install-first-pass"
-              >
-                Copy command
-              </button>
+          <div class="code-panel">
+            <div class="panel-bar">
+              <span>First pass</span>
+              <button type="button" data-copy-target="install-first-pass">Copy</button>
             </div>
-            <pre><code id="install-first-pass">cd ~/code/setup
-kitout doctor --config ./kitout.yaml
+            <pre><code id="install-first-pass">kitout doctor --config ./kitout.yaml
 kitout status --config ./kitout.yaml
 kitout apply --config ./kitout.yaml --dry-run</code></pre>
           </div>
+        </div>
+        <div class="doc-links" aria-label="Helpful documentation">
+          <a href="setup/first-real-run.md">Source doc: first run</a>
+          <a href="config/config-spec.md">Source doc: config</a>
+          <a href="cli/cli-spec.md">Source doc: CLI</a>
+          <a href="install/installation-and-distribution.md"
+            >Source doc: install</a
+          >
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <div class="footer-lockup">
-        <img
-          class="footer-computer"
-          src="assets/retro-modern-mac.webp"
-          alt=""
-          width="1200"
-          height="960"
-          aria-hidden="true"
-        />
-        <span>Kitout is Mac-first, local-first, and written in Go.</span>
-      </div>
+      <span>Kitout is Mac-first, local-first, and written in Go.</span>
       <a href="https://github.com/vwall/kitout">github.com/vwall/kitout</a>
     </footer>
+
     <script>
       const copyButtons = document.querySelectorAll(
         "[data-copy-text], [data-copy-target]",
@@ -415,7 +437,7 @@ kitout apply --config ./kitout.yaml --dry-run</code></pre>
             await navigator.clipboard.writeText(text);
             return;
           } catch {
-            /* Fall through to the selectable text fallback. */
+            /* Use the selectable textarea fallback below. */
           }
         }
 
@@ -433,6 +455,7 @@ kitout apply --config ./kitout.yaml --dry-run</code></pre>
 
       copyButtons.forEach((button) => {
         const initialLabel = button.textContent.trim();
+        button.setAttribute("aria-live", "polite");
 
         button.addEventListener("click", async () => {
           const targetId = button.dataset.copyTarget;
@@ -441,29 +464,16 @@ kitout apply --config ./kitout.yaml --dry-run</code></pre>
 
           try {
             await writeClipboard(text.trim());
-            const state = button.querySelector(".copy-state");
-
-            if (state) {
-              state.textContent = "Copied";
-            } else {
-              button.textContent = "Copied";
-            }
+            button.dataset.copyState = "copied";
+            button.textContent = "Copied";
 
             window.setTimeout(() => {
-              if (state) {
-                state.textContent = "Copy";
-              } else {
-                button.textContent = initialLabel;
-              }
+              delete button.dataset.copyState;
+              button.textContent = initialLabel;
             }, 1600);
           } catch {
-            const state = button.querySelector(".copy-state");
-
-            if (state) {
-              state.textContent = "Select";
-            } else {
-              button.textContent = "Select text";
-            }
+            button.dataset.copyState = "fallback";
+            button.textContent = "Select command";
           }
         });
       });

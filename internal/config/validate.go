@@ -156,6 +156,34 @@ func Validate(cfg Config) error {
 	}
 	errs.detectDuplicates(macOSDefaultKeys(cfg.MacOSDefaults))
 
+	if cfg.Security.FileVault != nil {
+		errs.requireTrue("security.filevault.required", cfg.Security.FileVault.Required)
+	}
+	if cfg.Security.Firewall != nil {
+		errs.requireBool("security.firewall.enabled", cfg.Security.Firewall.Enabled)
+		if cfg.Security.Firewall.StealthMode != nil &&
+			cfg.Security.Firewall.Enabled != nil &&
+			!*cfg.Security.Firewall.Enabled {
+			errs.add("security.firewall.stealth_mode", "requires security.firewall.enabled true")
+		}
+	}
+
+	if cfg.System.XcodeCommandLineTools != nil {
+		errs.requireTrue("system.xcode_command_line_tools.required", cfg.System.XcodeCommandLineTools.Required)
+	}
+	if cfg.System.Rosetta != nil {
+		errs.requireTrue("system.rosetta.required", cfg.System.Rosetta.Required)
+	}
+
+	for i, key := range cfg.SSH.Keys {
+		errs.requireString(fmt.Sprintf("ssh.keys[%d].path", i), key.Path)
+		errs.requireString(fmt.Sprintf("ssh.keys[%d].type", i), key.Type)
+		if strings.TrimSpace(key.Type) != "" && key.Type != "ed25519" {
+			errs.add(fmt.Sprintf("ssh.keys[%d].type", i), "must be ed25519")
+		}
+	}
+	errs.detectDuplicates(sshKeyPathKeys(cfg.SSH.Keys))
+
 	if cfg.LoginShell != nil {
 		errs.requireString("login_shell.path", cfg.LoginShell.Path)
 		if strings.TrimSpace(cfg.LoginShell.Path) != "" && !validLoginShellPath(cfg.LoginShell.Path) {
@@ -183,6 +211,22 @@ func (errs *ValidationErrors) add(field, message string) {
 func (errs *ValidationErrors) requireString(field, value string) {
 	if strings.TrimSpace(value) == "" {
 		errs.add(field, "is required")
+	}
+}
+
+func (errs *ValidationErrors) requireBool(field string, value *bool) {
+	if value == nil {
+		errs.add(field, "is required")
+	}
+}
+
+func (errs *ValidationErrors) requireTrue(field string, value *bool) {
+	if value == nil {
+		errs.add(field, "is required")
+		return
+	}
+	if !*value {
+		errs.add(field, "must be true")
 	}
 }
 
@@ -329,6 +373,17 @@ func macOSDefaultKeys(items []MacOSDefault) []duplicateKey {
 		})
 	}
 	return keys
+}
+
+func sshKeyPathKeys(keys []SSHKey) []duplicateKey {
+	duplicates := make([]duplicateKey, 0, len(keys))
+	for i, key := range keys {
+		duplicates = append(duplicates, duplicateKey{
+			Field: fmt.Sprintf("ssh.keys[%d].path", i),
+			Value: key.Path,
+		})
+	}
+	return duplicates
 }
 
 func shellNameKeys(commands []ShellCommand) []duplicateKey {

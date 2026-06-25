@@ -43,8 +43,17 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 		Symlinks:      []Symlink{{}},
 		SymlinkGroups: []SymlinkGroup{{Paths: []string{""}}},
 		MacOSDefaults: []MacOSDefault{{}},
-		LoginShell:    &LoginShell{},
-		Shell:         []ShellCommand{{}},
+		Security: Security{
+			FileVault: &RequiredSetting{},
+			Firewall:  &Firewall{},
+		},
+		System: System{
+			XcodeCommandLineTools: &RequiredSetting{},
+			Rosetta:               &RequiredSetting{},
+		},
+		SSH:        SSH{Keys: []SSHKey{{}}},
+		LoginShell: &LoginShell{},
+		Shell:      []ShellCommand{{}},
 	}
 
 	err := Validate(cfg)
@@ -73,6 +82,12 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 		"macos_defaults[0].key",
 		"macos_defaults[0].type",
 		"macos_defaults[0].value",
+		"security.filevault.required",
+		"security.firewall.enabled",
+		"system.xcode_command_line_tools.required",
+		"system.rosetta.required",
+		"ssh.keys[0].path",
+		"ssh.keys[0].type",
 		"login_shell.path",
 		"shell[0].name",
 		"shell[0].command",
@@ -116,6 +131,10 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: false},
 		},
+		SSH: SSH{Keys: []SSHKey{
+			{Path: "~/.ssh/id_ed25519", Type: "ed25519"},
+			{Path: "~/.ssh/id_ed25519", Type: "ed25519"},
+		}},
 		Shell: []ShellCommand{
 			{Name: "Enable Corepack", Command: "corepack enable"},
 			{Name: "Enable Corepack", Command: "corepack enable"},
@@ -138,6 +157,7 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 		"symlink_groups[0].paths[0]",
 		"symlink_groups[1].paths[1]",
 		"macos_defaults[1]",
+		"ssh.keys[1].path",
 		"shell[1].name",
 	} {
 		assertValidationErrorContains(t, err, field, "duplicates")
@@ -261,6 +281,51 @@ func TestValidateAcceptsLoginShellPaths(t *testing.T) {
 			t.Fatalf("Validate(%q) returned error: %v", path, err)
 		}
 	}
+}
+
+func TestValidateRejectsDisabledRequiredSettings(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		Security: Security{
+			FileVault: &RequiredSetting{Required: boolRef(false)},
+		},
+		System: System{
+			XcodeCommandLineTools: &RequiredSetting{Required: boolRef(false)},
+			Rosetta:               &RequiredSetting{Required: boolRef(false)},
+		},
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "security.filevault.required", "must be true")
+	assertValidationError(t, err, "system.xcode_command_line_tools.required", "must be true")
+	assertValidationError(t, err, "system.rosetta.required", "must be true")
+}
+
+func TestValidateRejectsFirewallStealthModeWhenFirewallDisabled(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		Security: Security{
+			Firewall: &Firewall{Enabled: boolRef(false), StealthMode: boolRef(true)},
+		},
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "security.firewall.stealth_mode", "requires security.firewall.enabled true")
+}
+
+func TestValidateRejectsUnsupportedSSHKeyType(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		SSH: SSH{Keys: []SSHKey{
+			{Path: "~/.ssh/id_rsa", Type: "rsa"},
+		}},
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "ssh.keys[0].type", "must be ed25519")
 }
 
 func TestValidateRejectsInvalidLoginShellPaths(t *testing.T) {

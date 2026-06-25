@@ -78,10 +78,12 @@ Before tagging, also verify these release-specific items:
 - `kitout init` writes a starter config that validates without manual edits and
   `kitout status --config <generated-file>` can parse through it immediately
 - the generated starter keeps non-directory resources commented until the user
-  replaces placeholder package, repo, copy, dotfile, and login-shell values
+  replaces placeholder package, repo, copy, dotfile, security, system, SSH key,
+  and login-shell values
 - risky apply actions still require confirmation unless `--yes` is passed
-- copy replacements and login-shell changes are still treated as risky apply
-  actions
+- security changes, SSH key generation, copy replacements, symlink replacements,
+  login-shell changes, and shell commands are still treated as risky apply
+  actions where configured
 - fresh-machine prerequisite friction is documented in
   `docs/setup/first-real-run.md`
 

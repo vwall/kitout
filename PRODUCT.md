@@ -24,7 +24,7 @@ Avoid generic SaaS gloss, vague automation claims, AI-themed visuals, and shell-
 
 - Show the actual command surface instead of abstract process language.
 - Make safety visible: status and dry-run happen before apply.
-- Keep the interface specific to Mac setup resources such as Homebrew, casks, repos, dotfiles, directories, defaults, and shell commands.
+- Keep the interface specific to Mac setup resources such as Homebrew, casks, repos, dotfiles, directories, defaults, security checks, system prerequisites, SSH keys, and shell commands.
 - Prefer clear, inspectable artifacts over decorative chrome.
 
 ## Accessibility & Inclusion

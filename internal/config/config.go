@@ -18,6 +18,9 @@ type Config struct {
 	Symlinks      []Symlink      `yaml:"symlinks,omitempty"`
 	SymlinkGroups []SymlinkGroup `yaml:"symlink_groups,omitempty"`
 	MacOSDefaults []MacOSDefault `yaml:"macos_defaults,omitempty"`
+	Security      Security       `yaml:"security,omitempty"`
+	System        System         `yaml:"system,omitempty"`
+	SSH           SSH            `yaml:"ssh,omitempty"`
 	LoginShell    *LoginShell    `yaml:"login_shell,omitempty"`
 	Shell         []ShellCommand `yaml:"shell,omitempty"`
 }
@@ -120,6 +123,41 @@ type MacOSDefault struct {
 	Key    string `yaml:"key"`
 	Type   string `yaml:"type"`
 	Value  any    `yaml:"value"`
+}
+
+// Security describes desired macOS security state.
+type Security struct {
+	FileVault *RequiredSetting `yaml:"filevault,omitempty"`
+	Firewall  *Firewall        `yaml:"firewall,omitempty"`
+}
+
+// RequiredSetting describes a resource that must be present or enabled.
+type RequiredSetting struct {
+	Required *bool `yaml:"required,omitempty"`
+}
+
+// Firewall describes the macOS application firewall state.
+type Firewall struct {
+	Enabled     *bool `yaml:"enabled,omitempty"`
+	StealthMode *bool `yaml:"stealth_mode,omitempty"`
+}
+
+// System describes desired macOS system prerequisites.
+type System struct {
+	XcodeCommandLineTools *RequiredSetting `yaml:"xcode_command_line_tools,omitempty"`
+	Rosetta               *RequiredSetting `yaml:"rosetta,omitempty"`
+}
+
+// SSH describes SSH key material managed by Kitout.
+type SSH struct {
+	Keys []SSHKey `yaml:"keys,omitempty"`
+}
+
+// SSHKey describes one SSH keypair.
+type SSHKey struct {
+	Path    string `yaml:"path"`
+	Type    string `yaml:"type"`
+	Comment string `yaml:"comment,omitempty"`
 }
 
 // LoginShell describes the current user's desired macOS login shell.

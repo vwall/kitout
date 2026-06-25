@@ -26,6 +26,9 @@ func TestConfigUsesDocumentedYAMLFields(t *testing.T) {
 		{"Symlinks", "symlinks,omitempty"},
 		{"SymlinkGroups", "symlink_groups,omitempty"},
 		{"MacOSDefaults", "macos_defaults,omitempty"},
+		{"Security", "security,omitempty"},
+		{"System", "system,omitempty"},
+		{"SSH", "ssh,omitempty"},
 		{"LoginShell", "login_shell,omitempty"},
 		{"Shell", "shell,omitempty"},
 	}
@@ -72,6 +75,17 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Key", "key"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Type", "type"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Value", "value"},
+		{"Security", reflect.TypeOf(Security{}), "FileVault", "filevault,omitempty"},
+		{"Security", reflect.TypeOf(Security{}), "Firewall", "firewall,omitempty"},
+		{"RequiredSetting", reflect.TypeOf(RequiredSetting{}), "Required", "required,omitempty"},
+		{"Firewall", reflect.TypeOf(Firewall{}), "Enabled", "enabled,omitempty"},
+		{"Firewall", reflect.TypeOf(Firewall{}), "StealthMode", "stealth_mode,omitempty"},
+		{"System", reflect.TypeOf(System{}), "XcodeCommandLineTools", "xcode_command_line_tools,omitempty"},
+		{"System", reflect.TypeOf(System{}), "Rosetta", "rosetta,omitempty"},
+		{"SSH", reflect.TypeOf(SSH{}), "Keys", "keys,omitempty"},
+		{"SSHKey", reflect.TypeOf(SSHKey{}), "Path", "path"},
+		{"SSHKey", reflect.TypeOf(SSHKey{}), "Type", "type"},
+		{"SSHKey", reflect.TypeOf(SSHKey{}), "Comment", "comment,omitempty"},
 		{"LoginShell", reflect.TypeOf(LoginShell{}), "Path", "path"},
 		{"LoginShell", reflect.TypeOf(LoginShell{}), "AddToEtcShells", "add_to_etc_shells,omitempty"},
 		{"ShellCommand", reflect.TypeOf(ShellCommand{}), "Name", "name"},
@@ -123,6 +137,19 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 		MacOSDefaults: []MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
 		},
+		Security: Security{
+			FileVault: &RequiredSetting{Required: boolRef(true)},
+			Firewall:  &Firewall{Enabled: boolRef(true), StealthMode: boolRef(true)},
+		},
+		System: System{
+			XcodeCommandLineTools: &RequiredSetting{Required: boolRef(true)},
+			Rosetta:               &RequiredSetting{Required: boolRef(true)},
+		},
+		SSH: SSH{
+			Keys: []SSHKey{
+				{Path: "~/.ssh/id_ed25519", Type: "ed25519", Comment: "user@example.com"},
+			},
+		},
 		LoginShell: &LoginShell{Path: "homebrew:fish", AddToEtcShells: true},
 		Shell: []ShellCommand{
 			{Name: "Enable Corepack", Command: "corepack enable", When: "missing-command:pnpm"},
@@ -152,6 +179,18 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	}
 	if got := cfg.LoginShell.Path; got != "homebrew:fish" {
 		t.Fatalf("login shell path = %q, want homebrew:fish", got)
+	}
+	if cfg.Security.FileVault == nil || cfg.Security.FileVault.Required == nil || !*cfg.Security.FileVault.Required {
+		t.Fatalf("security.filevault.required = %#v, want true", cfg.Security.FileVault)
+	}
+	if cfg.Security.Firewall == nil || cfg.Security.Firewall.Enabled == nil || !*cfg.Security.Firewall.Enabled {
+		t.Fatalf("security.firewall.enabled = %#v, want true", cfg.Security.Firewall)
+	}
+	if cfg.System.Rosetta == nil || cfg.System.Rosetta.Required == nil || !*cfg.System.Rosetta.Required {
+		t.Fatalf("system.rosetta.required = %#v, want true", cfg.System.Rosetta)
+	}
+	if got := cfg.SSH.Keys[0].Type; got != "ed25519" {
+		t.Fatalf("ssh key type = %q, want ed25519", got)
 	}
 }
 
@@ -202,4 +241,8 @@ func yamlTagOf(t *testing.T, typ reflect.Type, field string) string {
 	}
 
 	return structField.Tag.Get("yaml")
+}
+
+func boolRef(value bool) *bool {
+	return &value
 }

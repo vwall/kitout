@@ -373,6 +373,27 @@ symlink_groups:
 	}
 }
 
+func TestLoadFileResolvesRelativeSSHKeyPathsFromConfigDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := writeConfigFileInDir(t, configDir, `version: 1
+
+ssh:
+  keys:
+    - path: home/.ssh/id_ed25519
+      type: ed25519
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	want := filepath.Join(configDir, "home", ".ssh", "id_ed25519")
+	if got := loaded.Config.SSH.Keys[0].Path; got != want {
+		t.Fatalf("ssh key path = %q, want %q", got, want)
+	}
+}
+
 func TestLoadFileWrapsMissingFileError(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "missing.yaml")
 

@@ -37,6 +37,10 @@
 - directories
 - symlinks
 - Git repositories
+- macOS defaults
+- security prerequisites
+- system prerequisites
+- SSH keys
 - shell commands
 
 ## Phase 4: Safety and doctor

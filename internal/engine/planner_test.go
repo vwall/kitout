@@ -149,6 +149,7 @@ type fakeResource struct {
 	message     string
 	err         error
 	applyErr    error
+	blocksApply bool
 	statusCalls int
 	applyCalls  int
 }
@@ -187,4 +188,8 @@ func (resource *fakeResource) Apply(ctx context.Context) (ApplyResult, error) {
 		Action:     string(ActionApply),
 		Changed:    true,
 	}, resource.applyErr
+}
+
+func (resource *fakeResource) BlocksApply() bool {
+	return resource.blocksApply
 }

@@ -131,18 +131,22 @@ Do not build a full dependency graph in the MVP.
 Use fixed execution order:
 
 1. doctor prerequisites
-2. Homebrew taps
-3. Homebrew packages
-4. asdf plugins and versions
-5. asdf `.tool-versions` entries
-6. casks
-7. directories
-8. repositories
-9. copies
-10. symlinks
-11. macOS defaults
-12. login shell
-13. shell commands
+2. FileVault requirement
+3. system prerequisites
+4. Homebrew taps
+5. Homebrew packages
+6. asdf plugins and versions
+7. asdf `.tool-versions` entries
+8. casks
+9. directories
+10. repositories
+11. copies
+12. symlinks
+13. macOS defaults
+14. firewall security settings
+15. SSH keys
+16. login shell
+17. shell commands
 
 This is enough for a first version.
 
@@ -165,6 +169,9 @@ Dry-run should not:
 - create directories
 - copy files
 - create symlinks
+- update security settings
+- install system prerequisites
+- generate SSH keys
 - run shell commands
 - write files
 

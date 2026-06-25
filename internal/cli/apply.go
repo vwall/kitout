@@ -175,6 +175,10 @@ func riskyApplyItems(plan engine.Plan) []engine.PlanItem {
 			items = append(items, item)
 		case "login_shell":
 			items = append(items, item)
+		case "security":
+			items = append(items, item)
+		case "ssh_key":
+			items = append(items, item)
 		case "copy":
 			if item.State == engine.StateChanged {
 				items = append(items, item)

@@ -64,16 +64,20 @@ func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Reso
 		Items: make([]ApplyItem, 0, len(plan.Items)),
 	}
 
-	for _, planItem := range plan.Items {
+	for i, planItem := range plan.Items {
+		resource := resourceByID[planItem.ResourceID]
 		if planItem.Action != ActionApply {
 			item := applyItemFromPlan(planItem)
 			report.Items = append(report.Items, item)
 			report.Summary.add(item)
+			if planItem.Action == ActionFail && resourceBlocksApply(resource) {
+				appendBlockedApplyItems(&report, plan.Items[i+1:], planItem.ResourceID)
+				return report
+			}
 			continue
 		}
 
-		resource, ok := resourceByID[planItem.ResourceID]
-		if !ok {
+		if resource == nil {
 			item := ApplyItem{
 				ResourceID: planItem.ResourceID,
 				Type:       planItem.Type,
@@ -95,9 +99,38 @@ func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Reso
 		item := applyItemFor(resource, result, err)
 		report.Items = append(report.Items, item)
 		report.Summary.add(item)
+		if err != nil && resourceBlocksApply(resource) {
+			appendBlockedApplyItems(&report, plan.Items[i+1:], resource.ID())
+			return report
+		}
 	}
 
 	return report
+}
+
+func appendBlockedApplyItems(report *ApplyReport, planItems []PlanItem, blockerID string) {
+	for _, planItem := range planItems {
+		item := applyItemFromPlan(planItem)
+		if planItem.Action == ActionApply {
+			item = ApplyItem{
+				ResourceID: planItem.ResourceID,
+				Type:       planItem.Type,
+				Action:     "skip",
+				Message:    "blocked by " + blockerID,
+				Details:    planItem.Details,
+			}
+		}
+		report.Items = append(report.Items, item)
+		report.Summary.add(item)
+	}
+}
+
+func resourceBlocksApply(resource Resource) bool {
+	if resource == nil {
+		return false
+	}
+	blocker, ok := resource.(ApplyBlocker)
+	return ok && blocker.BlocksApply()
 }
 
 func applyItemFromPlan(planItem PlanItem) ApplyItem {

@@ -457,7 +457,7 @@ func displayResourceLabel(typ, id string, details map[string]string) string {
 
 func displayResourceTarget(typ, id string, details map[string]string) string {
 	switch typ {
-	case "brew_tap", "brew", "cask", "shell":
+	case "brew_tap", "brew", "cask", "shell", "security", "system":
 		if value := details["name"]; value != "" {
 			return value
 		}
@@ -481,6 +481,10 @@ func displayResourceTarget(typ, id string, details map[string]string) string {
 		}
 	case "copy", "symlink":
 		if value := details["target"]; value != "" {
+			return compactPath(value)
+		}
+	case "ssh_key":
+		if value := details["path"]; value != "" {
 			return compactPath(value)
 		}
 	case "macos_default":
@@ -592,6 +596,15 @@ func dryRunMessage(item engine.PlanItem) string {
 		return "Would clone repository " + target
 	case "macos_default":
 		return "Would set macOS default " + target
+	case "security":
+		return securityDryRunMessage(item, target)
+	case "system":
+		return systemDryRunMessage(item, target)
+	case "ssh_key":
+		if item.State == engine.StateChanged {
+			return "Would recreate SSH public key " + target + ".pub"
+		}
+		return "Would generate SSH keypair " + target
 	case "login_shell":
 		if item.Details["listed_in_etc_shells"] == "false" && item.Details["add_to_etc_shells"] == "true" {
 			return "Would allow login shell " + target + " and set it for the current user"
@@ -653,6 +666,15 @@ func applyProgressMessage(item engine.PlanItem) string {
 		return "Cloning repository " + target + "..."
 	case "macos_default":
 		return "Setting macOS default " + target + "..."
+	case "security":
+		return securityApplyProgressMessage(item, target)
+	case "system":
+		return systemApplyProgressMessage(item, target)
+	case "ssh_key":
+		if item.State == engine.StateChanged {
+			return "Recreating SSH public key " + target + ".pub..."
+		}
+		return "Generating SSH keypair " + target + "..."
 	case "login_shell":
 		return "Setting login shell to " + target + "..."
 	case "shell":
@@ -676,6 +698,66 @@ func applyProgressMessage(item engine.PlanItem) string {
 		return "Updating .tool-versions " + target + "..."
 	default:
 		return "Applying " + displayResourceLabel(item.Type, item.ResourceID, item.Details) + "..."
+	}
+}
+
+func securityDryRunMessage(item engine.PlanItem, target string) string {
+	switch item.Details["name"] {
+	case "filevault":
+		return "Requires FileVault to be enabled manually"
+	case "firewall":
+		if item.Details["enabled"] == "false" {
+			return "Would disable firewall"
+		}
+		return "Would enable firewall"
+	case "firewall_stealth_mode":
+		if item.Details["enabled"] == "false" {
+			return "Would disable firewall stealth mode"
+		}
+		return "Would enable firewall stealth mode"
+	default:
+		return "Would update security setting " + target
+	}
+}
+
+func systemDryRunMessage(item engine.PlanItem, target string) string {
+	switch item.Details["name"] {
+	case "xcode_command_line_tools":
+		return "Would start Command Line Tools installer"
+	case "rosetta":
+		return "Would install Rosetta"
+	default:
+		return "Would update system prerequisite " + target
+	}
+}
+
+func securityApplyProgressMessage(item engine.PlanItem, target string) string {
+	switch item.Details["name"] {
+	case "filevault":
+		return "Opening FileVault settings..."
+	case "firewall":
+		if item.Details["enabled"] == "false" {
+			return "Disabling firewall..."
+		}
+		return "Enabling firewall..."
+	case "firewall_stealth_mode":
+		if item.Details["enabled"] == "false" {
+			return "Disabling firewall stealth mode..."
+		}
+		return "Enabling firewall stealth mode..."
+	default:
+		return "Updating security setting " + target + "..."
+	}
+}
+
+func systemApplyProgressMessage(item engine.PlanItem, target string) string {
+	switch item.Details["name"] {
+	case "xcode_command_line_tools":
+		return "Starting Command Line Tools installer..."
+	case "rosetta":
+		return "Installing Rosetta..."
+	default:
+		return "Updating system prerequisite " + target + "..."
 	}
 }
 

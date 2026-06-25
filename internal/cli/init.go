@@ -51,6 +51,25 @@ directories:
 #     target: ~/.zshrc
 #     replace: false
 #
+# security:
+#   filevault:
+#     required: true
+#   firewall:
+#     enabled: true
+#     stealth_mode: true
+#
+# system:
+#   xcode_command_line_tools:
+#     required: true
+#   rosetta:
+#     required: true
+#
+# ssh:
+#   keys:
+#     - path: ~/.ssh/id_ed25519
+#       type: ed25519
+#       comment: user@example.com
+#
 # login_shell:
 #   path: homebrew:fish
 #   add_to_etc_shells: true

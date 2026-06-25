@@ -210,6 +210,58 @@ func TestHumanRendererShowsLoginShellDryRunMessage(t *testing.T) {
 	}
 }
 
+func TestHumanRendererShowsSecuritySystemAndSSHKeyDryRunMessages(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+	home := mustUserHome(t)
+
+	renderer.renderDryRunPlan("/tmp/kitout.yaml", engine.Plan{
+		Items: []engine.PlanItem{
+			{
+				ResourceID: "security:filevault",
+				Type:       "security",
+				State:      engine.StateMissing,
+				Action:     engine.ActionApply,
+				Details:    map[string]string{"name": "filevault", "required": "true"},
+			},
+			{
+				ResourceID: "security:firewall",
+				Type:       "security",
+				State:      engine.StateChanged,
+				Action:     engine.ActionApply,
+				Details:    map[string]string{"name": "firewall", "enabled": "true"},
+			},
+			{
+				ResourceID: "system:rosetta",
+				Type:       "system",
+				State:      engine.StateMissing,
+				Action:     engine.ActionApply,
+				Details:    map[string]string{"name": "rosetta", "required": "true"},
+			},
+			{
+				ResourceID: "ssh_key:" + home + "/.ssh/id_ed25519",
+				Type:       "ssh_key",
+				State:      engine.StateMissing,
+				Action:     engine.ActionApply,
+				Details:    map[string]string{"path": home + "/.ssh/id_ed25519", "type": "ed25519"},
+			},
+		},
+		Summary: engine.PlanSummary{Total: 4, Missing: 3, Changed: 1, ToApply: 4},
+	})
+
+	for _, fragment := range []string{
+		"dry-run Requires FileVault to be enabled manually",
+		"dry-run Would enable firewall",
+		"dry-run Would install Rosetta",
+		"dry-run Would generate SSH keypair ~/.ssh/id_ed25519",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+}
+
 func TestHumanRendererShowsCopyDryRunAndApplyMessages(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

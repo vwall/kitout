@@ -70,6 +70,9 @@ Examples:
 - symlink
 - Git repository
 - macOS default
+- security setting
+- system prerequisite
+- SSH key
 - shell command
 
 Each resource must implement the same lifecycle.
@@ -117,6 +120,9 @@ internal/resources/
   symlink.go
   repo.go
   macos_default.go
+  security.go
+  system.go
+  ssh_key.go
   shell.go
 
 internal/platform/

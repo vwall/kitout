@@ -76,9 +76,27 @@ func TestInitGeneratedConfigLoadsAndStatusParsesWithoutEdits(t *testing.T) {
 	if loaded.Config.LoginShell != nil {
 		t.Fatalf("generated config active login_shell = %#v, want nil", loaded.Config.LoginShell)
 	}
+	if loaded.Config.Security.FileVault != nil || loaded.Config.Security.Firewall != nil {
+		t.Fatalf("generated config active security = %#v, want none", loaded.Config.Security)
+	}
+	if loaded.Config.System.XcodeCommandLineTools != nil || loaded.Config.System.Rosetta != nil {
+		t.Fatalf("generated config active system = %#v, want none", loaded.Config.System)
+	}
+	if len(loaded.Config.SSH.Keys) != 0 {
+		t.Fatalf("generated config active SSH keys = %#v, want none", loaded.Config.SSH.Keys)
+	}
 	contents := string(mustReadFile(t, configPath))
 	if !strings.Contains(contents, "# copies:") {
 		t.Fatalf("generated config missing commented copies example")
+	}
+	if !strings.Contains(contents, "# security:") {
+		t.Fatalf("generated config missing commented security example")
+	}
+	if !strings.Contains(contents, "# system:") {
+		t.Fatalf("generated config missing commented system example")
+	}
+	if !strings.Contains(contents, "# ssh:") {
+		t.Fatalf("generated config missing commented ssh example")
 	}
 	if !strings.Contains(contents, "# login_shell:") {
 		t.Fatalf("generated config missing commented login_shell example")
