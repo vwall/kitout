@@ -24,8 +24,9 @@ type jsonStatusResponse struct {
 }
 
 type jsonConfigStatus struct {
-	Path  string `json:"path,omitempty"`
-	Valid bool   `json:"valid"`
+	Path     string            `json:"path,omitempty"`
+	Valid    bool              `json:"valid"`
+	Warnings []jsonErrorDetail `json:"warnings,omitempty"`
 }
 
 type jsonPlan struct {
@@ -87,25 +88,27 @@ func newJSONRenderer(stdout io.Writer) jsonRenderer {
 	return jsonRenderer{stdout: stdout}
 }
 
-func (r jsonRenderer) renderPlan(command, path string, plan engine.Plan, dryRun bool) error {
+func (r jsonRenderer) renderPlan(command, path string, warnings []config.ConfigWarning, plan engine.Plan, dryRun bool) error {
 	return r.write(jsonStatusResponse{
 		Command: command,
 		OK:      !plan.HasFailures(),
 		Config: &jsonConfigStatus{
-			Path:  path,
-			Valid: true,
+			Path:     path,
+			Valid:    true,
+			Warnings: jsonWarningsFromConfig(warnings),
 		},
 		Plan: jsonPlanFromEngine(plan, dryRun),
 	})
 }
 
-func (r jsonRenderer) renderApplyReport(path string, report engine.ApplyReport) error {
+func (r jsonRenderer) renderApplyReport(path string, warnings []config.ConfigWarning, report engine.ApplyReport) error {
 	return r.write(jsonStatusResponse{
 		Command: "apply",
 		OK:      !report.HasFailures(),
 		Config: &jsonConfigStatus{
-			Path:  path,
-			Valid: true,
+			Path:     path,
+			Valid:    true,
+			Warnings: jsonWarningsFromConfig(warnings),
 		},
 		Apply: jsonApplyReportFromEngine(report),
 	})
@@ -116,8 +119,9 @@ func (r jsonRenderer) renderDoctorReport(report doctorReport) error {
 		Command: "doctor",
 		OK:      !report.HasFailures(),
 		Config: &jsonConfigStatus{
-			Path:  report.ConfigPath,
-			Valid: report.configIsValid(),
+			Path:     report.ConfigPath,
+			Valid:    report.configIsValid(),
+			Warnings: jsonWarningsFromConfig(report.ConfigWarnings),
 		},
 		Doctor: jsonDoctorReportFromCLI(report),
 	})
@@ -176,6 +180,21 @@ func (r jsonRenderer) write(response jsonStatusResponse) error {
 	encoder := json.NewEncoder(r.stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(response)
+}
+
+func jsonWarningsFromConfig(warnings []config.ConfigWarning) []jsonErrorDetail {
+	if len(warnings) == 0 {
+		return nil
+	}
+
+	details := make([]jsonErrorDetail, 0, len(warnings))
+	for _, warning := range warnings {
+		details = append(details, jsonErrorDetail{
+			Field:   warning.Field,
+			Message: warning.Message,
+		})
+	}
+	return details
 }
 
 func jsonPlanFromEngine(plan engine.Plan, dryRun bool) *jsonPlan {
@@ -240,7 +259,7 @@ func jsonDoctorReportFromCLI(report doctorReport) *jsonDoctorReport {
 func (report doctorReport) configIsValid() bool {
 	for _, item := range report.Items {
 		if item.Name == "Config" {
-			return item.State == doctorOK
+			return item.State != doctorFail
 		}
 	}
 	return false

@@ -29,7 +29,7 @@ func TestValidateRejectsUnsupportedVersion(t *testing.T) {
 func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
-		Brew:    Brew{Taps: []string{""}, Packages: []string{""}},
+		Brew:    Brew{Taps: []string{""}, Packages: []string{""}, Casks: []string{""}},
 		ASDF: ASDF{
 			Plugins: []ASDFPlugin{{Versions: []string{""}}},
 			ToolVersions: []ASDFToolVersion{
@@ -52,6 +52,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 	for _, field := range []string{
 		"brew.taps[0]",
 		"brew.packages[0]",
+		"brew.casks[0]",
 		"asdf.plugins[0].name",
 		"asdf.plugins[0].url",
 		"asdf.plugins[0].versions[0]",
@@ -83,7 +84,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 func TestValidateRejectsDuplicateResources(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
-		Brew:    Brew{Taps: []string{"vwall/kitout", "vwall/kitout"}, Packages: []string{"git", "git"}},
+		Brew:    Brew{Taps: []string{"vwall/kitout", "vwall/kitout"}, Packages: []string{"git", "git"}, Casks: []string{"ghostty", "ghostty"}},
 		ASDF: ASDF{
 			Plugins: []ASDFPlugin{
 				{Name: "ruby", URL: "https://github.com/asdf-vm/asdf-ruby.git", Versions: []string{"3.3.6", "3.3.6"}},
@@ -94,7 +95,6 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 				{Path: "~/.tool-versions", Tools: map[string]string{"nodejs": "22.12.0"}},
 			},
 		},
-		Casks:       []string{"ghostty", "ghostty"},
 		Directories: []string{"~/code", "~/code"},
 		Repos: []Repo{
 			{Path: "~/code/kitout", URL: "git@github.com:vwall/kitout.git"},
@@ -127,10 +127,10 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 	for _, field := range []string{
 		"brew.taps[1]",
 		"brew.packages[1]",
+		"brew.casks[1]",
 		"asdf.plugins[0].versions[1]",
 		"asdf.plugins[1].name",
 		"asdf.tool_versions[1].path",
-		"casks[1]",
 		"directories[1]",
 		"repos[1].path",
 		"copies[1].target",
@@ -141,6 +141,48 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 		"shell[1].name",
 	} {
 		assertValidationErrorContains(t, err, field, "duplicates")
+	}
+}
+
+func TestValidateStillChecksLegacyTopLevelCasks(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		Casks:   []string{"ghostty", "ghostty"},
+	}
+
+	err := Validate(cfg)
+
+	assertValidationErrorContains(t, err, "casks[1]", "duplicates")
+}
+
+func TestValidateRejectsBothCaskLocations(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		Brew:    Brew{Casks: []string{"ghostty"}},
+		Casks:   []string{"visual-studio-code"},
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "casks", "cannot be used with brew.casks; move entries to brew.casks")
+}
+
+func TestWarningsReportDeprecatedTopLevelCasks(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		Casks:   []string{"ghostty"},
+	}
+
+	warnings := Warnings(cfg)
+
+	if len(warnings) != 1 {
+		t.Fatalf("len(Warnings) = %d, want 1: %#v", len(warnings), warnings)
+	}
+	if warnings[0].Field != "casks" {
+		t.Fatalf("warning field = %q, want casks", warnings[0].Field)
+	}
+	if !strings.Contains(warnings[0].Message, "top-level casks is deprecated") {
+		t.Fatalf("warning message = %q, want deprecation guidance", warnings[0].Message)
 	}
 }
 

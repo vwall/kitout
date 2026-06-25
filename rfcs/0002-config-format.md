@@ -22,13 +22,15 @@ Support top-level sections:
 
 ```yaml
 brew:
-casks:
 directories:
 repos:
 symlinks:
 macos_defaults:
 shell:
 ```
+
+Homebrew casks belong under `brew.casks`; the older top-level `casks` section is
+kept only as a deprecated schema-version-1 compatibility form.
 
 ## Consequences
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
 )
 
@@ -196,6 +197,12 @@ func (r humanRenderer) renderDoctorReport(report doctorReport) {
 
 func (r humanRenderer) renderInvalidConfigDetails(err error) {
 	fmt.Fprintln(r.stderr, err.Error())
+}
+
+func (r humanRenderer) renderConfigWarnings(warnings []config.ConfigWarning) {
+	for _, warning := range warnings {
+		fmt.Fprintf(r.stderr, "warning: %s\n", warning.Message)
+	}
 }
 
 func (r humanRenderer) renderInvalidConfig(err error) {

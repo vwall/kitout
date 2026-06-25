@@ -59,7 +59,7 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 	for _, item := range cfg.ASDF.ToolVersions {
 		resources = append(resources, NewASDFToolVersions(item.Path, item.Tools))
 	}
-	for _, name := range cfg.Casks {
+	for _, name := range cfg.HomebrewCasks() {
 		resources = append(resources, newCask(name, runner, caskInstalled))
 	}
 	for _, path := range cfg.Directories {
@@ -92,7 +92,7 @@ func resourceCount(cfg config.Config) int {
 		len(cfg.Brew.Packages) +
 		len(cfg.ASDF.Plugins) +
 		len(cfg.ASDF.ToolVersions) +
-		len(cfg.Casks) +
+		len(cfg.HomebrewCasks()) +
 		len(cfg.Directories) +
 		len(cfg.Repos) +
 		len(cfg.Copies) +

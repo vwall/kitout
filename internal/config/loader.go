@@ -19,8 +19,9 @@ const LocalPath = "./kitout.yaml"
 
 // LoadedConfig is a config loaded from disk with its resolved source path.
 type LoadedConfig struct {
-	Path   string
-	Config Config
+	Path     string
+	Config   Config
+	Warnings []ConfigWarning
 }
 
 // AmbiguousConfigError reports that Kitout found both implicit config paths and
@@ -142,12 +143,14 @@ func LoadFile(path string) (LoadedConfig, error) {
 	if err := Validate(cfg); err != nil {
 		return LoadedConfig{}, err
 	}
+	warnings := Warnings(cfg)
 
 	cfg = resolveResourcePaths(filepath.Dir(resolvedPath), cfg)
 
 	return LoadedConfig{
-		Path:   resolvedPath,
-		Config: cfg,
+		Path:     resolvedPath,
+		Config:   cfg,
+		Warnings: warnings,
 	}, nil
 }
 

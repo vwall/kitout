@@ -3,7 +3,8 @@
 ## Purpose
 
 The brew tap resource ensures a Homebrew tap is available. The brew package
-resource ensures a Homebrew formula is installed.
+resource ensures a Homebrew formula is installed. The cask resource ensures a
+Homebrew cask application is installed.
 
 ## Config
 
@@ -16,6 +17,9 @@ brew:
     - vwall/kitout/kitout
     - ruby
     - node
+  casks:
+    - ghostty
+    - visual-studio-code
 ```
 
 Future expanded form:

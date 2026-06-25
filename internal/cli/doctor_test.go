@@ -97,6 +97,35 @@ repos:
 	}
 }
 
+func TestDoctorCheckerWarnsForDeprecatedTopLevelCasks(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+
+casks:
+  - ghostty
+`)
+	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
+		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
+		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
+		{result: doctorCommandResult("brew", []string{"--prefix"}, "/opt/homebrew\n")},
+		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
+	}}
+	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	assertDoctorItem(t, report, "Config", doctorWarn, "top-level casks is deprecated")
+	configItem := doctorItemByName(t, report, "Config")
+	if !strings.Contains(configItem.Fix, "brew.casks") {
+		t.Fatalf("Config fix = %q, want brew.casks guidance", configItem.Fix)
+	}
+	if report.Summary.Warn != 1 {
+		t.Fatalf("warnings = %d, want 1", report.Summary.Warn)
+	}
+}
+
 func TestDoctorCheckerReportsWritableConfiguredPaths(t *testing.T) {
 	dir := t.TempDir()
 	toolVersionsPath := filepath.Join(dir, ".tool-versions")

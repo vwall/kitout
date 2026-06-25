@@ -166,6 +166,12 @@ func TestInitForceOverwritesExistingConfig(t *testing.T) {
 	if !strings.Contains(string(contents), "brew:") {
 		t.Fatalf("starter config missing brew section: %q", string(contents))
 	}
+	if !strings.Contains(string(contents), "#   casks:") {
+		t.Fatalf("starter config missing nested brew.casks example: %q", string(contents))
+	}
+	if strings.Contains(string(contents), "# casks:") {
+		t.Fatalf("starter config still includes top-level casks example: %q", string(contents))
+	}
 }
 
 func TestInitAcceptsGlobalConfigFlagBeforeCommand(t *testing.T) {

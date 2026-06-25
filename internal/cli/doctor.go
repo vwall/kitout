@@ -24,9 +24,10 @@ const (
 )
 
 type doctorReport struct {
-	ConfigPath string
-	Items      []doctorItem
-	Summary    doctorSummary
+	ConfigPath     string
+	ConfigWarnings []config.ConfigWarning
+	Items          []doctorItem
+	Summary        doctorSummary
 }
 
 type doctorItem struct {
@@ -114,7 +115,8 @@ func (checker doctorChecker) Check(ctx context.Context, configPath string) docto
 	gitItem := checker.checkCommand(ctx, "Git", "git", []string{"--version"}, "Install Git or the Xcode Command Line Tools, then rerun `kitout doctor`.")
 	shellItem := checker.checkShellEnvironment()
 	report := doctorReport{
-		ConfigPath: configPath,
+		ConfigPath:     configPath,
+		ConfigWarnings: loaded.Warnings,
 		Items: []doctorItem{
 			checker.checkOS(),
 			checker.checkArchitecture(),
@@ -394,6 +396,19 @@ func (checker doctorChecker) checkConfig(path string) (doctorItem, config.Loaded
 				"error": err.Error(),
 			},
 		}, config.LoadedConfig{}, false
+	}
+
+	if len(loaded.Warnings) > 0 {
+		return doctorItem{
+			Name:    "Config",
+			State:   doctorWarn,
+			Message: "config is valid, but " + loaded.Warnings[0].Message,
+			Fix:     "Move cask entries under brew.casks.",
+			Details: map[string]string{
+				"path":    resolvedPath,
+				"warning": loaded.Warnings[0].Message,
+			},
+		}, loaded, true
 	}
 
 	return doctorItem{

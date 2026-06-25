@@ -629,7 +629,7 @@ func TestCaskDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
 	}}
 	resources := Build(config.Config{
 		Version: config.CurrentVersion,
-		Casks:   []string{"ghostty", "rectangle"},
+		Brew:    config.Brew{Casks: []string{"ghostty", "rectangle"}},
 	}, runner)
 
 	plan := engine.NewPlanner().Build(context.Background(), resources)
@@ -652,7 +652,7 @@ func TestCaskUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	}}
 	resources := BuildUncached(config.Config{
 		Version: config.CurrentVersion,
-		Casks:   []string{"ghostty", "rectangle"},
+		Brew:    config.Brew{Casks: []string{"ghostty", "rectangle"}},
 	}, runner)
 
 	plan := engine.NewPlanner().Build(context.Background(), resources)

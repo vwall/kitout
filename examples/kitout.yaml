@@ -12,6 +12,10 @@ brew:
     - pnpm
     - gh
     - fish
+  casks:
+    - ghostty
+    - visual-studio-code
+    - rectangle
 
 asdf:
   plugins:
@@ -29,11 +33,6 @@ asdf:
       tools:
         ruby: 3.3.6
         nodejs: 22.12.0
-
-casks:
-  - ghostty
-  - visual-studio-code
-  - rectangle
 
 directories:
   - ~/code

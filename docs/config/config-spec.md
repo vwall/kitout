@@ -69,10 +69,10 @@ Validation should reject a missing `version` field and any version other than
 
 Scalar resource lists remain scalar in Go:
 
-- `casks` is `[]string`
 - `directories` is `[]string`
 - `brew.taps` is `[]string`
 - `brew.packages` is `[]string`
+- `brew.casks` is `[]string`
 
 Resources with named fields use typed structs:
 
@@ -88,9 +88,16 @@ Resources with named fields use typed structs:
 
 Current resource implementation coverage:
 
-- implemented resource packages: `brew.taps`, `brew.packages`, `asdf.plugins`,
-  `asdf.tool_versions`, `casks`, `directories`, `repos`, `copies`, `symlinks`,
-  `symlink_groups`, `macos_defaults`, `login_shell`, and `shell`
+- implemented resource packages: `brew.taps`, `brew.packages`, `brew.casks`,
+  `asdf.plugins`, `asdf.tool_versions`, `directories`, `repos`, `copies`,
+  `symlinks`, `symlink_groups`, `macos_defaults`, `login_shell`, and `shell`
+
+## Compatibility
+
+Top-level `casks` is still supported for schema version 1, but it is deprecated.
+New configs should use `brew.casks`. Kitout reports a warning when top-level
+`casks` contains entries, and validation rejects configs that set both
+top-level `casks` and `brew.casks`.
 
 ## Required fields
 
@@ -100,7 +107,8 @@ Scalar resource entries must not be empty:
 
 - `brew.taps[]`
 - `brew.packages[]`
-- `casks[]`
+- `brew.casks[]`
+- legacy `casks[]`
 - `directories[]`
 
 `brew.packages[]` entries may be simple formula names such as `git` or
@@ -171,6 +179,10 @@ brew:
     - asdf
     - pnpm
     - gh
+  casks:
+    - ghostty
+    - visual-studio-code
+    - rectangle
 
 asdf:
   plugins:
@@ -188,11 +200,6 @@ asdf:
       tools:
         ruby: 3.3.6
         nodejs: 22.12.0
-
-casks:
-  - ghostty
-  - visual-studio-code
-  - rectangle
 
 directories:
   - ~/code

@@ -34,6 +34,7 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 
 	if !opts.json {
 		renderer.renderStatusStart(loaded.Path)
+		renderer.renderConfigWarnings(loaded.Warnings)
 	}
 
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
@@ -44,7 +45,7 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 	plan := engine.NewPlanner().BuildWithObserver(context.Background(), resourceList, observer)
 
 	if opts.json {
-		if err := jsonRenderer.renderPlan("status", loaded.Path, plan, false); err != nil {
+		if err := jsonRenderer.renderPlan("status", loaded.Path, loaded.Warnings, plan, false); err != nil {
 			fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
 			return exitRuntimeError
 		}

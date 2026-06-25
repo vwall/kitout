@@ -47,6 +47,11 @@ When running from a private setup repo that contains `kitout.yaml`, pass
 `--config ./kitout.yaml` if a home config also exists. Kitout prints the selected
 path before running checks.
 
+Config deprecation warnings are non-fatal. Human `status` and `apply` render
+them once on stderr after the selected config is loaded. JSON output includes
+them under `config.warnings`. `doctor` reports a deprecated but otherwise valid
+config as a `warn` Config item.
+
 ## Commands
 
 ### `kitout init`

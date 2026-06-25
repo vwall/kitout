@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- Added `brew.casks` as the preferred config location for Homebrew cask apps.
+
+### Deprecated
+
+- Deprecated top-level `casks`; it still works in config version 1 but now
+  reports a warning and should be moved under `brew.casks`.
+
 ## 1.2.0 - Homebrew tap resources
 
 Kitout 1.2.0 adds first-class Homebrew tap management while keeping the stable

@@ -12,6 +12,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		Brew: config.Brew{
 			Taps:     []string{"vwall/kitout"},
 			Packages: []string{"asdf"},
+			Casks:    []string{"ghostty"},
 		},
 		ASDF: config.ASDF{
 			Plugins: []config.ASDFPlugin{
@@ -21,7 +22,6 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 				{Path: "/Users/example/.tool-versions", Tools: map[string]string{"ruby": "3.3.6"}},
 			},
 		},
-		Casks:       []string{"ghostty"},
 		Directories: []string{"/Users/example/code"},
 		Repos: []config.Repo{
 			{Path: "/Users/example/code/kitout", URL: "git@example.com:kitout.git", Branch: "main"},
@@ -83,5 +83,21 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 	}
 	if _, ok := resources[12].(LoginShellResource); !ok {
 		t.Fatalf("resource[12] = %T, want LoginShellResource", resources[12])
+	}
+}
+
+func TestBuildCreatesCaskResourcesFromLegacyTopLevelCasks(t *testing.T) {
+	cfg := config.Config{
+		Version: config.CurrentVersion,
+		Casks:   []string{"ghostty"},
+	}
+
+	resources := Build(cfg, &fakeRunner{})
+
+	if len(resources) != 1 {
+		t.Fatalf("len(resources) = %d, want 1", len(resources))
+	}
+	if got := resources[0].ID(); got != "cask:ghostty" {
+		t.Fatalf("resource ID = %q, want cask:ghostty", got)
 	}
 }

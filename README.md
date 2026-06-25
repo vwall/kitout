@@ -63,6 +63,10 @@ brew:
     - asdf
     - pnpm
     - gh
+  casks:
+    - ghostty
+    - visual-studio-code
+    - rectangle
 
 asdf:
   plugins:
@@ -74,11 +78,6 @@ asdf:
     - path: ~/.tool-versions
       tools:
         ruby: 3.3.6
-
-casks:
-  - ghostty
-  - visual-studio-code
-  - rectangle
 
 login_shell:
   path: homebrew:fish

@@ -44,6 +44,7 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		field string
 		tag   string
 	}{
+		{"Brew", reflect.TypeOf(Brew{}), "Casks", "casks,omitempty"},
 		{"Brew", reflect.TypeOf(Brew{}), "Packages", "packages,omitempty"},
 		{"Brew", reflect.TypeOf(Brew{}), "Taps", "taps,omitempty"},
 		{"ASDF", reflect.TypeOf(ASDF{}), "Plugins", "plugins,omitempty"},
@@ -91,6 +92,7 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 		Brew: Brew{
 			Taps:     []string{"vwall/kitout"},
 			Packages: []string{"git", "ruby", "node", "pnpm", "gh"},
+			Casks:    []string{"ghostty", "visual-studio-code", "rectangle"},
 		},
 		ASDF: ASDF{
 			Plugins: []ASDFPlugin{
@@ -105,7 +107,6 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 				{Path: "~/.tool-versions", Tools: map[string]string{"ruby": "3.3.6"}},
 			},
 		},
-		Casks:       []string{"ghostty", "visual-studio-code", "rectangle"},
 		Directories: []string{"~/code", "~/.config"},
 		Repos: []Repo{
 			{Path: "~/code/example-project", URL: "git@github.com:example/example-project.git", Branch: "main"},
@@ -134,6 +135,9 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	if got := cfg.Brew.Packages[0]; got != "git" {
 		t.Fatalf("first brew package = %q, want git", got)
 	}
+	if got := cfg.HomebrewCasks()[0]; got != "ghostty" {
+		t.Fatalf("first cask = %q, want ghostty", got)
+	}
 	if got := cfg.Repos[0].Branch; got != "main" {
 		t.Fatalf("repo branch = %q, want main", got)
 	}
@@ -148,6 +152,17 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	}
 	if got := cfg.LoginShell.Path; got != "homebrew:fish" {
 		t.Fatalf("login shell path = %q, want homebrew:fish", got)
+	}
+}
+
+func TestConfigHomebrewCasksFallsBackToLegacyTopLevelCasks(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		Casks:   []string{"ghostty"},
+	}
+
+	if got := cfg.HomebrewCasks(); !reflect.DeepEqual(got, []string{"ghostty"}) {
+		t.Fatalf("HomebrewCasks() = %#v, want legacy top-level casks", got)
 	}
 }
 

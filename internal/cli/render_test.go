@@ -444,6 +444,24 @@ func TestHumanRendererInvalidConfigOutput(t *testing.T) {
 	}
 }
 
+func TestHumanRendererConfigWarnings(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	renderer.renderConfigWarnings([]config.ConfigWarning{
+		{Field: "casks", Message: "top-level casks is deprecated; move entries to brew.casks"},
+	})
+
+	want := "warning: top-level casks is deprecated; move entries to brew.casks\n"
+	if stderr.String() != want {
+		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
+	}
+	if stdout.String() != "" {
+		t.Fatalf("stdout = %q, want empty", stdout.String())
+	}
+}
+
 func findLineContaining(t *testing.T, lines []string, fragment string) string {
 	t.Helper()
 

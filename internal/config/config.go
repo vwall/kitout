@@ -7,9 +7,10 @@ const CurrentVersion = 1
 
 // Config is the root YAML document for a Kitout configuration.
 type Config struct {
-	Version       int            `yaml:"version"`
-	Brew          Brew           `yaml:"brew,omitempty"`
-	ASDF          ASDF           `yaml:"asdf,omitempty"`
+	Version int  `yaml:"version"`
+	Brew    Brew `yaml:"brew,omitempty"`
+	ASDF    ASDF `yaml:"asdf,omitempty"`
+	// Casks is the legacy top-level cask list. Prefer Brew.Casks.
 	Casks         []string       `yaml:"casks,omitempty"`
 	Directories   []string       `yaml:"directories,omitempty"`
 	Copies        []Copy         `yaml:"copies,omitempty"`
@@ -25,6 +26,16 @@ type Config struct {
 type Brew struct {
 	Taps     []string `yaml:"taps,omitempty"`
 	Packages []string `yaml:"packages,omitempty"`
+	Casks    []string `yaml:"casks,omitempty"`
+}
+
+// HomebrewCasks returns the active cask list. The top-level casks field is
+// kept for schema version 1 compatibility; validation rejects using both forms.
+func (cfg Config) HomebrewCasks() []string {
+	if len(cfg.Brew.Casks) > 0 {
+		return cfg.Brew.Casks
+	}
+	return cfg.Casks
 }
 
 // ASDF describes runtimes managed by asdf.

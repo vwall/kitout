@@ -43,6 +43,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 
 	if !opts.json {
 		renderer.renderApplyPlanStart(loaded.Path, applyOpts.dryRun)
+		renderer.renderConfigWarnings(loaded.Warnings)
 	}
 
 	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
@@ -54,7 +55,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 
 	if applyOpts.dryRun {
 		if opts.json {
-			if err := jsonRenderer.renderPlan("apply", loaded.Path, plan, true); err != nil {
+			if err := jsonRenderer.renderPlan("apply", loaded.Path, loaded.Warnings, plan, true); err != nil {
 				fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
 				return exitRuntimeError
 			}
@@ -95,7 +96,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 	applyResources := resources.BuildUncached(loaded.Config, applyRunner)
 	report := engine.NewExecutor().ApplyWithObserver(context.Background(), applyResources, plan, observer)
 	if opts.json {
-		if err := jsonRenderer.renderApplyReport(loaded.Path, report); err != nil {
+		if err := jsonRenderer.renderApplyReport(loaded.Path, loaded.Warnings, report); err != nil {
 			fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
 			return exitRuntimeError
 		}

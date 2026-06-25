@@ -170,6 +170,8 @@ func TestLoadFileParsesValidConfig(t *testing.T) {
 brew:
   packages:
     - git
+  casks:
+    - ghostty
 
 repos:
   - path: ~/code/kitout
@@ -191,8 +193,37 @@ repos:
 	if got := loaded.Config.Brew.Packages[0]; got != "git" {
 		t.Fatalf("first brew package = %q, want git", got)
 	}
+	if got := loaded.Config.HomebrewCasks()[0]; got != "ghostty" {
+		t.Fatalf("first brew cask = %q, want ghostty", got)
+	}
 	if got := loaded.Config.Repos[0].Branch; got != "main" {
 		t.Fatalf("repo branch = %q, want main", got)
+	}
+	if len(loaded.Warnings) != 0 {
+		t.Fatalf("warnings = %#v, want none for preferred schema", loaded.Warnings)
+	}
+}
+
+func TestLoadFileWarnsForDeprecatedTopLevelCasks(t *testing.T) {
+	configPath := writeConfigFile(t, `version: 1
+
+casks:
+  - ghostty
+`)
+
+	loaded, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("LoadFile returned error: %v", err)
+	}
+
+	if got := loaded.Config.HomebrewCasks(); !slices.Equal(got, []string{"ghostty"}) {
+		t.Fatalf("HomebrewCasks() = %#v, want legacy cask", got)
+	}
+	if len(loaded.Warnings) != 1 {
+		t.Fatalf("len(warnings) = %d, want 1: %#v", len(loaded.Warnings), loaded.Warnings)
+	}
+	if loaded.Warnings[0].Field != "casks" {
+		t.Fatalf("warning field = %q, want casks", loaded.Warnings[0].Field)
 	}
 }
 

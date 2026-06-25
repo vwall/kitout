@@ -32,9 +32,8 @@ directories:
 #   packages:
 #     - git
 #     - gh
-#
-# casks:
-#   - visual-studio-code
+#   casks:
+#     - visual-studio-code
 #
 # repos:
 #   - path: ~/code/example

@@ -10,19 +10,22 @@ The cask resource ensures a Homebrew cask application is installed.
 brew:
   taps:
     - homebrew/cask-fonts
-
-casks:
-  - ghostty
-  - visual-studio-code
-  - rectangle
+  casks:
+    - ghostty
+    - visual-studio-code
+    - rectangle
 ```
+
+Top-level `casks` is supported for schema version 1 compatibility, but it is
+deprecated. Move cask entries under `brew.casks`.
 
 Future expanded form:
 
 ```yaml
-casks:
-  - name: ghostty
-  - name: visual-studio-code
+brew:
+  casks:
+    - name: ghostty
+    - name: visual-studio-code
 ```
 
 ## Status check
