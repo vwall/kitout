@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.0 - Preferred Homebrew cask config
+
 ### Added
 
 - Added `brew.casks` as the preferred config location for Homebrew cask apps.
@@ -10,6 +12,17 @@
 
 - Deprecated top-level `casks`; it still works in config version 1 but now
   reports a warning and should be moved under `brew.casks`.
+
+### Documentation
+
+- Updated cask and config docs for the `brew.casks` migration path.
+- Updated the Homebrew formula template for `v1.3.0` macOS arm64 and amd64
+  artifacts.
+
+### Notes
+
+- This is an additive `version: 1` schema release. Existing configs that use
+  top-level `casks` continue to load with a deprecation warning.
 
 ## 1.2.0 - Homebrew tap resources
 
