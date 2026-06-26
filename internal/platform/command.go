@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -26,10 +28,23 @@ type CommandResult struct {
 
 // ExecRunner runs commands through os/exec.
 type ExecRunner struct {
-	stdout         io.Writer
-	stderr         io.Writer
-	renderCommands bool
+	stdout           io.Writer
+	stderr           io.Writer
+	renderCommands   bool
+	trustCommandPath bool
+	preserveUserPath bool
 }
+
+var trustedCommandDirectories = []string{
+	"/usr/bin",
+	"/bin",
+	"/usr/sbin",
+	"/sbin",
+	"/opt/homebrew/bin",
+	"/usr/local/bin",
+}
+
+const pathEnvironmentPrefix = "PATH="
 
 // NewExecRunner returns the default external command runner.
 func NewExecRunner() ExecRunner {
@@ -43,6 +58,39 @@ func NewVerboseExecRunner(stdout, stderr io.Writer) ExecRunner {
 		stdout:         stdout,
 		stderr:         stderr,
 		renderCommands: true,
+	}
+}
+
+// WithTrustedCommandPath returns a runner variant that resolves top-level
+// commands from trusted system locations and hides the caller's PATH from child
+// processes unless WithUserPath is also applied.
+func WithTrustedCommandPath(runner Runner) Runner {
+	switch execRunner := runner.(type) {
+	case ExecRunner:
+		execRunner.trustCommandPath = true
+		return execRunner
+	case *ExecRunner:
+		copy := *execRunner
+		copy.trustCommandPath = true
+		return copy
+	default:
+		return runner
+	}
+}
+
+// WithUserPath returns a runner variant that preserves the caller's PATH for
+// explicitly approved shell commands.
+func WithUserPath(runner Runner) Runner {
+	switch execRunner := runner.(type) {
+	case ExecRunner:
+		execRunner.preserveUserPath = true
+		return execRunner
+	case *ExecRunner:
+		copy := *execRunner
+		copy.preserveUserPath = true
+		return copy
+	default:
+		return runner
 	}
 }
 
@@ -62,7 +110,19 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 		fmt.Fprintf(runner.stdout, "$ %s\n", renderCommand(name, args))
 	}
 
-	cmd := exec.CommandContext(ctx, name, args...)
+	executable := name
+	if runner.trustCommandPath {
+		trustedPath, err := resolveTrustedCommandPath(name)
+		if err != nil {
+			return result, CommandError{Result: result, Err: err}
+		}
+		executable = trustedPath
+	}
+
+	cmd := exec.CommandContext(ctx, executable, args...)
+	if runner.trustCommandPath && !runner.preserveUserPath {
+		cmd.Env = trustedCommandEnvironment()
+	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -87,6 +147,50 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 	}
 
 	return result, nil
+}
+
+func resolveTrustedCommandPath(name string) (string, error) {
+	if filepath.Base(name) != name {
+		if !filepath.IsAbs(name) {
+			return "", fmt.Errorf("command path %q must be absolute: %w", name, exec.ErrNotFound)
+		}
+		return name, nil
+	}
+
+	for _, dir := range trustedCommandDirectories {
+		path := filepath.Join(dir, name)
+		info, err := os.Stat(path)
+		if err == nil {
+			if info.IsDir() || info.Mode().Perm()&0o111 == 0 {
+				continue
+			}
+			return path, nil
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("could not inspect trusted command %s: %w", path, err)
+		}
+	}
+
+	return "", fmt.Errorf("%q not found in trusted command paths: %w", name, exec.ErrNotFound)
+}
+
+func trustedCommandEnvironment() []string {
+	return trustedCommandEnvironmentFrom(os.Environ())
+}
+
+func trustedCommandEnvironmentFrom(env []string) []string {
+	filtered := make([]string, 0, len(env)+1)
+	for _, value := range env {
+		if strings.HasPrefix(value, pathEnvironmentPrefix) {
+			continue
+		}
+		filtered = append(filtered, value)
+	}
+	return append(filtered, pathEnvironmentPrefix+trustedCommandPath())
+}
+
+func trustedCommandPath() string {
+	return strings.Join(trustedCommandDirectories, string(os.PathListSeparator))
 }
 
 func renderCommand(name string, args []string) string {

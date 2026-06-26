@@ -15,17 +15,23 @@ const shellType = "shell"
 
 // ShellCommandResource runs an explicitly configured shell command when its condition asks for it.
 type ShellCommandResource struct {
-	name    string
-	command string
-	when    string
-	runner  platform.Runner
+	name        string
+	command     string
+	when        string
+	runner      platform.Runner
+	applyRunner platform.Runner
 }
 
 var _ engine.Resource = ShellCommandResource{}
 
 // NewShellCommand returns a resource for one explicit shell command.
 func NewShellCommand(name, command, when string, runner platform.Runner) ShellCommandResource {
-	return ShellCommandResource{name: name, command: command, when: when, runner: runner}
+	return NewShellCommandWithApplyRunner(name, command, when, runner, runner)
+}
+
+// NewShellCommandWithApplyRunner returns a resource with separate condition and apply runners.
+func NewShellCommandWithApplyRunner(name, command, when string, runner, applyRunner platform.Runner) ShellCommandResource {
+	return ShellCommandResource{name: name, command: command, when: when, runner: runner, applyRunner: applyRunner}
 }
 
 func (resource ShellCommandResource) ID() string {
@@ -62,7 +68,7 @@ func (resource ShellCommandResource) Apply(ctx context.Context) (engine.ApplyRes
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "command does not need to run"), nil
 	case engine.StateMissing:
-		if _, err := resource.runner.Run(ctx, "sh", "-c", resource.command); err != nil {
+		if _, err := resource.applyRunner.Run(ctx, "sh", "-c", resource.command); err != nil {
 			return resource.applyResult("run", false, "command failed"), err
 		}
 		return resource.applyResult("run", true, "command completed"), nil
@@ -81,6 +87,9 @@ func (resource ShellCommandResource) validate() error {
 	}
 	if resource.runner == nil {
 		return errors.New("command runner is required")
+	}
+	if resource.applyRunner == nil {
+		return errors.New("command apply runner is required")
 	}
 	return nil
 }

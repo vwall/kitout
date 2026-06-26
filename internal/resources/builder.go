@@ -98,8 +98,9 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 	if cfg.LoginShell != nil {
 		resources = append(resources, NewLoginShell(cfg.LoginShell.Path, cfg.LoginShell.AddToEtcShells, runner))
 	}
+	shellRunner := platform.WithUserPath(platform.WithTrustedCommandPath(runner))
 	for _, command := range cfg.Shell {
-		resources = append(resources, NewShellCommand(command.Name, command.Command, command.When, runner))
+		resources = append(resources, NewShellCommandWithApplyRunner(command.Name, command.Command, command.When, shellRunner, shellRunner))
 	}
 
 	return resources

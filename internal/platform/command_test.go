@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -166,6 +167,117 @@ func TestExecRunnerReportsMissingCommand(t *testing.T) {
 	}
 	if !errors.Is(err, exec.ErrNotFound) {
 		t.Fatalf("errors.Is(err, exec.ErrNotFound) = false for %v", err)
+	}
+}
+
+func TestExecRunnerResolvesCommandsFromAmbientPathByDefault(t *testing.T) {
+	dir := t.TempDir()
+	commandPath := filepath.Join(dir, "kitout-user-tool")
+	if err := os.WriteFile(commandPath, []byte("#!/bin/sh\nprintf user-path\n"), 0o755); err != nil {
+		t.Fatalf("write fake command: %v", err)
+	}
+	t.Setenv("PATH", dir)
+
+	result, err := NewExecRunner().Run(context.Background(), "kitout-user-tool")
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+	if result.Stdout != "user-path" {
+		t.Fatalf("Stdout = %q, want command from user PATH", result.Stdout)
+	}
+}
+
+func TestTrustedExecRunnerDoesNotResolveCommandsFromAmbientPath(t *testing.T) {
+	dir := t.TempDir()
+	commandPath := filepath.Join(dir, "kitout-attacker-tool")
+	if err := os.WriteFile(commandPath, []byte("#!/bin/sh\nprintf compromised\n"), 0o755); err != nil {
+		t.Fatalf("write fake command: %v", err)
+	}
+	t.Setenv("PATH", dir)
+
+	result, err := WithTrustedCommandPath(NewExecRunner()).Run(context.Background(), "kitout-attacker-tool")
+	if err == nil {
+		t.Fatal("Run returned nil error, want untrusted PATH command to be rejected")
+	}
+	if !errors.Is(err, exec.ErrNotFound) {
+		t.Fatalf("errors.Is(err, exec.ErrNotFound) = false for %v", err)
+	}
+	if result.Stdout != "" {
+		t.Fatalf("Stdout = %q, want fake command not to execute", result.Stdout)
+	}
+}
+
+func TestExecRunnerUsesTrustedShellInsteadOfAmbientPathEntry(t *testing.T) {
+	dir := t.TempDir()
+	commandPath := filepath.Join(dir, "sh")
+	if err := os.WriteFile(commandPath, []byte("#!/bin/sh\nprintf compromised\n"), 0o755); err != nil {
+		t.Fatalf("write fake sh: %v", err)
+	}
+	t.Setenv("PATH", dir)
+
+	result, err := WithTrustedCommandPath(NewExecRunner()).Run(context.Background(), "sh", "-c", "printf trusted")
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+	if result.Stdout != "trusted" {
+		t.Fatalf("Stdout = %q, want trusted shell output", result.Stdout)
+	}
+}
+
+func TestExecRunnerDoesNotExposeAmbientPathToChildProcess(t *testing.T) {
+	dir := t.TempDir()
+	commandPath := filepath.Join(dir, "kitout-attacker-helper")
+	if err := os.WriteFile(commandPath, []byte("#!/bin/sh\nprintf compromised\n"), 0o755); err != nil {
+		t.Fatalf("write fake helper: %v", err)
+	}
+	t.Setenv("PATH", dir)
+
+	result, err := WithTrustedCommandPath(NewExecRunner()).Run(context.Background(), "sh", "-c", "kitout-attacker-helper")
+	if err == nil {
+		t.Fatal("Run returned nil error, want helper lookup to fail")
+	}
+	if result.Stdout != "" {
+		t.Fatalf("Stdout = %q, want fake helper not to execute", result.Stdout)
+	}
+}
+
+func TestExecRunnerCanPreserveUserPathForExplicitCommands(t *testing.T) {
+	dir := t.TempDir()
+	helperPath := filepath.Join(dir, "kitout-user-helper")
+	if err := os.WriteFile(helperPath, []byte("#!/bin/sh\nprintf user-path\n"), 0o755); err != nil {
+		t.Fatalf("write helper: %v", err)
+	}
+	fakeShellPath := filepath.Join(dir, "sh")
+	if err := os.WriteFile(fakeShellPath, []byte("#!/bin/sh\nprintf compromised\n"), 0o755); err != nil {
+		t.Fatalf("write fake sh: %v", err)
+	}
+	t.Setenv("PATH", dir)
+
+	result, err := WithUserPath(WithTrustedCommandPath(NewExecRunner())).Run(context.Background(), "sh", "-c", "kitout-user-helper")
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+	if result.Stdout != "user-path" {
+		t.Fatalf("Stdout = %q, want helper from user PATH", result.Stdout)
+	}
+}
+
+func TestTrustedCommandEnvironmentRemovesDuplicatePathEntries(t *testing.T) {
+	got := trustedCommandEnvironmentFrom([]string{
+		"USER=kitout",
+		"PATH=/tmp/first",
+		"HOME=/Users/kitout",
+		"PATH=/tmp/second",
+	})
+	wantPath := pathEnvironmentPrefix + trustedCommandPath()
+	want := []string{
+		"USER=kitout",
+		"HOME=/Users/kitout",
+		wantPath,
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("trustedCommandEnvironmentFrom = %#v, want %#v", got, want)
 	}
 }
 

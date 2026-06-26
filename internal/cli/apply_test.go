@@ -576,6 +576,63 @@ shell:
 	}
 }
 
+func TestApplyShellCommandUsesUserPathForExplicitCommand(t *testing.T) {
+	dir := t.TempDir()
+	markerPath := filepath.Join(dir, "created")
+	helperPath := filepath.Join(dir, "kitout-user-path-tool")
+	if err := os.WriteFile(helperPath, []byte("#!/bin/sh\nprintf ok > \"$KITOUT_MARKER\"\n"), 0o755); err != nil {
+		t.Fatalf("write helper: %v", err)
+	}
+	t.Setenv("KITOUT_MARKER", markerPath)
+	t.Setenv("PATH", dir)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Run user path helper
+    command: kitout-user-path-tool
+    when: always
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if contents, err := os.ReadFile(markerPath); err != nil || string(contents) != "ok" {
+		t.Fatalf("ReadFile(%q) = (%q, %v), want helper marker", markerPath, string(contents), err)
+	}
+}
+
+func TestApplyShellMissingCommandConditionUsesUserPath(t *testing.T) {
+	dir := t.TempDir()
+	markerPath := filepath.Join(dir, "should-not-run")
+	helperPath := filepath.Join(dir, "kitout-installed-tool")
+	if err := os.WriteFile(helperPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write helper: %v", err)
+	}
+	t.Setenv("PATH", dir)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Do not rerun installed tool setup
+    command: touch `+markerPath+`
+    when: "missing-command: kitout-installed-tool"
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if _, err := os.Stat(markerPath); !os.IsNotExist(err) {
+		t.Fatalf("Stat(%q) error = %v, want command not to run", markerPath, err)
+	}
+}
+
 func TestApplyDryRunDoesNotPromptForShellCommand(t *testing.T) {
 	outputPath := filepath.Join(t.TempDir(), "created")
 	configPath := writeCLIConfigFile(t, `version: 1
@@ -598,6 +655,35 @@ shell:
 	}
 	if _, err := os.Stat(outputPath); !os.IsNotExist(err) {
 		t.Fatalf("Stat(%q) error = %v, want command not to run", outputPath, err)
+	}
+}
+
+func TestApplyDryRunDoesNotResolveShellFromAmbientPathDuringStatus(t *testing.T) {
+	dir := t.TempDir()
+	markerPath := filepath.Join(dir, "path-runner-executed")
+	fakeShellPath := filepath.Join(dir, "sh")
+	if err := os.WriteFile(fakeShellPath, []byte("#!/bin/sh\nprintf compromised > \"$KITOUT_MARKER\"\nexit 1\n"), 0o755); err != nil {
+		t.Fatalf("write fake shell: %v", err)
+	}
+	t.Setenv("KITOUT_MARKER", markerPath)
+	t.Setenv("PATH", dir)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Missing command check
+    command: touch `+filepath.Join(dir, "created")+`
+    when: "missing-command: kitout-definitely-missing-command"
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if _, err := os.Stat(markerPath); !os.IsNotExist(err) {
+		t.Fatalf("Stat(%q) error = %v, want ambient PATH shell not to run", markerPath, err)
 	}
 }
 
