@@ -138,6 +138,29 @@ func TestCopyStatusFailedWhenSourceContainsSymlink(t *testing.T) {
 	expectStatus(t, result, resource.ID(), copyType, engine.StateFailed, err.Error())
 }
 
+func TestCopyStatusFailedWhenTargetAncestorIsSymlink(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	linkedAncestor := filepath.Join(dir, "linked-target")
+	outside := filepath.Join(dir, "outside")
+	target := filepath.Join(linkedAncestor, "target")
+	writeFile(t, source, "contents")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	resource := NewCopy(source, target, false)
+
+	result, err := resource.Status(context.Background())
+	if !containsError(err, "copy target ancestor") {
+		t.Fatalf("Status error = %v, want target ancestor symlink error", err)
+	}
+
+	expectStatus(t, result, resource.ID(), copyType, engine.StateFailed, err.Error())
+}
+
 func TestCopyApplyCreatesMissingFileTarget(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "source")
@@ -153,6 +176,33 @@ func TestCopyApplyCreatesMissingFileTarget(t *testing.T) {
 	expectApply(t, result, resource.ID(), copyType, "create", true, "copied source to target")
 	if got := readFile(t, target); got != "contents" {
 		t.Fatalf("target contents = %q, want contents", got)
+	}
+}
+
+func TestCopyApplyRejectsMissingFileTargetWithSymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	linkedAncestor := filepath.Join(dir, "linked-target")
+	outside := filepath.Join(dir, "outside")
+	outsideTarget := filepath.Join(outside, "target")
+	target := filepath.Join(linkedAncestor, "target")
+	writeFile(t, source, "contents")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	resource := NewCopy(source, target, false)
+
+	result, err := resource.Apply(context.Background())
+	if !containsError(err, "copy target ancestor") {
+		t.Fatalf("Apply error = %v, want target ancestor symlink error", err)
+	}
+
+	expectApply(t, result, resource.ID(), copyType, "fail", false, err.Error())
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
 	}
 }
 
@@ -175,6 +225,33 @@ func TestCopyApplyCreatesMissingDirectoryTarget(t *testing.T) {
 	}
 	if got := readFile(t, filepath.Join(target, "references", "rails.md")); got != "rails" {
 		t.Fatalf("target references/rails.md = %q, want rails", got)
+	}
+}
+
+func TestCopyApplyRejectsMissingDirectoryTargetWithSymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	linkedAncestor := filepath.Join(dir, "linked-target")
+	outside := filepath.Join(dir, "outside")
+	outsideTarget := filepath.Join(outside, "profile", "SKILL.md")
+	target := filepath.Join(linkedAncestor, "profile")
+	writeFile(t, filepath.Join(source, "SKILL.md"), "skill")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	resource := NewCopy(source, target, false)
+
+	result, err := resource.Apply(context.Background())
+	if !containsError(err, "copy target ancestor") {
+		t.Fatalf("Apply error = %v, want target ancestor symlink error", err)
+	}
+
+	expectApply(t, result, resource.ID(), copyType, "fail", false, err.Error())
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
 	}
 }
 

@@ -41,6 +41,7 @@ Failed when:
 - source is missing
 - source is a symlink
 - source contains a symlink
+- target has a symlinked ancestor
 - target differs and `replace: false`
 
 ## Apply
@@ -62,6 +63,10 @@ confirmation.
 Copy sources must not be symlinks and must not contain symlinks. This keeps the
 result physically materialized and avoids surprising discovery behavior in tools
 that do not follow symlinked directories reliably.
+
+Copy targets also reject symlinked ancestors before status planning or apply.
+This keeps missing-target creation from writing through a linked parent into a
+different location than the configured target path.
 
 ## Implementation status
 

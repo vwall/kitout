@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/vwall/kitout/internal/engine"
 )
@@ -52,6 +53,9 @@ func (resource CopyResource) Status(ctx context.Context) (engine.StatusResult, e
 		return resource.status(engine.StateFailed, "could not inspect copy source"), err
 	}
 	if err := validateCopySourceTree(resource.source, sourceInfo); err != nil {
+		return resource.status(engine.StateFailed, err.Error()), err
+	}
+	if err := validateCopyTargetAncestors(resource.target); err != nil {
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 
@@ -161,6 +165,72 @@ func validateCopySourceTree(path string, info fs.FileInfo) error {
 	})
 }
 
+func validateCopyTargetAncestors(path string) error {
+	for _, ancestor := range copyTargetAncestors(path) {
+		info, err := os.Lstat(ancestor)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("could not inspect copy target ancestor %s: %w", ancestor, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			if isAllowedDarwinSystemSymlink(ancestor) {
+				continue
+			}
+			return fmt.Errorf("copy target ancestor %s must not be a symlink", ancestor)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("copy target ancestor %s must be a directory", ancestor)
+		}
+	}
+	return nil
+}
+
+func copyTargetAncestors(path string) []string {
+	parent := filepath.Dir(filepath.Clean(path))
+	var reversed []string
+	for parent != "." && parent != "" && parent != string(filepath.Separator) {
+		reversed = append(reversed, parent)
+		next := filepath.Dir(parent)
+		if next == parent {
+			break
+		}
+		parent = next
+	}
+
+	ancestors := make([]string, 0, len(reversed))
+	for i := len(reversed) - 1; i >= 0; i-- {
+		ancestors = append(ancestors, reversed[i])
+	}
+	return ancestors
+}
+
+func isAllowedDarwinSystemSymlink(path string) bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+
+	expectedTargets := map[string]string{
+		"/etc": "/private/etc",
+		"/tmp": "/private/tmp",
+		"/var": "/private/var",
+	}
+	expected, ok := expectedTargets[filepath.Clean(path)]
+	if !ok {
+		return false
+	}
+
+	linkTarget, err := os.Readlink(path)
+	if err != nil {
+		return false
+	}
+	if !filepath.IsAbs(linkTarget) {
+		linkTarget = filepath.Join(filepath.Dir(path), linkTarget)
+	}
+	return filepath.Clean(linkTarget) == expected
+}
+
 func copyTargetsMatch(source, target string, sourceInfo, targetInfo fs.FileInfo) (bool, error) {
 	switch {
 	case sourceInfo.IsDir():
@@ -266,6 +336,9 @@ func copyPath(source, target string) error {
 		return err
 	}
 	if err := validateCopySourceTree(source, info); err != nil {
+		return err
+	}
+	if err := validateCopyTargetAncestors(target); err != nil {
 		return err
 	}
 	if info.IsDir() {
