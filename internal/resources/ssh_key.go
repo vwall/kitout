@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/vwall/kitout/internal/engine"
 	"github.com/vwall/kitout/internal/platform"
@@ -53,6 +54,9 @@ func (resource SSHKeyResource) Status(ctx context.Context) (engine.StatusResult,
 		return resource.status(engine.StateFailed, "context canceled while checking SSH key"), err
 	}
 	if err := resource.validate(false); err != nil {
+		return resource.status(engine.StateFailed, err.Error()), err
+	}
+	if err := resource.validatePublicKeyPath(); err != nil {
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 
@@ -117,7 +121,7 @@ func (resource SSHKeyResource) Apply(ctx context.Context) (engine.ApplyResult, e
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "SSH keypair already exists"), nil
 	case engine.StateMissing:
-		if err := os.MkdirAll(filepath.Dir(resource.path), 0o700); err != nil {
+		if err := resource.ensureKeyParent(); err != nil {
 			return resource.applyResult("create", false, "could not create SSH key directory"), err
 		}
 		if _, err := resource.runner.Run(ctx, "ssh-keygen", resource.generateArgs()...); err != nil {
@@ -167,7 +171,42 @@ func (resource SSHKeyResource) publicPath() string {
 	return resource.path + ".pub"
 }
 
+func (resource SSHKeyResource) ensureKeyParent() error {
+	if err := resource.validatePublicKeyPath(); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(resource.path), 0o700); err != nil {
+		return err
+	}
+	return resource.validatePublicKeyPath()
+}
+
+func (resource SSHKeyResource) validatePublicKeyPath() error {
+	for _, ancestor := range pathAncestors(resource.publicPath()) {
+		info, err := os.Lstat(ancestor)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("could not inspect SSH public key ancestor %s: %w", ancestor, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			if isAllowedDarwinSystemSymlink(ancestor) {
+				continue
+			}
+			return fmt.Errorf("SSH public key ancestor %s must not be a symlink", ancestor)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("SSH public key ancestor %s must be a directory", ancestor)
+		}
+	}
+	return nil
+}
+
 func (resource SSHKeyResource) publicKeyFileInfo() (os.FileInfo, error) {
+	if err := resource.validatePublicKeyPath(); err != nil {
+		return nil, err
+	}
 	info, err := os.Lstat(resource.publicPath())
 	if err != nil {
 		return nil, err
@@ -212,8 +251,11 @@ func (resource SSHKeyResource) derivedPublicKey(ctx context.Context) (sshPublicK
 }
 
 func (resource SSHKeyResource) writePublicKey(contents string) error {
-	// Exclusive creation prevents following a symlink inserted after Status.
-	file, err := os.OpenFile(resource.publicPath(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err := resource.validatePublicKeyPath(); err != nil {
+		return err
+	}
+	// Exclusive no-follow creation rejects a final-path symlink inserted after Status.
+	file, err := os.OpenFile(resource.publicPath(), os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, 0o644)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
 			if _, inspectErr := resource.publicKeyFileInfo(); inspectErr != nil {

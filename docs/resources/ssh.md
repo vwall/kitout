@@ -33,6 +33,7 @@ Status reports:
 - changed when the private key exists but the `.pub` file is missing
 - failed when either key path points at a directory, cannot be inspected, or the
   public key does not match the private key
+- failed when the `.pub` path or one of its existing ancestors is a symlink
 - failed when the private key is missing but `.pub` exists, because generating a
   new keypair would overwrite that public key
 
@@ -51,8 +52,10 @@ When only the public key is missing, apply runs `ssh-keygen -y` to recreate it
 from the private key.
 
 Kitout never overwrites an existing private key or an existing `.pub` file when
-the private key is missing. SSH key resources require confirmation during
-`kitout apply` unless `--yes` is passed.
+the private key is missing. Public-key recreation refuses symlinked `.pub` paths
+and symlinked public-key ancestors so apply cannot write through hidden targets.
+SSH key resources require confirmation during `kitout apply` unless `--yes` is
+passed.
 
 ## Safety
 

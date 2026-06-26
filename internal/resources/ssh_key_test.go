@@ -154,6 +154,36 @@ func TestSSHKeyStatusFailsWhenPublicKeyIsDanglingSymlink(t *testing.T) {
 	expectCalls(t, runner.calls, nil)
 }
 
+func TestSSHKeyStatusFailsWhenPublicKeyAncestorIsSymlink(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	path := filepath.Join(linkedAncestor, "id_ed25519")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outside, "id_ed25519"), []byte("private"), 0o600); err != nil {
+		t.Fatalf("write private key: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("create public key ancestor symlink: %v", err)
+	}
+	runner := &fakeRunner{}
+	resource := NewSSHKey(path, "ed25519", "user@example.com", runner)
+
+	result, err := resource.Status(context.Background())
+	if err == nil {
+		t.Fatal("Status returned nil error, want unsafe public key ancestor error")
+	}
+
+	wantMessage := "SSH public key ancestor " + linkedAncestor + " must not be a symlink"
+	expectStatus(t, result, resource.ID(), sshKeyType, engine.StateFailed, wantMessage)
+	if !containsError(err, wantMessage) {
+		t.Fatalf("error = %q, want public key ancestor error", err.Error())
+	}
+	expectCalls(t, runner.calls, nil)
+}
+
 func TestSSHKeyApplyGeneratesMissingKeypair(t *testing.T) {
 	path := filepath.Join(t.TempDir(), ".ssh", "id_ed25519")
 	runner := &fakeRunner{}
@@ -221,6 +251,40 @@ func TestSSHKeyApplyRefusesDanglingPublicKeySymlink(t *testing.T) {
 	expectCalls(t, runner.calls, nil)
 	if _, err := os.Lstat(target); !os.IsNotExist(err) {
 		t.Fatalf("target Lstat error = %v, want target to remain missing", err)
+	}
+}
+
+func TestSSHKeyApplyRefusesPublicKeySymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	path := filepath.Join(linkedAncestor, "id_ed25519")
+	outsideTarget := filepath.Join(outside, "id_ed25519.pub")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outside, "id_ed25519"), []byte("private"), 0o600); err != nil {
+		t.Fatalf("write private key: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("create public key ancestor symlink: %v", err)
+	}
+	runner := &fakeRunner{}
+	resource := NewSSHKey(path, "ed25519", "", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err == nil {
+		t.Fatal("Apply returned nil error, want unsafe public key ancestor error")
+	}
+
+	wantMessage := "SSH public key ancestor " + linkedAncestor + " must not be a symlink"
+	expectApply(t, result, resource.ID(), sshKeyType, "fail", false, wantMessage)
+	if !containsError(err, wantMessage) {
+		t.Fatalf("error = %q, want public key ancestor error", err.Error())
+	}
+	expectCalls(t, runner.calls, nil)
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
 	}
 }
 

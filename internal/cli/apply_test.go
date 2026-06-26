@@ -757,6 +757,82 @@ asdf:
 	}
 }
 
+func TestApplyDryRunRejectsSSHPublicKeySymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	outsidePrivateKey := filepath.Join(outside, "id_ed25519")
+	outsidePublicKey := outsidePrivateKey + ".pub"
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.WriteFile(outsidePrivateKey, []byte("private"), 0o600); err != nil {
+		t.Fatalf("write private key: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+ssh:
+  keys:
+    - path: `+filepath.Join(linkedAncestor, "id_ed25519")+`
+      type: ed25519
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d; stdout: %s; stderr: %s", code, exitRuntimeError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "SSH public key ancestor") {
+		t.Fatalf("stdout = %q, want SSH public key ancestor failure", stdout.String())
+	}
+	if _, err := os.Lstat(outsidePublicKey); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside public key to remain missing", outsidePublicKey, err)
+	}
+}
+
+func TestApplyRejectsSSHPublicKeySymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	outsidePrivateKey := filepath.Join(outside, "id_ed25519")
+	outsidePublicKey := outsidePrivateKey + ".pub"
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.WriteFile(outsidePrivateKey, []byte("private"), 0o600); err != nil {
+		t.Fatalf("write private key: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+ssh:
+  keys:
+    - path: `+filepath.Join(linkedAncestor, "id_ed25519")+`
+      type: ed25519
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	if code != exitApplyFailure {
+		t.Fatalf("exit code = %d, want %d; stdout: %s; stderr: %s", code, exitApplyFailure, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "SSH public key ancestor") {
+		t.Fatalf("stdout = %q, want SSH public key ancestor failure", stdout.String())
+	}
+	if _, err := os.Lstat(outsidePublicKey); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside public key to remain missing", outsidePublicKey, err)
+	}
+}
+
 func TestApplyRequiresConfirmationForSymlinkReplacement(t *testing.T) {
 	dir := t.TempDir()
 	sourcePath := filepath.Join(dir, "source")
