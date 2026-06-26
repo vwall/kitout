@@ -44,6 +44,16 @@ var trustedCommandDirectories = []string{
 	"/usr/local/bin",
 }
 
+var trustedAbsoluteCommandDirectories = []string{
+	"/usr/bin",
+	"/bin",
+	"/usr/sbin",
+	"/sbin",
+	"/usr/libexec",
+	"/opt/homebrew/bin",
+	"/usr/local/bin",
+}
+
 const pathEnvironmentPrefix = "PATH="
 
 // NewExecRunner returns the default external command runner.
@@ -154,24 +164,51 @@ func resolveTrustedCommandPath(name string) (string, error) {
 		if !filepath.IsAbs(name) {
 			return "", fmt.Errorf("command path %q must be absolute: %w", name, exec.ErrNotFound)
 		}
-		return name, nil
+		if !isTrustedAbsoluteCommandPath(name) {
+			return "", fmt.Errorf("command path %q is outside trusted command paths: %w", name, exec.ErrNotFound)
+		}
+		if err := requireExecutableCommand(name); err != nil {
+			return "", err
+		}
+		return filepath.Clean(name), nil
 	}
 
 	for _, dir := range trustedCommandDirectories {
 		path := filepath.Join(dir, name)
-		info, err := os.Stat(path)
-		if err == nil {
-			if info.IsDir() || info.Mode().Perm()&0o111 == 0 {
-				continue
-			}
+		if err := requireExecutableCommand(path); err == nil {
 			return path, nil
-		}
-		if !errors.Is(err, os.ErrNotExist) {
+		} else if !errors.Is(err, os.ErrNotExist) && !errors.Is(err, exec.ErrNotFound) {
 			return "", fmt.Errorf("could not inspect trusted command %s: %w", path, err)
 		}
 	}
 
 	return "", fmt.Errorf("%q not found in trusted command paths: %w", name, exec.ErrNotFound)
+}
+
+func isTrustedAbsoluteCommandPath(path string) bool {
+	cleanPath := filepath.Clean(path)
+	for _, dir := range trustedAbsoluteCommandDirectories {
+		cleanDir := filepath.Clean(dir)
+		rel, err := filepath.Rel(cleanDir, cleanPath)
+		if err != nil {
+			continue
+		}
+		if rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+			return true
+		}
+	}
+	return false
+}
+
+func requireExecutableCommand(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() || info.Mode().Perm()&0o111 == 0 {
+		return fmt.Errorf("command path %q is not executable: %w", path, exec.ErrNotFound)
+	}
+	return nil
 }
 
 func trustedCommandEnvironment() []string {

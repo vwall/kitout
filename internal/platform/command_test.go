@@ -207,6 +207,35 @@ func TestTrustedExecRunnerDoesNotResolveCommandsFromAmbientPath(t *testing.T) {
 	}
 }
 
+func TestTrustedExecRunnerRejectsAbsoluteCommandOutsideTrustedPaths(t *testing.T) {
+	dir := t.TempDir()
+	commandPath := filepath.Join(dir, "kitout-attacker-tool")
+	if err := os.WriteFile(commandPath, []byte("#!/bin/sh\nprintf compromised\n"), 0o755); err != nil {
+		t.Fatalf("write fake command: %v", err)
+	}
+
+	result, err := WithTrustedCommandPath(NewExecRunner()).Run(context.Background(), commandPath)
+	if err == nil {
+		t.Fatal("Run returned nil error, want untrusted absolute command to be rejected")
+	}
+	if !errors.Is(err, exec.ErrNotFound) {
+		t.Fatalf("errors.Is(err, exec.ErrNotFound) = false for %v", err)
+	}
+	if result.Stdout != "" {
+		t.Fatalf("Stdout = %q, want fake command not to execute", result.Stdout)
+	}
+}
+
+func TestTrustedExecRunnerAllowsTrustedAbsoluteCommandPath(t *testing.T) {
+	result, err := WithTrustedCommandPath(NewExecRunner()).Run(context.Background(), "/bin/sh", "-c", "printf trusted")
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+	if result.Stdout != "trusted" {
+		t.Fatalf("Stdout = %q, want trusted absolute command output", result.Stdout)
+	}
+}
+
 func TestExecRunnerUsesTrustedShellInsteadOfAmbientPathEntry(t *testing.T) {
 	dir := t.TempDir()
 	commandPath := filepath.Join(dir, "sh")

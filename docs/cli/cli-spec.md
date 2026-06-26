@@ -54,9 +54,10 @@ config as a `warn` Config item.
 
 Implicit dependency checks and first-class resources resolve external tools such
 as `brew`, `git`, and `xcode-select` from trusted system locations instead of
-the caller's ambient `PATH`. Explicit `shell` resources still run through the
-user PATH because those commands are intentionally listed in config and require
-apply confirmation.
+the caller's ambient `PATH`. Absolute executable paths used by implicit checks
+must also be under trusted system or Homebrew command roots. Explicit `shell`
+resources still run through the user PATH because those commands are
+intentionally listed in config and require apply confirmation.
 
 ## Commands
 
