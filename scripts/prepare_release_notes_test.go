@@ -58,6 +58,71 @@ func TestPrepareReleaseNotesWritesFallbackWhenNoNotesFileExists(t *testing.T) {
 	}
 }
 
+func TestValidateReleaseVersionAcceptsSemanticVersionTag(t *testing.T) {
+	output, stderr, err := runValidateReleaseVersion("v1.2.3")
+	if err != nil {
+		t.Fatalf("validate-release-version failed: %v\nstderr:\n%s", err, stderr)
+	}
+	if output != "1.2.3\n" {
+		t.Fatalf("output = %q, want 1.2.3", output)
+	}
+}
+
+func TestValidateReleaseVersionRejectsUnsafeTag(t *testing.T) {
+	output, stderr, err := runValidateReleaseVersion(`v1.2.3";printf${IFS}KITOUT_VALIDATION_MARKER;#`)
+	if err == nil {
+		t.Fatalf("validate-release-version succeeded with output %q, want failure", output)
+	}
+	if !strings.Contains(stderr, "release tag must be vX.Y.Z") {
+		t.Fatalf("stderr = %q, want semantic-version rejection", stderr)
+	}
+}
+
+func TestReleaseCheckRejectsUnsafeVersionBeforeRecipeExpansion(t *testing.T) {
+	makePath, err := exec.LookPath("make")
+	if err != nil {
+		t.Skip("make is not available")
+	}
+
+	tempDir := t.TempDir()
+	markerPath := filepath.Join(tempDir, "pwned")
+	payload := `1.2.3"; printf KITOUT_PWNED > ` + markerPath + `; #`
+
+	cmd := exec.Command(makePath, "release-check", "VERSION="+payload)
+	cmd.Dir = filepath.Clean(filepath.Join(".."))
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("make release-check succeeded with unsafe VERSION, want failure\noutput:\n%s", output)
+	}
+	if !strings.Contains(string(output), "release tag must be vX.Y.Z") {
+		t.Fatalf("output = %q, want release-version rejection", output)
+	}
+	if _, statErr := os.Stat(markerPath); !os.IsNotExist(statErr) {
+		t.Fatalf("marker path state = %v, want no injected command output", statErr)
+	}
+}
+
+func TestBuildKeepsVersionOutOfRecipeShell(t *testing.T) {
+	makePath, err := exec.LookPath("make")
+	if err != nil {
+		t.Skip("make is not available")
+	}
+
+	payload := `1.2.3"; printf KITOUT_PWNED; #`
+	cmd := exec.Command(makePath, "-n", "build", "VERSION="+payload)
+	cmd.Dir = filepath.Clean(filepath.Join(".."))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make -n build failed: %v\noutput:\n%s", err, output)
+	}
+	if strings.Contains(string(output), "KITOUT_PWNED") {
+		t.Fatalf("build recipe expanded unsafe VERSION into shell text:\n%s", output)
+	}
+	if !strings.Contains(string(output), `-ldflags "$LDFLAGS"`) {
+		t.Fatalf("build recipe does not use shell LDFLAGS environment:\n%s", output)
+	}
+}
+
 func newReleaseNotesWorkspace(t *testing.T) string {
 	t.Helper()
 
@@ -102,4 +167,21 @@ func runPrepareReleaseNotes(t *testing.T, root, tag, version string) (string, st
 	}
 
 	return string(outputBytes), strings.TrimSpace(string(sourceBytes))
+}
+
+func runValidateReleaseVersion(tag string) (string, string, error) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	scriptPath, err := filepath.Abs(filepath.Join(repoRoot, "scripts", "validate-release-version.sh"))
+	if err != nil {
+		return "", "", err
+	}
+	cmd := exec.Command(scriptPath, tag)
+	output, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return string(output), string(exitErr.Stderr), err
+		}
+		return string(output), "", err
+	}
+	return string(output), "", nil
 }

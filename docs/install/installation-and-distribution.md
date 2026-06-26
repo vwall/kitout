@@ -150,6 +150,9 @@ leading `v`, the workflow uses that file as the release body. If not, it uses
 neither file exists, the workflow publishes a small generated fallback body that
 lists the release assets.
 
+Release tags must be exactly `vX.Y.Z` with numeric components. The workflow
+validates the tag before exporting release metadata or invoking Make.
+
 The archive layout is stable:
 
 ```txt
