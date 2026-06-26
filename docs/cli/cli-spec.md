@@ -52,6 +52,12 @@ them once on stderr after the selected config is loaded. JSON output includes
 them under `config.warnings`. `doctor` reports a deprecated but otherwise valid
 config as a `warn` Config item.
 
+Implicit dependency checks and first-class resources resolve external tools such
+as `brew`, `git`, and `xcode-select` from trusted system locations instead of
+the caller's ambient `PATH`. Explicit `shell` resources still run through the
+user PATH because those commands are intentionally listed in config and require
+apply confirmation.
+
 ## Commands
 
 ### `kitout init`

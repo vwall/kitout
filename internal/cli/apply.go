@@ -11,7 +11,6 @@ import (
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
-	"github.com/vwall/kitout/internal/platform"
 	"github.com/vwall/kitout/internal/resources"
 )
 
@@ -46,7 +45,7 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		renderer.renderConfigWarnings(loaded.Warnings)
 	}
 
-	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
+	resourceList := resources.Build(loaded.Config, newCLIExecRunner())
 	var planObserver engine.PlanObserver
 	if !opts.json {
 		planObserver = newApplyPlanObserver(renderer, opts.verbose)
@@ -89,9 +88,9 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		}
 		observer = renderer
 	}
-	applyRunner := platform.NewExecRunner()
+	applyRunner := newCLIExecRunner()
 	if verboseApplyOutputEnabled(opts, applyOpts) && plan.Summary.ToApply > 0 {
-		applyRunner = platform.NewVerboseExecRunner(stdout, stderr)
+		applyRunner = newCLIVerboseExecRunner(stdout, stderr)
 	}
 	applyResources := resources.BuildUncached(loaded.Config, applyRunner)
 	report := engine.NewExecutor().ApplyWithObserver(context.Background(), applyResources, plan, observer)

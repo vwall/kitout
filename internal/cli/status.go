@@ -8,7 +8,6 @@ import (
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
-	"github.com/vwall/kitout/internal/platform"
 	"github.com/vwall/kitout/internal/resources"
 )
 
@@ -37,7 +36,7 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		renderer.renderConfigWarnings(loaded.Warnings)
 	}
 
-	resourceList := resources.Build(loaded.Config, platform.NewExecRunner())
+	resourceList := resources.Build(loaded.Config, newCLIExecRunner())
 	var observer engine.PlanObserver
 	if !opts.json {
 		observer = newStatusPlanObserver(renderer, opts.verbose)

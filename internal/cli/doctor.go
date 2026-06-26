@@ -78,7 +78,7 @@ func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		renderer.renderDoctorStart(configPath)
 	}
 
-	checker := newDoctorChecker(platform.NewExecRunner(), doctorSystemInfo{
+	checker := newDoctorChecker(newCLIExecRunner(), doctorSystemInfo{
 		OS:    runtime.GOOS,
 		Arch:  runtime.GOARCH,
 		Shell: os.Getenv("SHELL"),
