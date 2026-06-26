@@ -14,6 +14,12 @@ import (
 
 const sshKeyType = "ssh_key"
 
+var (
+	errSSHPublicKeyPathSymlink   = errors.New("SSH public key path is a symlink")
+	errSSHPublicKeyPathDirectory = errors.New("SSH public key path is a directory")
+	errSSHPublicKeyAlreadyExists = errors.New("SSH public key already exists")
+)
+
 // SSHKeyResource ensures an SSH keypair exists.
 type SSHKeyResource struct {
 	path    string
@@ -61,16 +67,10 @@ func (resource SSHKeyResource) Status(ctx context.Context) (engine.StatusResult,
 		return resource.status(engine.StateFailed, "SSH private key path is a directory"), errors.New("SSH private key path is a directory")
 	}
 
-	publicPath := resource.publicPath()
-	publicInfo, err := os.Stat(publicPath)
-	if errors.Is(err, os.ErrNotExist) {
+	if _, err := resource.publicKeyFileInfo(); errors.Is(err, os.ErrNotExist) {
 		return resource.status(engine.StateChanged, "SSH public key is missing"), nil
-	}
-	if err != nil {
-		return resource.status(engine.StateFailed, "could not inspect SSH public key"), err
-	}
-	if publicInfo.IsDir() {
-		return resource.status(engine.StateFailed, "SSH public key path is a directory"), errors.New("SSH public key path is a directory")
+	} else if err != nil {
+		return resource.status(engine.StateFailed, sshPublicKeyInspectMessage(err)), err
 	}
 	publicKey, err := resource.publicKey()
 	if err != nil {
@@ -93,18 +93,13 @@ func (resource SSHKeyResource) Status(ctx context.Context) (engine.StatusResult,
 }
 
 func (resource SSHKeyResource) statusWhenPrivateKeyMissing() (engine.StatusResult, error) {
-	publicInfo, err := os.Stat(resource.publicPath())
-	if errors.Is(err, os.ErrNotExist) {
+	if _, err := resource.publicKeyFileInfo(); errors.Is(err, os.ErrNotExist) {
 		return resource.status(engine.StateMissing, "SSH private key is missing"), nil
-	}
-	if err != nil {
-		return resource.status(engine.StateFailed, "could not inspect SSH public key"), err
-	}
-	if publicInfo.IsDir() {
-		return resource.status(engine.StateFailed, "SSH public key path is a directory"), errors.New("SSH public key path is a directory")
+	} else if err != nil {
+		return resource.status(engine.StateFailed, sshPublicKeyInspectMessage(err)), err
 	}
 
-	err = errors.New("SSH private key is missing but public key exists")
+	err := errors.New("SSH private key is missing but public key exists")
 	return resource.status(engine.StateFailed, err.Error()), err
 }
 
@@ -130,7 +125,11 @@ func (resource SSHKeyResource) Apply(ctx context.Context) (engine.ApplyResult, e
 		}
 		return resource.applyResult("create", true, "generated SSH keypair"), nil
 	case engine.StateChanged:
-		if _, err := resource.runner.Run(ctx, "sh", "-c", "ssh-keygen -y -f \"$1\" > \"$2\"", "kitout", resource.path, resource.publicPath()); err != nil {
+		result, err := resource.runner.Run(ctx, "ssh-keygen", "-y", "-f", resource.path)
+		if err != nil {
+			return resource.applyResult("public_key", false, "could not recreate SSH public key"), err
+		}
+		if err := resource.writePublicKey(result.Stdout); err != nil {
 			return resource.applyResult("public_key", false, "could not recreate SSH public key"), err
 		}
 		return resource.applyResult("public_key", true, "recreated SSH public key"), nil
@@ -168,6 +167,27 @@ func (resource SSHKeyResource) publicPath() string {
 	return resource.path + ".pub"
 }
 
+func (resource SSHKeyResource) publicKeyFileInfo() (os.FileInfo, error) {
+	info, err := os.Lstat(resource.publicPath())
+	if err != nil {
+		return nil, err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return nil, errSSHPublicKeyPathSymlink
+	}
+	if info.IsDir() {
+		return nil, errSSHPublicKeyPathDirectory
+	}
+	return info, nil
+}
+
+func sshPublicKeyInspectMessage(err error) string {
+	if errors.Is(err, errSSHPublicKeyPathSymlink) || errors.Is(err, errSSHPublicKeyPathDirectory) {
+		return err.Error()
+	}
+	return "could not inspect SSH public key"
+}
+
 func (resource SSHKeyResource) publicKey() (sshPublicKey, error) {
 	contents, err := os.ReadFile(resource.publicPath())
 	if err != nil {
@@ -189,6 +209,25 @@ func (resource SSHKeyResource) derivedPublicKey(ctx context.Context) (sshPublicK
 		return sshPublicKey{}, fmt.Errorf("could not parse SSH private key public output: %w", err)
 	}
 	return key, nil
+}
+
+func (resource SSHKeyResource) writePublicKey(contents string) error {
+	// Exclusive creation prevents following a symlink inserted after Status.
+	file, err := os.OpenFile(resource.publicPath(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			if _, inspectErr := resource.publicKeyFileInfo(); inspectErr != nil {
+				return inspectErr
+			}
+			return errSSHPublicKeyAlreadyExists
+		}
+		return err
+	}
+	if _, err := file.WriteString(contents); err != nil {
+		_ = file.Close()
+		return err
+	}
+	return file.Close()
 }
 
 type sshPublicKey struct {

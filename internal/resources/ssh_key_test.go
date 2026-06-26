@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/vwall/kitout/internal/engine"
+	"github.com/vwall/kitout/internal/platform"
 )
 
 func TestSSHKeyStatusSatisfiedWhenKeypairExists(t *testing.T) {
@@ -132,6 +133,27 @@ func TestSSHKeyStatusChangedWhenPublicKeyIsMissing(t *testing.T) {
 	expectCalls(t, runner.calls, nil)
 }
 
+func TestSSHKeyStatusFailsWhenPublicKeyIsDanglingSymlink(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "id_ed25519")
+	if err := os.WriteFile(path, []byte("private"), 0o600); err != nil {
+		t.Fatalf("write private key: %v", err)
+	}
+	if err := os.Symlink(filepath.Join(dir, "arbitrary-write-target"), path+".pub"); err != nil {
+		t.Fatalf("create public key symlink: %v", err)
+	}
+	runner := &fakeRunner{}
+	resource := NewSSHKey(path, "ed25519", "user@example.com", runner)
+
+	result, err := resource.Status(context.Background())
+	if err == nil {
+		t.Fatal("Status returned nil error, want unsafe public key symlink error")
+	}
+
+	expectStatus(t, result, resource.ID(), sshKeyType, engine.StateFailed, "SSH public key path is a symlink")
+	expectCalls(t, runner.calls, nil)
+}
+
 func TestSSHKeyApplyGeneratesMissingKeypair(t *testing.T) {
 	path := filepath.Join(t.TempDir(), ".ssh", "id_ed25519")
 	runner := &fakeRunner{}
@@ -177,6 +199,31 @@ func TestSSHKeyApplyDoesNotOverwriteExistingPublicKey(t *testing.T) {
 	}
 }
 
+func TestSSHKeyApplyRefusesDanglingPublicKeySymlink(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "id_ed25519")
+	target := filepath.Join(dir, "arbitrary-write-target")
+	if err := os.WriteFile(path, []byte("private"), 0o600); err != nil {
+		t.Fatalf("write private key: %v", err)
+	}
+	if err := os.Symlink(target, path+".pub"); err != nil {
+		t.Fatalf("create public key symlink: %v", err)
+	}
+	runner := &fakeRunner{}
+	resource := NewSSHKey(path, "ed25519", "", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err == nil {
+		t.Fatal("Apply returned nil error, want unsafe public key symlink error")
+	}
+
+	expectApply(t, result, resource.ID(), sshKeyType, "fail", false, "SSH public key path is a symlink")
+	expectCalls(t, runner.calls, nil)
+	if _, err := os.Lstat(target); !os.IsNotExist(err) {
+		t.Fatalf("target Lstat error = %v, want target to remain missing", err)
+	}
+}
+
 func TestSSHKeyApplyReportsGenerateFailure(t *testing.T) {
 	path := filepath.Join(t.TempDir(), ".ssh", "id_ed25519")
 	runner := &fakeRunner{responses: []fakeResponse{
@@ -198,7 +245,9 @@ func TestSSHKeyApplyRecreatesMissingPublicKey(t *testing.T) {
 	if err := os.WriteFile(path, []byte("private"), 0o600); err != nil {
 		t.Fatalf("write private key: %v", err)
 	}
-	runner := &fakeRunner{}
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("ssh-keygen", []string{"-y", "-f", path}, testEd25519DerivedPublicKey+"\n")},
+	}}
 	resource := NewSSHKey(path, "ed25519", "", runner)
 
 	result, err := resource.Apply(context.Background())
@@ -208,8 +257,44 @@ func TestSSHKeyApplyRecreatesMissingPublicKey(t *testing.T) {
 
 	expectApply(t, result, resource.ID(), sshKeyType, "public_key", true, "recreated SSH public key")
 	expectCalls(t, runner.calls, []commandCall{
-		{name: "sh", args: []string{"-c", "ssh-keygen -y -f \"$1\" > \"$2\"", "kitout", path, path + ".pub"}},
+		{name: "ssh-keygen", args: []string{"-y", "-f", path}},
 	})
+	contents, err := os.ReadFile(path + ".pub")
+	if err != nil {
+		t.Fatalf("read public key: %v", err)
+	}
+	if string(contents) != testEd25519DerivedPublicKey+"\n" {
+		t.Fatalf("public key contents = %q, want derived public key", string(contents))
+	}
+}
+
+func TestSSHKeyApplyRefusesPublicKeySymlinkCreatedDuringRecreation(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "id_ed25519")
+	target := filepath.Join(dir, "arbitrary-write-target")
+	if err := os.WriteFile(path, []byte("private"), 0o600); err != nil {
+		t.Fatalf("write private key: %v", err)
+	}
+	runner := &sshKeyRunnerFunc{
+		run: func(ctx context.Context, name string, args ...string) (platform.CommandResult, error) {
+			if err := os.Symlink(target, path+".pub"); err != nil {
+				return platform.CommandResult{}, err
+			}
+			return resultWithStdout(name, args, testEd25519DerivedPublicKey+"\n"), nil
+		},
+	}
+	resource := NewSSHKey(path, "ed25519", "", runner)
+
+	result, err := resource.Apply(context.Background())
+	if err == nil {
+		t.Fatal("Apply returned nil error, want unsafe public key symlink error")
+	}
+
+	expectApply(t, result, resource.ID(), sshKeyType, "public_key", false, "could not recreate SSH public key")
+	expectCalls(t, runner.calls, []commandCall{{name: "ssh-keygen", args: []string{"-y", "-f", path}}})
+	if _, err := os.Lstat(target); !os.IsNotExist(err) {
+		t.Fatalf("target Lstat error = %v, want target to remain missing", err)
+	}
 }
 
 func TestSSHKeyDryRunDoesNotGenerateKeypair(t *testing.T) {
@@ -259,4 +344,17 @@ func writeSSHKeypair(t *testing.T) string {
 		t.Fatalf("write public key: %v", err)
 	}
 	return path
+}
+
+type sshKeyRunnerFunc struct {
+	calls []commandCall
+	run   func(ctx context.Context, name string, args ...string) (platform.CommandResult, error)
+}
+
+func (runner *sshKeyRunnerFunc) Run(ctx context.Context, name string, args ...string) (platform.CommandResult, error) {
+	runner.calls = append(runner.calls, commandCall{
+		name: name,
+		args: append([]string(nil), args...),
+	})
+	return runner.run(ctx, name, args...)
 }
