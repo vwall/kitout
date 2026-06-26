@@ -303,6 +303,53 @@ func TestASDFToolVersionsApplyPreservesUnrelatedEntries(t *testing.T) {
 	}
 }
 
+func TestASDFToolVersionsApplyCreatesMissingFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nested", ".tool-versions")
+	resource := NewASDFToolVersions(path, map[string]string{"ruby": "3.3.6"})
+
+	result, err := resource.Apply(context.Background())
+	if err != nil {
+		t.Fatalf("Apply returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), asdfToolVersionsType, "write", true, "updated .tool-versions entries")
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read .tool-versions: %v", err)
+	}
+	if string(contents) != "ruby 3.3.6\n" {
+		t.Fatalf(".tool-versions = %q, want ruby entry", string(contents))
+	}
+}
+
+func TestASDFToolVersionsApplyRejectsSymlinkPath(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "shell-profile")
+	original := []byte("export PATH=/usr/local/bin:$PATH\n")
+	if err := os.WriteFile(target, original, 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	path := filepath.Join(dir, ".tool-versions")
+	if err := os.Symlink(target, path); err != nil {
+		t.Fatalf("create symlink: %v", err)
+	}
+	resource := NewASDFToolVersions(path, map[string]string{"ruby": "3.3.6"})
+
+	result, err := resource.Apply(context.Background())
+	if err == nil {
+		t.Fatal("Apply returned nil error, want symlink rejection")
+	}
+
+	expectApply(t, result, resource.ID(), asdfToolVersionsType, "fail", false, ".tool-versions path must be a regular file, not a symlink")
+	contents, readErr := os.ReadFile(target)
+	if readErr != nil {
+		t.Fatalf("read target: %v", readErr)
+	}
+	if string(contents) != string(original) {
+		t.Fatalf("symlink target was modified: %q", string(contents))
+	}
+}
+
 func TestASDFToolVersionsDryRunPlanDoesNotWrite(t *testing.T) {
 	path := writeToolVersions(t, "ruby 3.2.0\n")
 	resource := NewASDFToolVersions(path, map[string]string{"ruby": "3.3.6"})

@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/vwall/kitout/internal/engine"
 	"github.com/vwall/kitout/internal/platform"
@@ -16,6 +18,11 @@ import (
 const (
 	asdfPluginType       = "asdf_plugin"
 	asdfToolVersionsType = "asdf_tool_versions"
+)
+
+var (
+	errASDFToolVersionsSymlink    = errors.New(".tool-versions path must be a regular file, not a symlink")
+	errASDFToolVersionsNotRegular = errors.New(".tool-versions path must be a regular file")
 )
 
 // ASDFPluginResource ensures an asdf plugin and exact tool versions are installed.
@@ -300,15 +307,15 @@ func (resource ASDFToolVersionsResource) Status(ctx context.Context) (engine.Sta
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 
-	contents, err := os.ReadFile(resource.path)
-	if errors.Is(err, os.ErrNotExist) {
+	contents, exists, err := readASDFToolVersionsFile(resource.path)
+	if !exists {
 		return resource.status(engine.StateMissing, ".tool-versions file is missing"), nil
 	}
 	if err != nil {
-		return resource.status(engine.StateFailed, "could not read .tool-versions file"), err
+		return resource.status(engine.StateFailed, toolVersionsFileErrorMessage(err, "could not read .tool-versions file")), err
 	}
 
-	current := parseToolVersions(string(contents))
+	current := parseToolVersions(contents)
 	for tool, version := range resource.tools {
 		currentVersion, ok := current[tool]
 		if !ok {
@@ -339,14 +346,14 @@ func (resource ASDFToolVersionsResource) Apply(ctx context.Context) (engine.Appl
 		return resource.applyResult("write", false, "could not create .tool-versions parent directory"), err
 	}
 
-	contents, err := os.ReadFile(resource.path)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return resource.applyResult("write", false, "could not read .tool-versions file"), err
+	contents, _, err := readASDFToolVersionsFile(resource.path)
+	if err != nil {
+		return resource.applyResult("write", false, toolVersionsFileErrorMessage(err, "could not read .tool-versions file")), err
 	}
 
-	updated := updateToolVersions(string(contents), resource.tools)
-	if err := os.WriteFile(resource.path, []byte(updated), 0o644); err != nil {
-		return resource.applyResult("write", false, "could not write .tool-versions file"), err
+	updated := updateToolVersions(contents, resource.tools)
+	if err := writeASDFToolVersionsFile(resource.path, updated); err != nil {
+		return resource.applyResult("write", false, toolVersionsFileErrorMessage(err, "could not write .tool-versions file")), err
 	}
 
 	return resource.applyResult("write", true, "updated .tool-versions entries"), nil
@@ -427,6 +434,96 @@ func updateToolVersions(contents string, desired map[string]string) string {
 	}
 
 	return strings.Join(updated, "\n") + "\n"
+}
+
+func readASDFToolVersionsFile(path string) (string, bool, error) {
+	info, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", true, err
+	}
+	if err := validateASDFToolVersionsFileInfo(info); err != nil {
+		return "", true, err
+	}
+
+	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		return "", true, normalizeASDFToolVersionsOpenError(err)
+	}
+	defer file.Close()
+
+	if err := validateASDFToolVersionsFileHandle(file); err != nil {
+		return "", true, err
+	}
+	contents, err := io.ReadAll(file)
+	if err != nil {
+		return "", true, err
+	}
+	return string(contents), true, nil
+}
+
+func writeASDFToolVersionsFile(path, contents string) error {
+	info, err := os.Lstat(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err == nil {
+		if err := validateASDFToolVersionsFileInfo(info); err != nil {
+			return err
+		}
+	}
+
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0o644)
+	if err != nil {
+		return normalizeASDFToolVersionsOpenError(err)
+	}
+
+	if err := validateASDFToolVersionsFileHandle(file); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if _, err := file.WriteString(contents); err != nil {
+		_ = file.Close()
+		return err
+	}
+	return file.Close()
+}
+
+func validateASDFToolVersionsFileInfo(info os.FileInfo) error {
+	if info.Mode()&os.ModeSymlink != 0 {
+		return errASDFToolVersionsSymlink
+	}
+	if !info.Mode().IsRegular() {
+		return errASDFToolVersionsNotRegular
+	}
+	return nil
+}
+
+func validateASDFToolVersionsFileHandle(file *os.File) error {
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return errASDFToolVersionsNotRegular
+	}
+	return nil
+}
+
+func normalizeASDFToolVersionsOpenError(err error) error {
+	if errors.Is(err, syscall.ELOOP) {
+		return errASDFToolVersionsSymlink
+	}
+	return err
+}
+
+func toolVersionsFileErrorMessage(err error, fallback string) string {
+	if errors.Is(err, errASDFToolVersionsSymlink) || errors.Is(err, errASDFToolVersionsNotRegular) {
+		return err.Error()
+	}
+	return fallback
 }
 
 func (resource ASDFToolVersionsResource) status(state engine.ResourceState, message string) engine.StatusResult {
