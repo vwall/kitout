@@ -687,6 +687,76 @@ shell:
 	}
 }
 
+func TestApplyDryRunRejectsASDFToolVersionsSymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	outsideTarget := filepath.Join(outside, ".tool-versions")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+asdf:
+  tool_versions:
+    - path: `+filepath.Join(linkedAncestor, ".tool-versions")+`
+      tools:
+        ruby: 3.3.6
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d; stdout: %s; stderr: %s", code, exitRuntimeError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), ".tool-versions ancestor") {
+		t.Fatalf("stdout = %q, want .tool-versions ancestor failure", stdout.String())
+	}
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
+	}
+}
+
+func TestApplyRejectsASDFToolVersionsSymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	outsideTarget := filepath.Join(outside, ".tool-versions")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+asdf:
+  tool_versions:
+    - path: `+filepath.Join(linkedAncestor, ".tool-versions")+`
+      tools:
+        ruby: 3.3.6
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath}, nil, &stdout, &stderr)
+	if code != exitApplyFailure {
+		t.Fatalf("exit code = %d, want %d; stdout: %s; stderr: %s", code, exitApplyFailure, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), ".tool-versions ancestor") {
+		t.Fatalf("stdout = %q, want .tool-versions ancestor failure", stdout.String())
+	}
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
+	}
+}
+
 func TestApplyRequiresConfirmationForSymlinkReplacement(t *testing.T) {
 	dir := t.TempDir()
 	sourcePath := filepath.Join(dir, "source")

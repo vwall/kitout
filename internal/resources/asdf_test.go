@@ -283,6 +283,27 @@ func TestASDFToolVersionsStatusChangedWhenEntryDiffers(t *testing.T) {
 	expectStatus(t, result, resource.ID(), asdfToolVersionsType, engine.StateChanged, ".tool-versions entry differs")
 }
 
+func TestASDFToolVersionsStatusFailedWhenAncestorIsSymlink(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	path := filepath.Join(linkedAncestor, ".tool-versions")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	resource := NewASDFToolVersions(path, map[string]string{"ruby": "3.3.6"})
+
+	result, err := resource.Status(context.Background())
+	if !containsError(err, ".tool-versions ancestor") {
+		t.Fatalf("Status error = %v, want ancestor symlink error", err)
+	}
+
+	expectStatus(t, result, resource.ID(), asdfToolVersionsType, engine.StateFailed, err.Error())
+}
+
 func TestASDFToolVersionsApplyPreservesUnrelatedEntries(t *testing.T) {
 	path := writeToolVersions(t, "# managed nearby\nnodejs 22.12.0\nruby 3.2.0\n")
 	resource := NewASDFToolVersions(path, map[string]string{"ruby": "3.3.6", "python": "3.12.8"})
@@ -319,6 +340,31 @@ func TestASDFToolVersionsApplyCreatesMissingFile(t *testing.T) {
 	}
 	if string(contents) != "ruby 3.3.6\n" {
 		t.Fatalf(".tool-versions = %q, want ruby entry", string(contents))
+	}
+}
+
+func TestASDFToolVersionsApplyRejectsMissingFileWithSymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	outsideTarget := filepath.Join(outside, ".tool-versions")
+	path := filepath.Join(linkedAncestor, ".tool-versions")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	resource := NewASDFToolVersions(path, map[string]string{"ruby": "3.3.6"})
+
+	result, err := resource.Apply(context.Background())
+	if !containsError(err, ".tool-versions ancestor") {
+		t.Fatalf("Apply error = %v, want ancestor symlink error", err)
+	}
+
+	expectApply(t, result, resource.ID(), asdfToolVersionsType, "fail", false, err.Error())
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
 	}
 }
 

@@ -166,7 +166,7 @@ func validateCopySourceTree(path string, info fs.FileInfo) error {
 }
 
 func validateCopyTargetAncestors(path string) error {
-	for _, ancestor := range copyTargetAncestors(path) {
+	for _, ancestor := range pathAncestors(path) {
 		info, err := os.Lstat(ancestor)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
@@ -187,7 +187,7 @@ func validateCopyTargetAncestors(path string) error {
 	return nil
 }
 
-func copyTargetAncestors(path string) []string {
+func pathAncestors(path string) []string {
 	parent := filepath.Dir(filepath.Clean(path))
 	var reversed []string
 	for parent != "." && parent != "" && parent != string(filepath.Separator) {

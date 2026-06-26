@@ -66,7 +66,8 @@ Changed when the plugin is installed from a different URL.
 Failed when asdf is unavailable or an asdf command errors unexpectedly.
 
 `.tool-versions` status checks read the configured file and compare only the
-configured tool entries.
+configured tool entries. The configured `.tool-versions` path and existing
+ancestor directories must be regular filesystem entries, not symlinks.
 
 ## Apply
 
@@ -88,7 +89,8 @@ Other install failures include a compact stderr/stdout summary from the failed
 stream the full compiler and ruby-build output.
 
 `.tool-versions` apply writes only configured tool entries. Unrelated entries
-and comments are preserved.
+and comments are preserved. Kitout refuses to write through a symlinked
+`.tool-versions` path or symlinked ancestor directory.
 
 The first implementation does not:
 

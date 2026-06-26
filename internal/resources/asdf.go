@@ -306,6 +306,9 @@ func (resource ASDFToolVersionsResource) Status(ctx context.Context) (engine.Sta
 	if err := resource.validate(); err != nil {
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
+	if err := validateASDFToolVersionsAncestors(resource.path); err != nil {
+		return resource.status(engine.StateFailed, err.Error()), err
+	}
 
 	contents, exists, err := readASDFToolVersionsFile(resource.path)
 	if !exists {
@@ -342,7 +345,7 @@ func (resource ASDFToolVersionsResource) Apply(ctx context.Context) (engine.Appl
 		return resource.applyResult("fail", false, err.Error()), err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(resource.path), 0o755); err != nil {
+	if err := ensureASDFToolVersionsParent(resource.path); err != nil {
 		return resource.applyResult("write", false, "could not create .tool-versions parent directory"), err
 	}
 
@@ -434,6 +437,38 @@ func updateToolVersions(contents string, desired map[string]string) string {
 	}
 
 	return strings.Join(updated, "\n") + "\n"
+}
+
+func ensureASDFToolVersionsParent(path string) error {
+	if err := validateASDFToolVersionsAncestors(path); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return validateASDFToolVersionsAncestors(path)
+}
+
+func validateASDFToolVersionsAncestors(path string) error {
+	for _, ancestor := range pathAncestors(path) {
+		info, err := os.Lstat(ancestor)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("could not inspect .tool-versions ancestor %s: %w", ancestor, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			if isAllowedDarwinSystemSymlink(ancestor) {
+				continue
+			}
+			return fmt.Errorf(".tool-versions ancestor %s must not be a symlink", ancestor)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf(".tool-versions ancestor %s must be a directory", ancestor)
+		}
+	}
+	return nil
 }
 
 func readASDFToolVersionsFile(path string) (string, bool, error) {
