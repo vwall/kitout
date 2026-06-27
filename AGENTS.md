@@ -209,3 +209,11 @@ Document initial YAML config schema
 ```
 
 Avoid mixed commits that change docs, CLI behavior, config schema, and resource logic all at once.
+
+# Project Context
+
+Linear team: BUILD
+Linear initiative: Kitout
+
+Use Linear for private planning.
+When creating Linear issues from this repo, associate them with the Kitout initiative or a Kitout project when available.
