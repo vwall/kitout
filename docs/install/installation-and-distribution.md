@@ -81,9 +81,9 @@ Before tagging, also verify these release-specific items:
   replaces placeholder package, repo, copy, dotfile, security, system, SSH key,
   and login-shell values
 - risky apply actions still require confirmation unless `--yes` is passed
-- security changes, SSH key generation, copy replacements, symlink replacements,
-  login-shell changes, and shell commands are still treated as risky apply
-  actions where configured
+- security changes, system prerequisite installers, SSH key generation, copy
+  replacements, symlink replacements, login-shell changes, and shell commands
+  are still treated as risky apply actions where configured
 - fresh-machine prerequisite friction is documented in
   `docs/setup/first-real-run.md`
 

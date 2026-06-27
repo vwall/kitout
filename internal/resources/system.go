@@ -10,7 +10,17 @@ import (
 	"github.com/vwall/kitout/internal/platform"
 )
 
-const systemType = "system"
+const (
+	systemType = "system"
+
+	xcodeCommandLineToolsName           = "xcode_command_line_tools"
+	xcodeCommandLineToolsInstallCommand = "xcode-select --install"
+	xcodeCommandLineToolsPromptNote     = "macOS may open a Command Line Tools installer prompt."
+
+	rosettaName           = "rosetta"
+	rosettaInstallCommand = "softwareupdate --install-rosetta --agree-to-license"
+	rosettaPromptNote     = "softwareupdate may request system approval."
+)
 
 // XcodeCommandLineToolsResource ensures Apple's Command Line Tools are installed.
 type XcodeCommandLineToolsResource struct {
@@ -25,7 +35,7 @@ func NewXcodeCommandLineToolsRequirement(runner platform.Runner) XcodeCommandLin
 }
 
 func (resource XcodeCommandLineToolsResource) ID() string {
-	return systemType + ":xcode_command_line_tools"
+	return systemType + ":" + xcodeCommandLineToolsName
 }
 
 func (resource XcodeCommandLineToolsResource) Type() string {
@@ -74,20 +84,28 @@ func (resource XcodeCommandLineToolsResource) Apply(ctx context.Context) (engine
 }
 
 func (resource XcodeCommandLineToolsResource) status(state engine.ResourceState, message, path string) engine.StatusResult {
-	return statusResult(resource.ID(), resource.Type(), state, message, resource.details(path))
+	command, note := systemConfirmationDetails(state == engine.StateMissing, xcodeCommandLineToolsInstallCommand, xcodeCommandLineToolsPromptNote)
+	return statusResult(resource.ID(), resource.Type(), state, message, resource.details(path, command, note))
 }
 
 func (resource XcodeCommandLineToolsResource) applyResult(action string, changed bool, message, path string) engine.ApplyResult {
-	return applyResult(resource.ID(), resource.Type(), action, changed, message, resource.details(path))
+	command, note := systemConfirmationDetails(action == "install", xcodeCommandLineToolsInstallCommand, xcodeCommandLineToolsPromptNote)
+	return applyResult(resource.ID(), resource.Type(), action, changed, message, resource.details(path, command, note))
 }
 
-func (resource XcodeCommandLineToolsResource) details(path string) map[string]string {
+func (resource XcodeCommandLineToolsResource) details(path, command, note string) map[string]string {
 	details := map[string]string{
-		"name":     "xcode_command_line_tools",
+		"name":     xcodeCommandLineToolsName,
 		"required": "true",
 	}
 	if path != "" {
 		details["path"] = path
+	}
+	if command != "" {
+		details["command"] = command
+	}
+	if note != "" {
+		details["confirmation_note"] = note
 	}
 	return details
 }
@@ -105,7 +123,7 @@ func NewRosettaRequirement(runner platform.Runner) RosettaResource {
 }
 
 func (resource RosettaResource) ID() string {
-	return systemType + ":rosetta"
+	return systemType + ":" + rosettaName
 }
 
 func (resource RosettaResource) Type() string {
@@ -159,20 +177,35 @@ func (resource RosettaResource) Apply(ctx context.Context) (engine.ApplyResult, 
 }
 
 func (resource RosettaResource) status(state engine.ResourceState, message, architecture string) engine.StatusResult {
-	return statusResult(resource.ID(), resource.Type(), state, message, resource.details(architecture))
+	command, note := systemConfirmationDetails(state == engine.StateMissing, rosettaInstallCommand, rosettaPromptNote)
+	return statusResult(resource.ID(), resource.Type(), state, message, resource.details(architecture, command, note))
 }
 
 func (resource RosettaResource) applyResult(action string, changed bool, message, architecture string) engine.ApplyResult {
-	return applyResult(resource.ID(), resource.Type(), action, changed, message, resource.details(architecture))
+	command, note := systemConfirmationDetails(action == "install", rosettaInstallCommand, rosettaPromptNote)
+	return applyResult(resource.ID(), resource.Type(), action, changed, message, resource.details(architecture, command, note))
 }
 
-func (resource RosettaResource) details(architecture string) map[string]string {
+func (resource RosettaResource) details(architecture, command, note string) map[string]string {
 	details := map[string]string{
-		"name":     "rosetta",
+		"name":     rosettaName,
 		"required": "true",
 	}
 	if architecture != "" {
 		details["architecture"] = architecture
 	}
+	if command != "" {
+		details["command"] = command
+	}
+	if note != "" {
+		details["confirmation_note"] = note
+	}
 	return details
+}
+
+func systemConfirmationDetails(include bool, command, note string) (string, string) {
+	if !include {
+		return "", ""
+	}
+	return command, note
 }

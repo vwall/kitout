@@ -34,6 +34,9 @@ func TestXcodeCommandLineToolsStatusMissingWhenSelectFails(t *testing.T) {
 	}
 
 	expectStatus(t, result, resource.ID(), systemType, engine.StateMissing, "Command Line Tools are missing")
+	if result.Details["command"] != xcodeCommandLineToolsInstallCommand {
+		t.Fatalf("command detail = %q, want %q", result.Details["command"], xcodeCommandLineToolsInstallCommand)
+	}
 }
 
 func TestXcodeCommandLineToolsApplyStartsInstaller(t *testing.T) {
@@ -116,6 +119,9 @@ func TestRosettaStatusMissingWhenReceiptMissing(t *testing.T) {
 	}
 
 	expectStatus(t, result, resource.ID(), systemType, engine.StateMissing, "Rosetta is missing")
+	if result.Details["command"] != rosettaInstallCommand {
+		t.Fatalf("command detail = %q, want %q", result.Details["command"], rosettaInstallCommand)
+	}
 }
 
 func TestRosettaApplyInstallsWhenMissing(t *testing.T) {

@@ -27,7 +27,9 @@ rosetta.required                     required true when configured
 Status runs `xcode-select -p`.
 
 Apply runs `xcode-select --install` when the tools are missing. macOS may show a
-GUI installer; rerun Kitout after that installer completes.
+GUI installer; rerun Kitout after that installer completes. Because this starts
+a system installer flow, `kitout apply` requires confirmation unless `--yes` is
+passed.
 
 ## Rosetta
 
@@ -40,6 +42,9 @@ Apply runs:
 ```sh
 softwareupdate --install-rosetta --agree-to-license
 ```
+
+Because this starts a system updater flow, `kitout apply` requires confirmation
+unless `--yes` is passed.
 
 ## Shared expectations
 
@@ -54,3 +59,5 @@ Every resource must support:
 Status must never change the system.
 
 Apply must be idempotent.
+
+Dry-run must show the planned installer or updater action without starting it.

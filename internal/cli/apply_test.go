@@ -3,12 +3,14 @@ package cli
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/vwall/kitout/internal/engine"
+	"github.com/vwall/kitout/internal/platform"
 )
 
 func TestApplyDryRunShowsPlanWithoutCreatingDirectory(t *testing.T) {
@@ -453,26 +455,127 @@ func TestRiskyApplyItemsIncludesLoginShell(t *testing.T) {
 	}
 }
 
-func TestRiskyApplyItemsIncludesSecurityAndSSHKeys(t *testing.T) {
+func TestRiskyApplyItemsIncludesSecuritySystemAndSSHKeys(t *testing.T) {
 	plan := engine.Plan{
 		Items: []engine.PlanItem{
-			{ResourceID: "security:firewall", Type: "security", Action: engine.ActionApply},
-			{ResourceID: "system:rosetta", Type: "system", Action: engine.ActionApply},
-			{ResourceID: "ssh_key:/Users/example/.ssh/id_ed25519", Type: "ssh_key", Action: engine.ActionApply},
+			{ResourceID: "security:firewall", Type: "security", State: engine.StateChanged, Action: engine.ActionApply},
+			{ResourceID: "system:rosetta", Type: "system", State: engine.StateMissing, Action: engine.ActionApply},
+			{ResourceID: "ssh_key:/Users/example/.ssh/id_ed25519", Type: "ssh_key", State: engine.StateMissing, Action: engine.ActionApply},
 		},
 	}
 
 	items := riskyApplyItems(plan)
 
-	if len(items) != 2 {
-		t.Fatalf("len(items) = %d, want 2: %#v", len(items), items)
+	if len(items) != 3 {
+		t.Fatalf("len(items) = %d, want 3: %#v", len(items), items)
 	}
 	if items[0].Type != "security" {
 		t.Fatalf("risky item[0] type = %q, want security", items[0].Type)
 	}
-	if items[1].Type != "ssh_key" {
-		t.Fatalf("risky item[1] type = %q, want ssh_key", items[1].Type)
+	if items[1].Type != "system" {
+		t.Fatalf("risky item[1] type = %q, want system", items[1].Type)
 	}
+	if items[2].Type != "ssh_key" {
+		t.Fatalf("risky item[2] type = %q, want ssh_key", items[2].Type)
+	}
+}
+
+func TestApplyRequiresConfirmationForSystemPrerequisite(t *testing.T) {
+	planRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
+		{err: applyCommandError("xcode-select", []string{"-p"}, 2)},
+	}}
+	withCLIExecRunners(t, planRunner)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+system:
+  xcode_command_line_tools:
+    required: true
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath}, strings.NewReader("no\n"), &stdout, &stderr)
+	if code != exitValidation {
+		t.Fatalf("exit code = %d, want %d", code, exitValidation)
+	}
+	if !strings.Contains(stderr.String(), "Risky apply actions require confirmation") {
+		t.Fatalf("stderr = %q, want confirmation prompt", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "system system:xcode_command_line_tools (xcode-select --install)") {
+		t.Fatalf("stderr = %q, want system installer command detail", stderr.String())
+	}
+	expectApplyRunnerCalls(t, planRunner.calls, []applyCommandCall{
+		{name: "xcode-select", args: []string{"-p"}},
+	})
+}
+
+func TestApplyYesSkipsSystemPrerequisiteConfirmationAndRunsInstaller(t *testing.T) {
+	planRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
+		{err: applyCommandError("xcode-select", []string{"-p"}, 2)},
+	}}
+	applyRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
+		{err: applyCommandError("xcode-select", []string{"-p"}, 2)},
+		{result: applyCommandResult("xcode-select", []string{"--install"}, 0)},
+	}}
+	withCLIExecRunners(t, planRunner, applyRunner)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+system:
+  xcode_command_line_tools:
+    required: true
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "Risky apply actions require confirmation") {
+		t.Fatalf("stderr = %q, want no confirmation prompt", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "started Command Line Tools installer") {
+		t.Fatalf("stdout = %q, want installer apply result", stdout.String())
+	}
+	expectApplyRunnerCalls(t, planRunner.calls, []applyCommandCall{
+		{name: "xcode-select", args: []string{"-p"}},
+	})
+	expectApplyRunnerCalls(t, applyRunner.calls, []applyCommandCall{
+		{name: "xcode-select", args: []string{"-p"}},
+		{name: "xcode-select", args: []string{"--install"}},
+	})
+}
+
+func TestApplyDryRunShowsSystemPrerequisiteWithoutInstaller(t *testing.T) {
+	planRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
+		{err: applyCommandError("xcode-select", []string{"-p"}, 2)},
+	}}
+	withCLIExecRunners(t, planRunner)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+system:
+  xcode_command_line_tools:
+    required: true
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "Risky apply actions require confirmation") {
+		t.Fatalf("stderr = %q, want no confirmation prompt during dry-run", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "dry-run Would start Command Line Tools installer") {
+		t.Fatalf("stdout = %q, want system installer dry-run plan", stdout.String())
+	}
+	expectApplyRunnerCalls(t, planRunner.calls, []applyCommandCall{
+		{name: "xcode-select", args: []string{"-p"}},
+	})
 }
 
 func TestApplyRunsShellCommandAfterConfirmation(t *testing.T) {
@@ -1088,5 +1191,87 @@ func TestRiskyApplyItemsExcludesMacOSDefaults(t *testing.T) {
 
 	if len(items) != 0 {
 		t.Fatalf("len(items) = %d, want 0", len(items))
+	}
+}
+
+type applyCommandCall struct {
+	name string
+	args []string
+}
+
+type fakeApplyResponse struct {
+	result platform.CommandResult
+	err    error
+}
+
+type fakeApplyRunner struct {
+	calls     []applyCommandCall
+	responses []fakeApplyResponse
+}
+
+func (runner *fakeApplyRunner) Run(ctx context.Context, name string, args ...string) (platform.CommandResult, error) {
+	runner.calls = append(runner.calls, applyCommandCall{
+		name: name,
+		args: append([]string(nil), args...),
+	})
+
+	if len(runner.responses) == 0 {
+		return applyCommandResult(name, args, 0), nil
+	}
+
+	response := runner.responses[0]
+	runner.responses = runner.responses[1:]
+	if response.result.Name == "" {
+		response.result = applyCommandResult(name, args, 0)
+	}
+	return response.result, response.err
+}
+
+func withCLIExecRunners(t *testing.T, runners ...platform.Runner) {
+	t.Helper()
+
+	original := cliExecRunnerFactory
+	next := 0
+	cliExecRunnerFactory = func() platform.Runner {
+		if next >= len(runners) {
+			t.Fatalf("newCLIExecRunner called %d times, want %d", next+1, len(runners))
+		}
+		runner := runners[next]
+		next++
+		return runner
+	}
+	t.Cleanup(func() {
+		cliExecRunnerFactory = original
+		if next != len(runners) {
+			t.Fatalf("newCLIExecRunner called %d times, want %d", next, len(runners))
+		}
+	})
+}
+
+func expectApplyRunnerCalls(t *testing.T, got, want []applyCommandCall) {
+	t.Helper()
+
+	if len(got) != len(want) {
+		t.Fatalf("calls = %#v, want %#v", got, want)
+	}
+	for i := range want {
+		if got[i].name != want[i].name || strings.Join(got[i].args, "\x00") != strings.Join(want[i].args, "\x00") {
+			t.Fatalf("calls = %#v, want %#v", got, want)
+		}
+	}
+}
+
+func applyCommandResult(name string, args []string, exitCode int) platform.CommandResult {
+	return platform.CommandResult{
+		Name:     name,
+		Args:     append([]string(nil), args...),
+		ExitCode: exitCode,
+	}
+}
+
+func applyCommandError(name string, args []string, exitCode int) platform.CommandError {
+	return platform.CommandError{
+		Result: applyCommandResult(name, args, exitCode),
+		Err:    errors.New("command failed"),
 	}
 }

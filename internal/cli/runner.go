@@ -6,10 +6,18 @@ import (
 	"github.com/vwall/kitout/internal/platform"
 )
 
-func newCLIExecRunner() platform.Runner {
+var cliExecRunnerFactory = func() platform.Runner {
 	return platform.WithTrustedCommandPath(platform.NewExecRunner())
 }
 
-func newCLIVerboseExecRunner(stdout, stderr io.Writer) platform.Runner {
+var cliVerboseExecRunnerFactory = func(stdout, stderr io.Writer) platform.Runner {
 	return platform.WithTrustedCommandPath(platform.NewVerboseExecRunner(stdout, stderr))
+}
+
+func newCLIExecRunner() platform.Runner {
+	return cliExecRunnerFactory()
+}
+
+func newCLIVerboseExecRunner(stdout, stderr io.Writer) platform.Runner {
+	return cliVerboseExecRunnerFactory(stdout, stderr)
 }

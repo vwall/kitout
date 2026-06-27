@@ -176,6 +176,8 @@ func riskyApplyItems(plan engine.Plan) []engine.PlanItem {
 			items = append(items, item)
 		case "security":
 			items = append(items, item)
+		case "system":
+			items = append(items, item)
 		case "ssh_key":
 			items = append(items, item)
 		case "copy":
@@ -201,6 +203,9 @@ func confirmRiskyApply(stdin io.Reader, stderr io.Writer, items []engine.PlanIte
 		fmt.Fprintf(stderr, "  %s %s", item.Type, item.ResourceID)
 		if command := item.Details["command"]; command != "" {
 			fmt.Fprintf(stderr, " (%s)", command)
+		}
+		if note := item.Details["confirmation_note"]; note != "" {
+			fmt.Fprintf(stderr, " - %s", note)
 		}
 		fmt.Fprintln(stderr)
 	}

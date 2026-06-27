@@ -165,8 +165,9 @@ Behavior:
 - leave failed or unknown resources unapplied, but continue with other planned
   missing or changed resources when they are not blocked by a prerequisite
 - require confirmation before implemented risky actions, currently security
-  changes, SSH key generation, shell commands, login-shell changes, copy
-  replacements, and symlink replacements, unless `--yes` is passed
+  changes, system prerequisite installers, SSH key generation, shell commands,
+  login-shell changes, copy replacements, and symlink replacements, unless
+  `--yes` is passed
 - apply missing or changed resources in stable order
 - show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
 - by default, capture subprocess output and include a compact stderr/stdout
@@ -316,6 +317,7 @@ Risky changes currently include:
 - replacing copy targets
 - replacing symlink targets
 - changing security settings
+- starting system prerequisite installers
 - generating SSH keys
 - changing the current user's login shell
 - running shell commands
