@@ -23,6 +23,7 @@ func BuildUncached(cfg config.Config, runner platform.Runner) []engine.Resource 
 func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engine.Resource {
 	resources := make([]engine.Resource, 0, resourceCount(cfg))
 	brewOutdated := newBrewOutdatedCache(runner)
+	caskOutdated := newCaskOutdatedCache(runner)
 	var brewTapInstalled brewTapInstalledChecker = newDirectBrewTapInstalledChecker(runner)
 	var brewInstalled brewInstalledChecker = newDirectBrewInstalledChecker(runner)
 	var caskInstalled caskInstalledChecker = newDirectCaskInstalledChecker(runner)
@@ -69,7 +70,11 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 		resources = append(resources, NewASDFToolVersions(item.Path, item.Tools))
 	}
 	for _, name := range cfg.Brew.Casks {
-		resources = append(resources, newCask(name, runner, caskInstalled))
+		outdated := caskOutdated
+		if !batchHomebrew {
+			outdated = newCaskOutdatedCache(runner)
+		}
+		resources = append(resources, newCask(name, runner, caskInstalled, outdated))
 	}
 	for _, path := range cfg.Directories {
 		resources = append(resources, NewDirectory(path))

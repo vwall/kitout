@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"os"
 	"strings"
@@ -20,7 +21,7 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 		Items: []engine.PlanItem{
 			{ResourceID: "directory:/tmp/code", Type: "directory", State: engine.StateSatisfied, Action: engine.ActionNoop, Message: "directory exists"},
 			{ResourceID: "brew:git", Type: "brew", State: engine.StateMissing, Action: engine.ActionApply, Message: "formula is missing"},
-			{ResourceID: "brew:go", Type: "brew", State: engine.StateChanged, Action: engine.ActionApply, Message: "formula is outdated"},
+			{ResourceID: "symlink:/tmp/link", Type: "symlink", State: engine.StateChanged, Action: engine.ActionApply, Message: "symlink points elsewhere", Details: map[string]string{"target": "/tmp/link"}},
 		},
 		Summary: engine.PlanSummary{
 			Total:     3,
@@ -36,7 +37,7 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 		"Results:\n",
 		"✓ satisfied directory: /tmp/code satisfied",
 		"! missing   brew: git",
-		"! changed   brew: go",
+		"! changed   symlink: /tmp/link",
 		"Summary: 1 satisfied, 1 missing, 1 changed",
 		"2 resources need attention",
 	} {
@@ -54,24 +55,111 @@ func TestHumanRendererStatusOutput(t *testing.T) {
 	}
 	directoryLine := findLineContaining(t, lines, "directory: /tmp/code")
 	missingBrewLine := findLineContaining(t, lines, "brew: git")
-	changedBrewLine := findLineContaining(t, lines, "brew: go")
+	changedSymlinkLine := findLineContaining(t, lines, "symlink: /tmp/link")
 	resourceColumn := visualColumn(directoryLine, "directory:")
-	for _, line := range []string{missingBrewLine, changedBrewLine} {
-		if got := visualColumn(line, "brew:"); got != resourceColumn {
+	for _, line := range []string{missingBrewLine, changedSymlinkLine} {
+		target := "brew:"
+		if strings.Contains(line, "symlink:") {
+			target = "symlink:"
+		}
+		if got := visualColumn(line, target); got != resourceColumn {
 			t.Fatalf("resource column = %d in %q, want %d", got, line, resourceColumn)
 		}
 	}
 	messageColumn := visualLastColumn(directoryLine, "satisfied")
-	for _, line := range []string{missingBrewLine, changedBrewLine} {
+	for _, line := range []string{missingBrewLine, changedSymlinkLine} {
 		var got int
 		if strings.Contains(line, "missing") {
 			got = visualLastColumn(line, "missing")
 		} else {
-			got = visualColumn(line, "formula")
+			got = visualColumn(line, "symlink points elsewhere")
 		}
 		if got != messageColumn {
 			t.Fatalf("message column = %d in %q, want %d", got, line, messageColumn)
 		}
+	}
+}
+
+func TestHumanRendererStatusShowsAdvisoriesWithoutAttention(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
+
+	renderer.renderStatusPlan("/tmp/kitout.yaml", engine.Plan{
+		Items: []engine.PlanItem{
+			{
+				ResourceID: "brew:git",
+				Type:       "brew",
+				State:      engine.StateSatisfied,
+				Action:     engine.ActionNoop,
+				Message:    "formula is installed",
+				Details:    map[string]string{"name": "git"},
+				Advisories: []engine.Advisory{{
+					Code:     "homebrew_formula_outdated",
+					Severity: engine.AdvisoryNotice,
+					Message:  "formula update available for git",
+					Fix:      "Run `brew upgrade git` when you want to update it.",
+				}},
+			},
+		},
+		Summary: engine.PlanSummary{Total: 1, Satisfied: 1, Advisories: 1},
+	})
+
+	for _, fragment := range []string{
+		"✓ satisfied brew: git",
+		"i brew: git: formula update available for git",
+		"fix: Run `brew upgrade git` when you want to update it.",
+		"Summary: 1 satisfied",
+		"1 advisory",
+	} {
+		if !strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want fragment %q", stdout.String(), fragment)
+		}
+	}
+	if strings.Contains(stdout.String(), "needs attention") {
+		t.Fatalf("stdout = %q, want advisories outside attention count", stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestJSONRendererIncludesPlanAdvisories(t *testing.T) {
+	var stdout bytes.Buffer
+	renderer := newJSONRenderer(&stdout)
+
+	err := renderer.renderPlan("status", "/tmp/kitout.yaml", nil, engine.Plan{
+		Items: []engine.PlanItem{
+			{
+				ResourceID: "cask:ghostty",
+				Type:       "cask",
+				State:      engine.StateSatisfied,
+				Action:     engine.ActionNoop,
+				Message:    "cask is installed",
+				Advisories: []engine.Advisory{{
+					Code:     "homebrew_cask_outdated",
+					Severity: engine.AdvisoryNotice,
+					Message:  "cask update available for ghostty",
+					Fix:      "Run `brew upgrade --cask ghostty` when you want to update it.",
+					Details:  map[string]string{"name": "ghostty"},
+				}},
+			},
+		},
+		Summary: engine.PlanSummary{Total: 1, Satisfied: 1, Advisories: 1},
+	}, false)
+	if err != nil {
+		t.Fatalf("renderPlan returned error: %v", err)
+	}
+
+	var response statusJSONResponse
+	if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+		t.Fatalf("decode JSON output %q: %v", stdout.String(), err)
+	}
+	if response.Plan.Summary.Advisories != 1 {
+		t.Fatalf("advisories = %d, want 1", response.Plan.Summary.Advisories)
+	}
+	if got := response.Plan.Items[0].Advisories[0].Code; got != "homebrew_cask_outdated" {
+		t.Fatalf("advisory code = %q, want homebrew_cask_outdated", got)
 	}
 }
 
@@ -122,7 +210,7 @@ func TestHumanRendererAlignsMessageColumnsAcrossLongResourceIDs(t *testing.T) {
 
 	renderer.renderStatusPlan("/tmp/kitout.yaml", engine.Plan{
 		Items: []engine.PlanItem{
-			{ResourceID: "brew:git", Type: "brew", State: engine.StateChanged, Message: "formula is outdated"},
+			{ResourceID: "copy:/tmp/kitout-target", Type: "copy", State: engine.StateChanged, Message: "copy target differs", Details: map[string]string{"target": "/tmp/kitout-target"}},
 			{ResourceID: "directory:/tmp/kitout-long/.config", Type: "directory", State: engine.StateSatisfied, Message: "directory exists"},
 		},
 	})
@@ -132,14 +220,14 @@ func TestHumanRendererAlignsMessageColumnsAcrossLongResourceIDs(t *testing.T) {
 		t.Fatalf("stdout = %q, want status lines", stdout.String())
 	}
 
-	changedLine := findLineContaining(t, lines, "formula is outdated")
+	changedLine := findLineContaining(t, lines, "copy target differs")
 	directoryLine := findLineContaining(t, lines, "directory: /tmp/kitout-long/.config")
-	want := visualColumn(changedLine, "formula is outdated")
+	want := visualColumn(changedLine, "copy target differs")
 	if got := visualLastColumn(directoryLine, "satisfied"); got != want {
 		t.Fatalf("message column = %d in %q, want %d from %q", got, directoryLine, want, changedLine)
 	}
-	if !strings.Contains(stdout.String(), "! changed   brew: git") {
-		t.Fatalf("stdout = %q, want brew row padded to message column", stdout.String())
+	if !strings.Contains(stdout.String(), "! changed   copy: /tmp/kitout-target") {
+		t.Fatalf("stdout = %q, want copy row padded to message column", stdout.String())
 	}
 }
 
@@ -315,20 +403,20 @@ func TestHumanRendererApplyProgressOutput(t *testing.T) {
 	renderer.BeforeApply(engine.PlanItem{
 		ResourceID: "brew:go",
 		Type:       "brew",
-		State:      engine.StateChanged,
+		State:      engine.StateMissing,
 		Action:     engine.ActionApply,
 		Details:    map[string]string{"name": "go"},
 	})
 	renderer.renderApplyReport("", engine.ApplyReport{
 		Items: []engine.ApplyItem{
-			{ResourceID: "brew:go", Type: "brew", Action: "upgrade", Changed: true, Message: "upgraded formula", Details: map[string]string{"name": "go"}},
+			{ResourceID: "brew:go", Type: "brew", Action: "install", Changed: true, Message: "installed formula", Details: map[string]string{"name": "go"}},
 		},
 		Summary: engine.ApplySummary{Total: 1, Changed: 1},
 	})
 
 	for _, fragment := range []string{
 		"Config: /tmp/kitout.yaml\n\nApplying changes:",
-		"> Upgrading formula go...",
+		"> Installing formula go...",
 		"\nResults:\n",
 		"✓ done  brew: go",
 		"Summary: 1 changed",
@@ -427,7 +515,7 @@ func TestHumanRendererColorsHumanMarkersWhenEnabled(t *testing.T) {
 		Items: []engine.PlanItem{
 			{ResourceID: "directory:/tmp/code", Type: "directory", State: engine.StateSatisfied, Message: "directory exists"},
 			{ResourceID: "brew:git", Type: "brew", State: engine.StateMissing, Message: "formula is missing"},
-			{ResourceID: "brew:go", Type: "brew", State: engine.StateChanged, Message: "formula is outdated"},
+			{ResourceID: "symlink:/tmp/link", Type: "symlink", State: engine.StateChanged, Message: "symlink points elsewhere"},
 			{ResourceID: "shell:setup", Type: "shell", State: engine.StateFailed, Message: "command failed"},
 			{ResourceID: "repo:kitout", Type: "repo", State: engine.StateSkipped, Message: "skipped"},
 		},

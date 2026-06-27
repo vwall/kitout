@@ -9,7 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/platform"
@@ -56,6 +58,8 @@ type doctorChecker struct {
 	runner platform.Runner
 	info   doctorSystemInfo
 }
+
+const homebrewMetadataStaleAfter = 14 * 24 * time.Hour
 
 func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
@@ -112,6 +116,7 @@ func (checker doctorChecker) Check(ctx context.Context, configPath string) docto
 	xcodeItem := checker.checkCommand(ctx, "Xcode Command Line Tools", "xcode-select", []string{"-p"}, "Install them with `xcode-select --install`.")
 	homebrewItem := checker.checkCommand(ctx, "Homebrew", "brew", []string{"--version"}, "Install Homebrew, then rerun `kitout doctor`.")
 	homebrewPathItem := checker.checkHomebrewPath(ctx, homebrewItem)
+	homebrewFreshnessItem := checker.checkHomebrewFreshness(ctx, homebrewItem)
 	gitItem := checker.checkCommand(ctx, "Git", "git", []string{"--version"}, "Install Git or the Xcode Command Line Tools, then rerun `kitout doctor`.")
 	shellItem := checker.checkShellEnvironment()
 	report := doctorReport{
@@ -123,6 +128,7 @@ func (checker doctorChecker) Check(ctx context.Context, configPath string) docto
 			xcodeItem,
 			homebrewItem,
 			homebrewPathItem,
+			homebrewFreshnessItem,
 			gitItem,
 			shellItem,
 			configItem,
@@ -197,6 +203,112 @@ func (checker doctorChecker) checkHomebrewPath(ctx context.Context, homebrewItem
 			"command": "brew --prefix",
 			"prefix":  prefix,
 		},
+	}
+}
+
+func (checker doctorChecker) checkHomebrewFreshness(ctx context.Context, homebrewItem doctorItem) doctorItem {
+	if homebrewItem.State != doctorOK {
+		return doctorItem{
+			Name:    "Homebrew freshness",
+			State:   doctorWarn,
+			Message: "skipped because Homebrew is not available",
+			Fix:     "Install Homebrew, then rerun `kitout doctor`.",
+		}
+	}
+
+	repositoryResult, err := checker.runner.Run(ctx, "brew", "--repository")
+	details := map[string]string{"repository_command": "brew --repository"}
+	if err != nil {
+		details["error"] = err.Error()
+		return doctorItem{
+			Name:    "Homebrew freshness",
+			State:   doctorWarn,
+			Message: "Homebrew repository could not be detected",
+			Fix:     "Run `brew doctor`, then rerun `kitout doctor`.",
+			Details: details,
+		}
+	}
+
+	repository := strings.TrimSpace(repositoryResult.Stdout)
+	if repository == "" {
+		return doctorItem{
+			Name:    "Homebrew freshness",
+			State:   doctorWarn,
+			Message: "Homebrew repository path was empty",
+			Fix:     "Run `brew doctor`, then rerun `kitout doctor`.",
+			Details: details,
+		}
+	}
+	details["repository"] = repository
+
+	gitArgs := []string{"-C", repository, "log", "-1", "--format=%ct"}
+	details["command"] = commandString("git", gitArgs)
+	commitResult, err := checker.runner.Run(ctx, "git", gitArgs...)
+	if err != nil {
+		details["error"] = err.Error()
+		return doctorItem{
+			Name:    "Homebrew freshness",
+			State:   doctorWarn,
+			Message: "Homebrew metadata age could not be checked",
+			Fix:     "Run `brew update` when you want to refresh Homebrew and taps.",
+			Details: details,
+		}
+	}
+
+	updatedAt, err := parseUnixTimestamp(strings.TrimSpace(commitResult.Stdout))
+	if err != nil {
+		details["error"] = err.Error()
+		return doctorItem{
+			Name:    "Homebrew freshness",
+			State:   doctorWarn,
+			Message: "Homebrew metadata age could not be parsed",
+			Fix:     "Run `brew update` when you want to refresh Homebrew and taps.",
+			Details: details,
+		}
+	}
+
+	age := time.Since(updatedAt)
+	if age < 0 {
+		age = 0
+	}
+	details["last_updated_at"] = updatedAt.Format(time.RFC3339)
+	details["age"] = describeHomebrewMetadataAge(age)
+
+	if age > homebrewMetadataStaleAfter {
+		return doctorItem{
+			Name:    "Homebrew freshness",
+			State:   doctorWarn,
+			Message: "Homebrew metadata appears stale; last updated " + describeHomebrewMetadataAge(age),
+			Fix:     "Run `brew update` when you want to refresh Homebrew and taps.",
+			Details: details,
+		}
+	}
+
+	return doctorItem{
+		Name:    "Homebrew freshness",
+		State:   doctorOK,
+		Message: "Homebrew metadata looks current; last updated " + describeHomebrewMetadataAge(age),
+		Details: details,
+	}
+}
+
+func parseUnixTimestamp(value string) (time.Time, error) {
+	seconds, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parse unix timestamp %q: %w", value, err)
+	}
+	return time.Unix(seconds, 0), nil
+}
+
+func describeHomebrewMetadataAge(age time.Duration) string {
+	days := int(age.Hours() / 24)
+	switch days {
+	case 0:
+		return "today"
+	case 1:
+		return "1 day ago"
+	default:
+		return fmt.Sprintf("%d days ago", days)
 	}
 }
 

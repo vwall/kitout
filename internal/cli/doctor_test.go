@@ -8,8 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/vwall/kitout/internal/platform"
 )
@@ -20,6 +22,8 @@ func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
 		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
 		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
 		{result: doctorCommandResult("brew", []string{"--prefix"}, "/opt/homebrew\n")},
+		{result: doctorCommandResult("brew", []string{"--repository"}, fakeHomebrewRepository+"\n")},
+		{result: doctorCommandResult("git", []string{"-C", fakeHomebrewRepository, "log", "-1", "--format=%ct"}, doctorFreshnessTimestamp(time.Hour))},
 		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
 	}}
 	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
@@ -29,20 +33,47 @@ func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
 	if report.HasFailures() {
 		t.Fatalf("HasFailures() = true, want false: %+v", report)
 	}
-	if report.Summary != (doctorSummary{Total: 9, OK: 9}) {
-		t.Fatalf("summary = %+v, want nine ok checks", report.Summary)
+	if report.Summary != (doctorSummary{Total: 10, OK: 10}) {
+		t.Fatalf("summary = %+v, want ten ok checks", report.Summary)
 	}
 	expectDoctorCalls(t, runner.calls, []doctorCommandCall{
 		{name: "xcode-select", args: []string{"-p"}},
 		{name: "brew", args: []string{"--version"}},
 		{name: "brew", args: []string{"--prefix"}},
+		{name: "brew", args: []string{"--repository"}},
+		{name: "git", args: []string{"-C", fakeHomebrewRepository, "log", "-1", "--format=%ct"}},
 		{name: "git", args: []string{"--version"}},
 	})
 	assertDoctorItem(t, report, "Homebrew", doctorOK, "Homebrew 4.0.0")
 	assertDoctorItem(t, report, "Homebrew path", doctorOK, "Homebrew prefix is /opt/homebrew")
+	assertDoctorItem(t, report, "Homebrew freshness", doctorOK, "Homebrew metadata looks current")
 	assertDoctorItem(t, report, "Shell environment", doctorOK, "SHELL and PATH look usable")
 	assertDoctorItem(t, report, "Config", doctorOK, "config is valid")
 	assertDoctorItem(t, report, "Path permissions", doctorOK, "no configured filesystem write targets")
+}
+
+func TestDoctorCheckerWarnsWhenHomebrewMetadataIsStale(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
+		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
+		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
+		{result: doctorCommandResult("brew", []string{"--prefix"}, "/opt/homebrew\n")},
+		{result: doctorCommandResult("brew", []string{"--repository"}, fakeHomebrewRepository+"\n")},
+		{result: doctorCommandResult("git", []string{"-C", fakeHomebrewRepository, "log", "-1", "--format=%ct"}, doctorFreshnessTimestamp(homebrewMetadataStaleAfter+time.Hour))},
+		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
+	}}
+	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	assertDoctorItem(t, report, "Homebrew freshness", doctorWarn, "Homebrew metadata appears stale")
+	item := doctorItemByName(t, report, "Homebrew freshness")
+	if !strings.Contains(item.Fix, "brew update") {
+		t.Fatalf("fix = %q, want brew update guidance", item.Fix)
+	}
 }
 
 func TestDoctorCheckerReportsPrerequisiteFailures(t *testing.T) {
@@ -67,13 +98,14 @@ func TestDoctorCheckerReportsPrerequisiteFailures(t *testing.T) {
 	if report.Summary.Fail != 3 {
 		t.Fatalf("failures = %d, want 3", report.Summary.Fail)
 	}
-	if report.Summary.Warn != 2 {
-		t.Fatalf("warnings = %d, want 2", report.Summary.Warn)
+	if report.Summary.Warn != 3 {
+		t.Fatalf("warnings = %d, want 3", report.Summary.Warn)
 	}
 	assertDoctorItem(t, report, "macOS", doctorFail, "unsupported OS")
 	assertDoctorItem(t, report, "CPU architecture", doctorWarn, "Intel architecture")
 	assertDoctorItem(t, report, "Homebrew", doctorFail, "Homebrew is not available")
 	assertDoctorItem(t, report, "Homebrew path", doctorWarn, "skipped because Homebrew is not available")
+	assertDoctorItem(t, report, "Homebrew freshness", doctorWarn, "skipped because Homebrew is not available")
 }
 
 func TestDoctorCheckerReportsInvalidConfig(t *testing.T) {
@@ -192,6 +224,8 @@ func TestDoctorCheckerWarnsForUnexpectedAppleSiliconHomebrewPath(t *testing.T) {
 		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
 		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
 		{result: doctorCommandResult("brew", []string{"--prefix"}, "/usr/local\n")},
+		{result: doctorCommandResult("brew", []string{"--repository"}, fakeHomebrewRepository+"\n")},
+		{result: doctorCommandResult("git", []string{"-C", fakeHomebrewRepository, "log", "-1", "--format=%ct"}, doctorFreshnessTimestamp(time.Hour))},
 		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
 	}}
 	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
@@ -210,6 +244,8 @@ func TestDoctorCheckerWarnsWhenShellPathMissesHomebrewBin(t *testing.T) {
 		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
 		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
 		{result: doctorCommandResult("brew", []string{"--prefix"}, "/opt/homebrew\n")},
+		{result: doctorCommandResult("brew", []string{"--repository"}, fakeHomebrewRepository+"\n")},
+		{result: doctorCommandResult("git", []string{"-C", fakeHomebrewRepository, "log", "-1", "--format=%ct"}, doctorFreshnessTimestamp(time.Hour))},
 		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
 	}}
 	info := healthyDoctorInfo(t, "arm64")
@@ -428,6 +464,12 @@ func healthyDoctorInfo(t *testing.T, arch string) doctorSystemInfo {
 		Shell: executablePath(t),
 		Path:  pathValue,
 	}
+}
+
+const fakeHomebrewRepository = "/opt/homebrew"
+
+func doctorFreshnessTimestamp(age time.Duration) string {
+	return strconv.FormatInt(time.Now().Add(-age).Unix(), 10) + "\n"
 }
 
 func executablePath(t *testing.T) string {

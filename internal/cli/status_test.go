@@ -498,23 +498,33 @@ type statusJSONPlan struct {
 }
 
 type statusJSONPlanSummary struct {
-	Total     int `json:"total"`
-	Satisfied int `json:"satisfied"`
-	Missing   int `json:"missing"`
-	Changed   int `json:"changed"`
-	Failed    int `json:"failed"`
-	Skipped   int `json:"skipped"`
-	Unknown   int `json:"unknown"`
-	ToApply   int `json:"to_apply"`
+	Total      int `json:"total"`
+	Satisfied  int `json:"satisfied"`
+	Missing    int `json:"missing"`
+	Changed    int `json:"changed"`
+	Failed     int `json:"failed"`
+	Skipped    int `json:"skipped"`
+	Unknown    int `json:"unknown"`
+	ToApply    int `json:"to_apply"`
+	Advisories int `json:"advisories"`
 }
 
 type statusJSONPlanItem struct {
-	ResourceID string `json:"resource_id"`
-	Type       string `json:"type"`
-	State      string `json:"state"`
-	Action     string `json:"action"`
-	Message    string `json:"message"`
-	Error      string `json:"error"`
+	ResourceID string               `json:"resource_id"`
+	Type       string               `json:"type"`
+	State      string               `json:"state"`
+	Action     string               `json:"action"`
+	Message    string               `json:"message"`
+	Error      string               `json:"error"`
+	Advisories []statusJSONAdvisory `json:"advisories"`
+}
+
+type statusJSONAdvisory struct {
+	Code     string            `json:"code"`
+	Severity string            `json:"severity"`
+	Message  string            `json:"message"`
+	Fix      string            `json:"fix"`
+	Details  map[string]string `json:"details"`
 }
 
 type statusJSONError struct {

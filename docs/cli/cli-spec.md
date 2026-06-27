@@ -103,6 +103,7 @@ Current behavior:
 - check resource status through the engine planner
 - batch Homebrew tap, installed, and outdated checks across Homebrew resources during planning
 - render resource details and summary counts
+- render non-blocking advisories such as Homebrew formula or cask updates
 - return `0` when all resources are satisfied or skipped
 - return `1` when changes are needed
 - return `2` for config validation, parse, or unknown-field errors
@@ -122,14 +123,17 @@ Config: /Users/example/.config/kitout/kitout.yaml
 Results:
 ✓ satisfied brew_tap: vwall/kitout        satisfied
 ✓ satisfied brew: git                    satisfied
-! changed   brew: go                     formula is outdated
+✓ satisfied brew: go                     satisfied
+            i brew: go: formula update available for go
+                fix: Run `brew upgrade go` when you want to update it.
 ! missing   cask: ghostty                missing
 ✓ satisfied directory: /Users/example/code satisfied
 - skip      repo: /Users/example/code/app skipped by config
 × fail      shell: setup                 failed: command failed
 
-Summary: 3 satisfied, 1 missing, 1 changed, 1 failed, 1 skipped
-3 resources need attention
+Summary: 4 satisfied, 1 missing, 1 failed, 1 skipped
+2 resources need attention
+1 advisory
 ```
 
 Exit behavior:
@@ -169,7 +173,7 @@ Behavior:
   login-shell changes, copy replacements, and symlink replacements, unless
   `--yes` is passed
 - apply missing or changed resources in stable order
-- show a progress line before each resource apply starts, so long-running commands such as Homebrew upgrades do not look stuck
+- show a progress line before each resource apply starts, so long-running commands such as Homebrew installs do not look stuck
 - by default, capture subprocess output and include a compact stderr/stdout
   summary when a subprocess fails
 - with `--verbose`, render each subprocess command and stream its stdout and stderr while it runs
@@ -207,6 +211,11 @@ No shell commands will run without explicit approval.
 ### `kitout doctor`
 
 Checks local prerequisites and common problems.
+
+Homebrew freshness is checked by inspecting the local Homebrew repository's last
+commit timestamp. A stale metadata warning tells the user to consider
+`brew update`, but Kitout does not run `brew update` or upgrade packages
+automatically.
 
 ```sh
 kitout doctor

@@ -43,6 +43,7 @@ type jsonPlanItem struct {
 	Message    string            `json:"message,omitempty"`
 	Error      string            `json:"error,omitempty"`
 	Details    map[string]string `json:"details,omitempty"`
+	Advisories []jsonAdvisory    `json:"advisories,omitempty"`
 }
 
 type jsonApplyReport struct {
@@ -82,6 +83,14 @@ type jsonError struct {
 type jsonErrorDetail struct {
 	Field   string `json:"field,omitempty"`
 	Message string `json:"message"`
+}
+
+type jsonAdvisory struct {
+	Code     string            `json:"code"`
+	Severity string            `json:"severity"`
+	Message  string            `json:"message"`
+	Fix      string            `json:"fix,omitempty"`
+	Details  map[string]string `json:"details,omitempty"`
 }
 
 func newJSONRenderer(stdout io.Writer) jsonRenderer {
@@ -208,6 +217,7 @@ func jsonPlanFromEngine(plan engine.Plan, dryRun bool) *jsonPlan {
 			Message:    item.Message,
 			Error:      item.Error,
 			Details:    item.Details,
+			Advisories: jsonAdvisoriesFromEngine(item.Advisories),
 		})
 	}
 
@@ -216,6 +226,24 @@ func jsonPlanFromEngine(plan engine.Plan, dryRun bool) *jsonPlan {
 		Items:   items,
 		DryRun:  dryRun,
 	}
+}
+
+func jsonAdvisoriesFromEngine(advisories []engine.Advisory) []jsonAdvisory {
+	if len(advisories) == 0 {
+		return nil
+	}
+
+	items := make([]jsonAdvisory, 0, len(advisories))
+	for _, advisory := range advisories {
+		items = append(items, jsonAdvisory{
+			Code:     advisory.Code,
+			Severity: string(advisory.Severity),
+			Message:  advisory.Message,
+			Fix:      advisory.Fix,
+			Details:  advisory.Details,
+		})
+	}
+	return items
 }
 
 func jsonApplyReportFromEngine(report engine.ApplyReport) *jsonApplyReport {

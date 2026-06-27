@@ -46,14 +46,8 @@ func (resource BrewPackageResource) Status(ctx context.Context) (engine.StatusRe
 
 	installed, err := resource.installed.Contains(ctx, resource.name)
 	if err == nil && installed {
-		isOutdated, err := resource.outdated.Contains(ctx, resource.name)
-		if isOutdated {
-			return resource.status(engine.StateChanged, "formula is outdated"), nil
-		}
-		if err != nil {
-			return resource.status(engine.StateFailed, "could not inspect formula updates"), err
-		}
-		return resource.status(engine.StateSatisfied, "formula is installed"), nil
+		advisories := resource.updateAdvisories(ctx)
+		return resource.statusWithAdvisories(engine.StateSatisfied, "formula is installed", advisories), nil
 	}
 	if err == nil {
 		return resource.status(engine.StateMissing, "formula is missing"), nil
@@ -79,11 +73,6 @@ func (resource BrewPackageResource) Apply(ctx context.Context) (engine.ApplyResu
 			return resource.applyResult("install", false, "could not install formula"), err
 		}
 		return resource.applyResult("install", true, "installed formula"), nil
-	case engine.StateChanged:
-		if _, err := resource.runner.Run(ctx, "brew", "upgrade", resource.name); err != nil {
-			return resource.applyResult("upgrade", false, "could not upgrade formula"), err
-		}
-		return resource.applyResult("upgrade", true, "upgraded formula"), nil
 	default:
 		err := fmt.Errorf("cannot apply formula %s from state %s", resource.name, status.State)
 		return resource.applyResult("fail", false, err.Error()), err
@@ -110,12 +99,43 @@ func (resource BrewPackageResource) status(state engine.ResourceState, message s
 	return statusResult(resource.ID(), resource.Type(), state, message, resource.details())
 }
 
+func (resource BrewPackageResource) statusWithAdvisories(state engine.ResourceState, message string, advisories []engine.Advisory) engine.StatusResult {
+	return statusResultWithAdvisories(resource.ID(), resource.Type(), state, message, resource.details(), advisories)
+}
+
 func (resource BrewPackageResource) applyResult(action string, changed bool, message string) engine.ApplyResult {
 	return applyResult(resource.ID(), resource.Type(), action, changed, message, resource.details())
 }
 
 func (resource BrewPackageResource) details() map[string]string {
 	return map[string]string{"name": resource.name}
+}
+
+func (resource BrewPackageResource) updateAdvisories(ctx context.Context) []engine.Advisory {
+	isOutdated, err := resource.outdated.Contains(ctx, resource.name)
+	if err != nil {
+		return []engine.Advisory{{
+			Code:     "homebrew_formula_update_check_failed",
+			Severity: engine.AdvisoryWarning,
+			Message:  fmt.Sprintf("could not inspect formula updates for %s", resource.name),
+			Fix:      "Run `brew doctor`, then try the update check again.",
+			Details: map[string]string{
+				"name":  resource.name,
+				"error": err.Error(),
+			},
+		}}
+	}
+	if !isOutdated {
+		return nil
+	}
+
+	return []engine.Advisory{{
+		Code:     "homebrew_formula_outdated",
+		Severity: engine.AdvisoryNotice,
+		Message:  fmt.Sprintf("formula update available for %s", resource.name),
+		Fix:      fmt.Sprintf("Run `brew upgrade %s` when you want to update it.", resource.name),
+		Details:  map[string]string{"name": resource.name},
+	}}
 }
 
 func isExitCode(err error, code int) bool {

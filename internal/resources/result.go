@@ -12,6 +12,12 @@ func statusResult(id, typ string, state engine.ResourceState, message string, de
 	}
 }
 
+func statusResultWithAdvisories(id, typ string, state engine.ResourceState, message string, details map[string]string, advisories []engine.Advisory) engine.StatusResult {
+	result := statusResult(id, typ, state, message, details)
+	result.Advisories = advisories
+	return result
+}
+
 func applyResult(id, typ, action string, changed bool, message string, details map[string]string) engine.ApplyResult {
 	return engine.ApplyResult{
 		ResourceID: id,

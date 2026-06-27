@@ -74,6 +74,32 @@ func TestPlannerTreatsStatusErrorsAsFailedPlanItems(t *testing.T) {
 	}
 }
 
+func TestPlannerCarriesAdvisoriesWithoutApplying(t *testing.T) {
+	resources := []Resource{
+		&fakeResource{
+			id:      "brew:git",
+			typ:     "brew",
+			state:   StateSatisfied,
+			message: "formula is installed",
+			advisories: []Advisory{{
+				Code:     "homebrew_formula_outdated",
+				Severity: AdvisoryNotice,
+				Message:  "formula update available for git",
+			}},
+		},
+	}
+
+	plan := NewPlanner().Build(context.Background(), resources)
+
+	assertPlanItem(t, plan.Items[0], "brew:git", "brew", StateSatisfied, ActionNoop)
+	if plan.Summary.Advisories != 1 {
+		t.Fatalf("Advisories = %d, want 1", plan.Summary.Advisories)
+	}
+	if plan.HasChanges() {
+		t.Fatalf("HasChanges() = true, want false")
+	}
+}
+
 func TestPlannerNeverAppliesResources(t *testing.T) {
 	resource := &fakeResource{
 		id:    "directory:/Users/example/code",
@@ -173,6 +199,7 @@ type fakeResource struct {
 	message     string
 	err         error
 	applyErr    error
+	advisories  []Advisory
 	blocksApply bool
 	statusCalls int
 	applyCalls  int
@@ -201,6 +228,7 @@ func (resource *fakeResource) Status(ctx context.Context) (StatusResult, error) 
 		Type:       resource.typ,
 		State:      resource.state,
 		Message:    resource.message,
+		Advisories: resource.advisories,
 	}, resource.err
 }
 

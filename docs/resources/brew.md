@@ -67,8 +67,10 @@ Satisfied when the formula is installed.
 
 Missing when Homebrew is available but the formula is not installed.
 
-Changed when the formula is installed and Homebrew reports that it is outdated.
-Human status output marks this as `changed`.
+Still satisfied when the formula is installed and Homebrew reports that it is
+outdated. Kitout reports an advisory such as `formula update available for git`
+with a manual `brew upgrade git` fix, but it does not treat the resource as
+drift from config.
 
 Kitout batches Homebrew installed and outdated checks for resources built from
 the same config, so `kitout status` and `kitout apply --dry-run` inspect each
@@ -89,30 +91,34 @@ Use:
 ```sh
 brew tap <name>
 brew install <name>
-brew upgrade <name>
 ```
 
 Missing taps are added before formulae are installed.
 
-Missing formulae are installed. Outdated formulae are upgraded.
+Missing formulae are installed. Outdated formulae are reported as advisories
+and are not upgraded by `kitout apply`.
 
 Use fully-qualified formula names such as `owner/repo/formula` when a tapped
 formula needs to be selected explicitly.
 
 Human `kitout apply` output prints a progress line before starting each tap
-addition, install, or upgrade, for example `Adding Homebrew tap vwall/kitout...`
-or `Upgrading formula go...`, because Homebrew can be slow or quiet while it is
+addition or install, for example `Adding Homebrew tap vwall/kitout...` or
+`Installing formula go...`, because Homebrew can be slow or quiet while it is
 working.
 
 ## Notes
 
 Do not run `brew update` automatically in the MVP. That can be slow and surprising.
 
-A future flag may support:
+A future explicit command or flag may support:
 
 ```sh
-kitout apply --brew-update
+kitout upgrade
+kitout apply --upgrade
 ```
+
+For now, use `kitout doctor` to check Homebrew freshness and run `brew update`
+or `brew upgrade` manually when you decide to refresh packages, casks, or taps.
 
 ## Implementation status
 

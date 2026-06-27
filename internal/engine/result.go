@@ -12,6 +12,24 @@ const (
 	StateUnknown   ResourceState = "unknown"
 )
 
+// AdvisorySeverity describes how prominently an advisory should be shown.
+type AdvisorySeverity string
+
+const (
+	AdvisoryNotice  AdvisorySeverity = "notice"
+	AdvisoryWarning AdvisorySeverity = "warning"
+)
+
+// Advisory describes non-blocking information discovered while checking a
+// resource. Advisories do not make a satisfied resource drift from config.
+type Advisory struct {
+	Code     string
+	Severity AdvisorySeverity
+	Message  string
+	Fix      string
+	Details  map[string]string
+}
+
 // StatusResult is the structured result of checking one resource.
 type StatusResult struct {
 	ResourceID string
@@ -19,6 +37,7 @@ type StatusResult struct {
 	State      ResourceState
 	Message    string
 	Details    map[string]string
+	Advisories []Advisory
 }
 
 // ApplyResult is the structured result of applying one resource.

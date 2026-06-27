@@ -17,17 +17,18 @@ type CaskResource struct {
 	name      string
 	runner    platform.Runner
 	installed caskInstalledChecker
+	outdated  caskOutdatedChecker
 }
 
 var _ engine.Resource = CaskResource{}
 
 // NewCask returns a resource for one Homebrew cask.
 func NewCask(name string, runner platform.Runner) CaskResource {
-	return newCask(name, runner, newDirectCaskInstalledChecker(runner))
+	return newCask(name, runner, newDirectCaskInstalledChecker(runner), newCaskOutdatedCache(runner))
 }
 
-func newCask(name string, runner platform.Runner, installed caskInstalledChecker) CaskResource {
-	return CaskResource{name: name, runner: runner, installed: installed}
+func newCask(name string, runner platform.Runner, installed caskInstalledChecker, outdated caskOutdatedChecker) CaskResource {
+	return CaskResource{name: name, runner: runner, installed: installed, outdated: outdated}
 }
 
 func (resource CaskResource) ID() string {
@@ -45,7 +46,8 @@ func (resource CaskResource) Status(ctx context.Context) (engine.StatusResult, e
 
 	installed, err := resource.installed.Contains(ctx, resource.name)
 	if err == nil && installed {
-		return resource.status(engine.StateSatisfied, "cask is installed"), nil
+		advisories := resource.updateAdvisories(ctx)
+		return resource.statusWithAdvisories(engine.StateSatisfied, "cask is installed", advisories), nil
 	}
 	if err == nil || isExitCode(err, 1) {
 		return resource.status(engine.StateMissing, "cask is missing"), nil
@@ -84,11 +86,18 @@ func (resource CaskResource) validate() error {
 	if resource.installed == nil {
 		return errors.New("cask installed checker is required")
 	}
+	if resource.outdated == nil {
+		return errors.New("cask outdated checker is required")
+	}
 	return nil
 }
 
 func (resource CaskResource) status(state engine.ResourceState, message string) engine.StatusResult {
 	return statusResult(resource.ID(), resource.Type(), state, message, resource.details())
+}
+
+func (resource CaskResource) statusWithAdvisories(state engine.ResourceState, message string, advisories []engine.Advisory) engine.StatusResult {
+	return statusResultWithAdvisories(resource.ID(), resource.Type(), state, message, resource.details(), advisories)
 }
 
 func (resource CaskResource) applyResult(action string, changed bool, message string) engine.ApplyResult {
@@ -97,6 +106,33 @@ func (resource CaskResource) applyResult(action string, changed bool, message st
 
 func (resource CaskResource) details() map[string]string {
 	return map[string]string{"name": resource.name}
+}
+
+func (resource CaskResource) updateAdvisories(ctx context.Context) []engine.Advisory {
+	isOutdated, err := resource.outdated.Contains(ctx, resource.name)
+	if err != nil {
+		return []engine.Advisory{{
+			Code:     "homebrew_cask_update_check_failed",
+			Severity: engine.AdvisoryWarning,
+			Message:  fmt.Sprintf("could not inspect cask updates for %s", resource.name),
+			Fix:      "Run `brew doctor`, then try the update check again.",
+			Details: map[string]string{
+				"name":  resource.name,
+				"error": err.Error(),
+			},
+		}}
+	}
+	if !isOutdated {
+		return nil
+	}
+
+	return []engine.Advisory{{
+		Code:     "homebrew_cask_outdated",
+		Severity: engine.AdvisoryNotice,
+		Message:  fmt.Sprintf("cask update available for %s", resource.name),
+		Fix:      fmt.Sprintf("Run `brew upgrade --cask %s` when you want to update it.", resource.name),
+		Details:  map[string]string{"name": resource.name},
+	}}
 }
 
 type caskInstalledChecker interface {
@@ -151,6 +187,43 @@ func (cache *caskInstalledCache) load(ctx context.Context) {
 		cache.names[field] = struct{}{}
 	}
 	if err != nil {
+		cache.loadErr = err
+	}
+}
+
+type caskOutdatedCache struct {
+	runner  platform.Runner
+	loaded  bool
+	names   map[string]struct{}
+	loadErr error
+}
+
+type caskOutdatedChecker interface {
+	Contains(ctx context.Context, name string) (bool, error)
+}
+
+func newCaskOutdatedCache(runner platform.Runner) *caskOutdatedCache {
+	return &caskOutdatedCache{runner: runner}
+}
+
+func (cache *caskOutdatedCache) Contains(ctx context.Context, name string) (bool, error) {
+	if !cache.loaded {
+		cache.load(ctx)
+	}
+
+	_, ok := cache.names[name]
+	return ok, cache.loadErr
+}
+
+func (cache *caskOutdatedCache) load(ctx context.Context) {
+	cache.loaded = true
+	cache.names = make(map[string]struct{})
+
+	result, err := cache.runner.Run(ctx, "brew", "outdated", "--cask", "--quiet")
+	for _, field := range strings.Fields(result.Stdout) {
+		cache.names[field] = struct{}{}
+	}
+	if err != nil && !isExitCode(err, 1) {
 		cache.loadErr = err
 	}
 }

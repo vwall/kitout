@@ -21,18 +21,20 @@ type PlanItem struct {
 	Message    string
 	Error      string
 	Details    map[string]string
+	Advisories []Advisory
 }
 
 // PlanSummary aggregates resource states and planned actions.
 type PlanSummary struct {
-	Total     int `json:"total"`
-	Satisfied int `json:"satisfied"`
-	Missing   int `json:"missing"`
-	Changed   int `json:"changed"`
-	Failed    int `json:"failed"`
-	Skipped   int `json:"skipped"`
-	Unknown   int `json:"unknown"`
-	ToApply   int `json:"to_apply"`
+	Total      int `json:"total"`
+	Satisfied  int `json:"satisfied"`
+	Missing    int `json:"missing"`
+	Changed    int `json:"changed"`
+	Failed     int `json:"failed"`
+	Skipped    int `json:"skipped"`
+	Unknown    int `json:"unknown"`
+	ToApply    int `json:"to_apply"`
+	Advisories int `json:"advisories"`
 }
 
 // Plan is the result of checking resources and mapping their states to actions.
@@ -117,6 +119,7 @@ func planItemFor(resource Resource, result StatusResult, err error) PlanItem {
 		Action:     actionForState(result.State),
 		Message:    result.Message,
 		Details:    result.Details,
+		Advisories: result.Advisories,
 	}
 
 	if err != nil {
@@ -169,4 +172,6 @@ func (summary *PlanSummary) add(item PlanItem) {
 	if item.Action == ActionApply {
 		summary.ToApply++
 	}
+
+	summary.Advisories += len(item.Advisories)
 }

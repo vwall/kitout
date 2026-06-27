@@ -208,7 +208,7 @@ func TestBrewPackageStatusSatisfiedWhenOutdatedCheckExitsOneWithNoOutput(t *test
 	})
 }
 
-func TestBrewPackageStatusChangedWhenFormulaIsOutdated(t *testing.T) {
+func TestBrewPackageStatusAdvisesWhenFormulaIsOutdated(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
 		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
@@ -220,7 +220,8 @@ func TestBrewPackageStatusChangedWhenFormulaIsOutdated(t *testing.T) {
 		t.Fatalf("Status returned error: %v", err)
 	}
 
-	expectStatus(t, result, resource.ID(), brewType, engine.StateChanged, "formula is outdated")
+	expectStatus(t, result, resource.ID(), brewType, engine.StateSatisfied, "formula is installed")
+	expectAdvisory(t, result.Advisories, "homebrew_formula_outdated", "formula update available for git", "brew upgrade git")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
@@ -239,7 +240,7 @@ func TestBrewPackageStatusMissingWhenFormulaIsNotInstalled(t *testing.T) {
 	expectStatus(t, result, resource.ID(), brewType, engine.StateMissing, "formula is missing")
 }
 
-func TestBrewPackageStatusFailsWhenOutdatedCheckFails(t *testing.T) {
+func TestBrewPackageStatusWarnsWhenOutdatedCheckFails(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
 		{err: commandError("brew", []string{"outdated", "--formula", "--quiet"}, 2)},
@@ -247,11 +248,12 @@ func TestBrewPackageStatusFailsWhenOutdatedCheckFails(t *testing.T) {
 	resource := NewBrewPackage("git", runner)
 
 	result, err := resource.Status(context.Background())
-	if err == nil {
-		t.Fatal("Status returned nil error, want outdated check failure")
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
 	}
 
-	expectStatus(t, result, resource.ID(), brewType, engine.StateFailed, "could not inspect formula updates")
+	expectStatus(t, result, resource.ID(), brewType, engine.StateSatisfied, "formula is installed")
+	expectAdvisoryWithSeverity(t, result.Advisories, "homebrew_formula_update_check_failed", engine.AdvisoryWarning, "could not inspect formula updates for git", "brew doctor")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
@@ -299,11 +301,10 @@ func TestBrewPackageApplyIsIdempotentWhenInstalled(t *testing.T) {
 	})
 }
 
-func TestBrewPackageApplyUpgradesOutdatedFormula(t *testing.T) {
+func TestBrewPackageApplyDoesNotUpgradeOutdatedFormula(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
 		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
-		{result: commandResult("brew", []string{"upgrade", "git"}, 0)},
 	}}
 	resource := NewBrewPackage("git", runner)
 
@@ -312,28 +313,30 @@ func TestBrewPackageApplyUpgradesOutdatedFormula(t *testing.T) {
 		t.Fatalf("Apply returned error: %v", err)
 	}
 
-	expectApply(t, result, resource.ID(), brewType, "upgrade", true, "upgraded formula")
+	expectApply(t, result, resource.ID(), brewType, "noop", false, "formula already installed")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
-		{name: "brew", args: []string{"upgrade", "git"}},
 	})
 }
 
-func TestBrewPackageApplyReportsUpgradeFailure(t *testing.T) {
+func TestBrewPackageApplyIgnoresOutdatedFormulaUpgradeFailure(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
 		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
-		{err: commandError("brew", []string{"upgrade", "git"}, 2)},
 	}}
 	resource := NewBrewPackage("git", runner)
 
 	result, err := resource.Apply(context.Background())
-	if err == nil {
-		t.Fatal("Apply returned nil error, want upgrade failure")
+	if err != nil {
+		t.Fatalf("Apply returned error: %v", err)
 	}
 
-	expectApply(t, result, resource.ID(), brewType, "upgrade", false, "could not upgrade formula")
+	expectApply(t, result, resource.ID(), brewType, "noop", false, "formula already installed")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+	})
 }
 
 func TestBrewPackageApplyReportsInstallFailure(t *testing.T) {
@@ -372,12 +375,13 @@ func TestBrewPackageDryRunPlanDoesNotUpgrade(t *testing.T) {
 
 	plan := engine.NewPlanner().Build(context.Background(), []engine.Resource{resource})
 
-	if plan.Items[0].State != engine.StateChanged {
-		t.Fatalf("State = %q, want %q", plan.Items[0].State, engine.StateChanged)
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("State = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
 	}
-	if plan.Items[0].Action != engine.ActionApply {
-		t.Fatalf("Action = %q, want %q", plan.Items[0].Action, engine.ActionApply)
+	if plan.Items[0].Action != engine.ActionNoop {
+		t.Fatalf("Action = %q, want %q", plan.Items[0].Action, engine.ActionNoop)
 	}
+	expectAdvisory(t, plan.Items[0].Advisories, "homebrew_formula_outdated", "formula update available for git", "brew upgrade git")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
@@ -401,9 +405,10 @@ func TestBrewPackageDryRunBatchesOutdatedCheckForBuiltResources(t *testing.T) {
 	if plan.Items[0].State != engine.StateSatisfied {
 		t.Fatalf("git state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
 	}
-	if plan.Items[1].State != engine.StateChanged {
-		t.Fatalf("go state = %q, want %q", plan.Items[1].State, engine.StateChanged)
+	if plan.Items[1].State != engine.StateSatisfied {
+		t.Fatalf("go state = %q, want %q", plan.Items[1].State, engine.StateSatisfied)
 	}
+	expectAdvisory(t, plan.Items[1].Advisories, "homebrew_formula_outdated", "formula update available for go", "brew upgrade go")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "--quiet"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
@@ -473,9 +478,10 @@ func TestBrewPackageDryRunChecksFullyQualifiedBuiltFormulaOutdatedDirectly(t *te
 
 	plan := engine.NewPlanner().Build(context.Background(), resources)
 
-	if plan.Items[0].State != engine.StateChanged {
-		t.Fatalf("owner/repo/example state = %q, want %q", plan.Items[0].State, engine.StateChanged)
+	if plan.Items[0].State != engine.StateSatisfied {
+		t.Fatalf("owner/repo/example state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
 	}
+	expectAdvisory(t, plan.Items[0].Advisories, "homebrew_formula_outdated", "formula update available for owner/repo/example", "brew upgrade owner/repo/example")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "owner/repo/example"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "owner/repo/example"}},
@@ -529,9 +535,10 @@ func TestBrewPackageUncachedBuildDoesNotShareOutdatedChecks(t *testing.T) {
 	if plan.Items[0].State != engine.StateSatisfied {
 		t.Fatalf("git state = %q, want %q", plan.Items[0].State, engine.StateSatisfied)
 	}
-	if plan.Items[1].State != engine.StateChanged {
-		t.Fatalf("go state = %q, want %q", plan.Items[1].State, engine.StateChanged)
+	if plan.Items[1].State != engine.StateSatisfied {
+		t.Fatalf("go state = %q, want %q", plan.Items[1].State, engine.StateSatisfied)
 	}
+	expectAdvisory(t, plan.Items[1].Advisories, "homebrew_formula_outdated", "formula update available for go", "brew upgrade go")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
@@ -541,7 +548,10 @@ func TestBrewPackageUncachedBuildDoesNotShareOutdatedChecks(t *testing.T) {
 }
 
 func TestCaskStatusSatisfiedWhenInstalled(t *testing.T) {
-	runner := &fakeRunner{responses: []fakeResponse{{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)}}}
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--cask", "--quiet"}, 0)},
+	}}
 	resource := NewCask("ghostty", runner)
 
 	result, err := resource.Status(context.Background())
@@ -550,7 +560,42 @@ func TestCaskStatusSatisfiedWhenInstalled(t *testing.T) {
 	}
 
 	expectStatus(t, result, resource.ID(), caskType, engine.StateSatisfied, "cask is installed")
-	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"list", "--cask", "ghostty"}}})
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--cask", "ghostty"}},
+		{name: "brew", args: []string{"outdated", "--cask", "--quiet"}},
+	})
+}
+
+func TestCaskStatusAdvisesWhenOutdated(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--cask", "--quiet"}, "ghostty\n")},
+	}}
+	resource := NewCask("ghostty", runner)
+
+	result, err := resource.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+
+	expectStatus(t, result, resource.ID(), caskType, engine.StateSatisfied, "cask is installed")
+	expectAdvisory(t, result.Advisories, "homebrew_cask_outdated", "cask update available for ghostty", "brew upgrade --cask ghostty")
+}
+
+func TestCaskStatusWarnsWhenOutdatedCheckFails(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{err: commandError("brew", []string{"outdated", "--cask", "--quiet"}, 2)},
+	}}
+	resource := NewCask("ghostty", runner)
+
+	result, err := resource.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+
+	expectStatus(t, result, resource.ID(), caskType, engine.StateSatisfied, "cask is installed")
+	expectAdvisoryWithSeverity(t, result.Advisories, "homebrew_cask_update_check_failed", engine.AdvisoryWarning, "could not inspect cask updates for ghostty", "brew doctor")
 }
 
 func TestCaskStatusMissingWhenNotInstalled(t *testing.T) {
@@ -585,7 +630,10 @@ func TestCaskApplyInstallsMissingCask(t *testing.T) {
 }
 
 func TestCaskApplyIsIdempotentWhenInstalled(t *testing.T) {
-	runner := &fakeRunner{responses: []fakeResponse{{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)}}}
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--cask", "--quiet"}, 0)},
+	}}
 	resource := NewCask("ghostty", runner)
 
 	result, err := resource.Apply(context.Background())
@@ -626,6 +674,7 @@ func TestCaskDryRunPlanDoesNotInstall(t *testing.T) {
 func TestCaskDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: resultWithStdout("brew", []string{"list", "--cask", "--quiet"}, "ghostty\n")},
+		{result: commandResult("brew", []string{"outdated", "--cask", "--quiet"}, 0)},
 	}}
 	resources := Build(config.Config{
 		Version: config.CurrentVersion,
@@ -642,12 +691,14 @@ func TestCaskDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
 	}
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--cask", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--cask", "--quiet"}},
 	})
 }
 
 func TestCaskUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--cask", "--quiet"}, 0)},
 		{err: commandError("brew", []string{"list", "--cask", "rectangle"}, 1)},
 	}}
 	resources := BuildUncached(config.Config{
@@ -665,6 +716,7 @@ func TestCaskUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	}
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--cask", "ghostty"}},
+		{name: "brew", args: []string{"outdated", "--cask", "--quiet"}},
 		{name: "brew", args: []string{"list", "--cask", "rectangle"}},
 	})
 }
@@ -683,6 +735,33 @@ func expectStatus(t *testing.T, result engine.StatusResult, id, typ string, stat
 	}
 	if result.Message != message {
 		t.Fatalf("Message = %q, want %q", result.Message, message)
+	}
+}
+
+func expectAdvisory(t *testing.T, advisories []engine.Advisory, code, message, fixFragment string) {
+	t.Helper()
+
+	expectAdvisoryWithSeverity(t, advisories, code, engine.AdvisoryNotice, message, fixFragment)
+}
+
+func expectAdvisoryWithSeverity(t *testing.T, advisories []engine.Advisory, code string, severity engine.AdvisorySeverity, message, fixFragment string) {
+	t.Helper()
+
+	if len(advisories) != 1 {
+		t.Fatalf("advisories = %+v, want one advisory", advisories)
+	}
+	advisory := advisories[0]
+	if advisory.Code != code {
+		t.Fatalf("advisory code = %q, want %q", advisory.Code, code)
+	}
+	if advisory.Severity != severity {
+		t.Fatalf("advisory severity = %q, want %q", advisory.Severity, severity)
+	}
+	if advisory.Message != message {
+		t.Fatalf("advisory message = %q, want %q", advisory.Message, message)
+	}
+	if !strings.Contains(advisory.Fix, fixFragment) {
+		t.Fatalf("advisory fix = %q, want fragment %q", advisory.Fix, fixFragment)
 	}
 }
 

@@ -33,19 +33,25 @@ Use:
 
 ```sh
 brew list --cask --quiet
+brew outdated --cask --quiet
 ```
 
 Satisfied when the cask is installed.
 
 Missing when Homebrew is available but the cask is not installed.
 
+Still satisfied when the cask is installed and Homebrew reports that it is
+outdated. Kitout reports an advisory such as `cask update available for ghostty`
+with a manual `brew upgrade --cask ghostty` fix, but it does not treat the
+resource as drift from config.
+
 Failed when Homebrew is unavailable or the command errors unexpectedly.
 
-Kitout batches Homebrew cask installed checks for resources built from the same
-config, so `kitout status` and `kitout apply --dry-run` inspect the cask list
-once instead of running one `brew list` command per cask. During real apply
-execution, Kitout uses fresh uncached resource checks before mutating so planning
-state cannot go stale.
+Kitout batches Homebrew cask installed and outdated checks for resources built
+from the same config, so `kitout status` and `kitout apply --dry-run` inspect
+each cask list once instead of running one `brew list` and one `brew outdated`
+command per cask. During real apply execution, Kitout uses fresh uncached
+resource checks before mutating so planning state cannot go stale.
 
 ## Apply
 
@@ -57,6 +63,8 @@ brew install --cask <name>
 
 If a cask comes from a non-default tap, declare the tap under `brew.taps`.
 Kitout applies Homebrew taps before casks.
+
+Outdated casks are reported as advisories and are not upgraded by `kitout apply`.
 
 ## Safety
 

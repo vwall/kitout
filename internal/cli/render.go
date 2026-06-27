@@ -47,10 +47,14 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 		if item.Error != "" {
 			renderIndentedDetail(r.stdout, strings.Repeat(" ", statusLeftWidth), "error", item.Error)
 		}
+		r.renderItemAdvisories(strings.Repeat(" ", statusLeftWidth), item)
 	}
 	fmt.Fprintf(r.stdout, "\nSummary: %s\n", statusSummary(plan.Summary))
 	if attention := statusAttentionCount(plan.Summary); attention > 0 {
 		fmt.Fprintf(r.stdout, "%s\n", statusAttentionMessage(attention))
+	}
+	if plan.Summary.Advisories > 0 {
+		fmt.Fprintf(r.stdout, "%s\n", advisorySummaryMessage(plan.Summary.Advisories))
 	}
 }
 
@@ -88,6 +92,7 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 	if plan.Summary.ToApply == 0 {
 		fmt.Fprintln(r.stdout, "No changes.")
 	}
+	r.renderPlanAdvisories(plan)
 	fmt.Fprintf(r.stdout, "\n%s No changes made because --dry-run was used.\n", r.dryRunBadge())
 	fmt.Fprintln(r.stdout, "No shell commands will run without explicit approval.")
 }
@@ -144,6 +149,31 @@ func renderIndentedDetail(writer io.Writer, indent, label, text string) {
 	continuationIndent := indent + strings.Repeat(" ", len(label)+2)
 	for _, line := range lines[1:] {
 		fmt.Fprintf(writer, "%s%s\n", continuationIndent, line)
+	}
+}
+
+func (r humanRenderer) renderPlanAdvisories(plan engine.Plan) {
+	if plan.Summary.Advisories == 0 {
+		return
+	}
+
+	fmt.Fprintln(r.stdout, "\nAdvisories:")
+	for _, item := range plan.Items {
+		r.renderItemAdvisories("", item)
+	}
+}
+
+func (r humanRenderer) renderItemAdvisories(indent string, item engine.PlanItem) {
+	if len(item.Advisories) == 0 {
+		return
+	}
+
+	label := displayResourceLabel(item.Type, item.ResourceID, item.Details)
+	for _, advisory := range item.Advisories {
+		fmt.Fprintf(r.stdout, "%s%s %s: %s\n", indent, r.advisorySymbol(advisory), label, advisory.Message)
+		if advisory.Fix != "" {
+			renderIndentedDetail(r.stdout, indent+"    ", "fix", advisory.Fix)
+		}
 	}
 }
 
@@ -289,6 +319,15 @@ func (r humanRenderer) skipSymbol() string {
 	return r.colorize("-", ansiCyan)
 }
 
+func (r humanRenderer) advisorySymbol(advisory engine.Advisory) string {
+	switch advisory.Severity {
+	case engine.AdvisoryWarning:
+		return r.colorize("!", ansiYellow)
+	default:
+		return r.colorize("i", ansiCyan)
+	}
+}
+
 func planStatusLabelWidth(items []engine.PlanItem) int {
 	width := minResourceLabelWidth
 	for _, item := range items {
@@ -381,6 +420,13 @@ func statusAttentionMessage(count int) string {
 		return "1 resource needs attention"
 	}
 	return fmt.Sprintf("%d resources need attention", count)
+}
+
+func advisorySummaryMessage(count int) string {
+	if count == 1 {
+		return "1 advisory"
+	}
+	return fmt.Sprintf("%d advisories", count)
 }
 
 func statusMarkerColor(item engine.PlanItem) string {
