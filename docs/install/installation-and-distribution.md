@@ -65,7 +65,8 @@ make release-check VERSION=X.Y.Z
 The release gate runs `go test ./...`, then `go vet ./...`, then
 `make smoke-distribution`. The smoke target builds `bin/kitout` and covers
 temporary starter configs, `init`, `doctor`, `status`, `apply --dry-run`, a
-temp-only directory copy apply, and a safe login-shell status/dry-run plan.
+temp-only directory copy apply, and, when the host can report the current user's
+`UserShell`, a safe login-shell status/dry-run plan.
 
 Before tagging, also verify these release-specific items:
 

@@ -106,7 +106,7 @@ temporary HOME, writes starter configs with `kitout init --config`, runs
 `kitout doctor`, expects `kitout status` to report the missing starter
 directories such as `~/code`, verifies `kitout apply --dry-run` exits without
 changing the temporary filesystem, applies a temp-only nested directory copy,
-and checks a safe login-shell status/dry-run plan with temporary read-only
-`id`/`dscl` shims, without calling `chsh` or editing `/etc/shells`.
+and checks a safe login-shell status/dry-run plan when the host can report the
+current user's `UserShell`, without calling `chsh` or editing `/etc/shells`.
 
 Then test on a disposable macOS user account if possible.
