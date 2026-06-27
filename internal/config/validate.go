@@ -47,16 +47,9 @@ type ConfigWarning struct {
 	Message string
 }
 
-// Warnings returns non-fatal diagnostics for deprecated schema forms.
+// Warnings returns non-fatal diagnostics for discouraged but valid config forms.
 func Warnings(cfg Config) []ConfigWarning {
-	warnings := make([]ConfigWarning, 0)
-	if len(cfg.Casks) > 0 {
-		warnings = append(warnings, ConfigWarning{
-			Field:   "casks",
-			Message: "top-level casks is deprecated; move entries to brew.casks",
-		})
-	}
-	return warnings
+	return nil
 }
 
 // Validate checks the decoded config against Kitout's documented schema.
@@ -84,18 +77,16 @@ func validate(cfg Config, opts validationOptions) error {
 	errs.requireStrings("brew.taps", cfg.Brew.Taps)
 	errs.requireStrings("brew.packages", cfg.Brew.Packages)
 	errs.requireStrings("brew.casks", cfg.Brew.Casks)
-	errs.requireStrings("casks", cfg.Casks)
 	errs.requireStrings("directories", cfg.Directories)
 
 	errs.detectDuplicateStrings("brew.taps", cfg.Brew.Taps)
 	errs.detectDuplicateStrings("brew.packages", cfg.Brew.Packages)
 	errs.detectDuplicateStrings("brew.casks", cfg.Brew.Casks)
-	errs.detectDuplicateStrings("casks", cfg.Casks)
 	if opts.checkPathDuplicates {
 		errs.detectDuplicateStrings("directories", cfg.Directories)
 	}
-	if len(cfg.Brew.Casks) > 0 && len(cfg.Casks) > 0 {
-		errs.add("casks", "cannot be used with brew.casks; move entries to brew.casks")
+	if cfg.topLevelCasksSet || cfg.Casks != nil {
+		errs.add("casks", "is not supported; move entries under brew.casks")
 	}
 
 	for i, plugin := range cfg.ASDF.Plugins {

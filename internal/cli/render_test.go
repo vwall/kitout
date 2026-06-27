@@ -502,10 +502,10 @@ func TestHumanRendererConfigWarnings(t *testing.T) {
 	renderer := newHumanRenderer(&stdout, &stderr, globalOptions{})
 
 	renderer.renderConfigWarnings([]config.ConfigWarning{
-		{Field: "casks", Message: "top-level casks is deprecated; move entries to brew.casks"},
+		{Field: "example", Message: "example warning"},
 	})
 
-	want := "warning: top-level casks is deprecated; move entries to brew.casks\n"
+	want := "warning: example warning\n"
 	if stderr.String() != want {
 		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
 	}

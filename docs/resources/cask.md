@@ -16,8 +16,7 @@ brew:
     - rectangle
 ```
 
-Top-level `casks` is supported for schema version 1 compatibility, but it is
-deprecated. Move cask entries under `brew.casks`.
+Top-level `casks` is not supported. Move cask entries under `brew.casks`.
 
 Future expanded form:
 

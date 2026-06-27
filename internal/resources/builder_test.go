@@ -123,7 +123,7 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 	}
 }
 
-func TestBuildCreatesCaskResourcesFromLegacyTopLevelCasks(t *testing.T) {
+func TestBuildIgnoresTopLevelCasks(t *testing.T) {
 	cfg := config.Config{
 		Version: config.CurrentVersion,
 		Casks:   []string{"ghostty"},
@@ -131,11 +131,8 @@ func TestBuildCreatesCaskResourcesFromLegacyTopLevelCasks(t *testing.T) {
 
 	resources := Build(cfg, &fakeRunner{})
 
-	if len(resources) != 1 {
-		t.Fatalf("len(resources) = %d, want 1", len(resources))
-	}
-	if got := resources[0].ID(); got != "cask:ghostty" {
-		t.Fatalf("resource ID = %q, want cask:ghostty", got)
+	if len(resources) != 0 {
+		t.Fatalf("len(resources) = %d, want 0", len(resources))
 	}
 }
 

@@ -97,32 +97,24 @@ repos:
 	}
 }
 
-func TestDoctorCheckerWarnsForDeprecatedTopLevelCasks(t *testing.T) {
+func TestDoctorCheckerRejectsTopLevelCasks(t *testing.T) {
 	configPath := writeCLIConfigFile(t, `version: 1
 
 casks:
   - ghostty
 `)
-	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
-		{result: doctorCommandResult("xcode-select", []string{"-p"}, "/Library/Developer/CommandLineTools\n")},
-		{result: doctorCommandResult("brew", []string{"--version"}, "Homebrew 4.0.0\n")},
-		{result: doctorCommandResult("brew", []string{"--prefix"}, "/opt/homebrew\n")},
-		{result: doctorCommandResult("git", []string{"--version"}, "git version 2.45.0\n")},
-	}}
+	runner := &fakeDoctorRunner{}
 	checker := newDoctorChecker(runner, healthyDoctorInfo(t, "arm64"))
 
 	report := checker.Check(context.Background(), configPath)
 
-	if report.HasFailures() {
-		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	if !report.HasFailures() {
+		t.Fatalf("HasFailures() = false, want true: %+v", report)
 	}
-	assertDoctorItem(t, report, "Config", doctorWarn, "top-level casks is deprecated")
+	assertDoctorItem(t, report, "Config", doctorFail, "config is not valid")
 	configItem := doctorItemByName(t, report, "Config")
-	if !strings.Contains(configItem.Fix, "brew.casks") {
-		t.Fatalf("Config fix = %q, want brew.casks guidance", configItem.Fix)
-	}
-	if report.Summary.Warn != 1 {
-		t.Fatalf("warnings = %d, want 1", report.Summary.Warn)
+	if !strings.Contains(configItem.Details["error"], "casks is not supported; move entries under brew.casks") {
+		t.Fatalf("config error = %q, want brew.casks migration guidance", configItem.Details["error"])
 	}
 }
 

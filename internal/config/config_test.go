@@ -19,7 +19,6 @@ func TestConfigUsesDocumentedYAMLFields(t *testing.T) {
 		{"Version", "version"},
 		{"Brew", "brew,omitempty"},
 		{"ASDF", "asdf,omitempty"},
-		{"Casks", "casks,omitempty"},
 		{"Directories", "directories,omitempty"},
 		{"Copies", "copies,omitempty"},
 		{"Repos", "repos,omitempty"},
@@ -162,7 +161,7 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	if got := cfg.Brew.Packages[0]; got != "git" {
 		t.Fatalf("first brew package = %q, want git", got)
 	}
-	if got := cfg.HomebrewCasks()[0]; got != "ghostty" {
+	if got := cfg.Brew.Casks[0]; got != "ghostty" {
 		t.Fatalf("first cask = %q, want ghostty", got)
 	}
 	if got := cfg.Repos[0].Branch; got != "main" {
@@ -191,17 +190,6 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 	}
 	if got := cfg.SSH.Keys[0].Type; got != "ed25519" {
 		t.Fatalf("ssh key type = %q, want ed25519", got)
-	}
-}
-
-func TestConfigHomebrewCasksFallsBackToLegacyTopLevelCasks(t *testing.T) {
-	cfg := Config{
-		Version: CurrentVersion,
-		Casks:   []string{"ghostty"},
-	}
-
-	if got := cfg.HomebrewCasks(); !reflect.DeepEqual(got, []string{"ghostty"}) {
-		t.Fatalf("HomebrewCasks() = %#v, want legacy top-level casks", got)
 	}
 }
 

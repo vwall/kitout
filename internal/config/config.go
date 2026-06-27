@@ -10,8 +10,9 @@ type Config struct {
 	Version int  `yaml:"version"`
 	Brew    Brew `yaml:"brew,omitempty"`
 	ASDF    ASDF `yaml:"asdf,omitempty"`
-	// Casks is the legacy top-level cask list. Prefer Brew.Casks.
-	Casks         []string       `yaml:"casks,omitempty"`
+	// Casks catches the removed top-level casks field so validation can report a
+	// migration error. Use Brew.Casks for supported config.
+	Casks         any            `yaml:"casks,omitempty"`
 	Directories   []string       `yaml:"directories,omitempty"`
 	Copies        []Copy         `yaml:"copies,omitempty"`
 	Repos         []Repo         `yaml:"repos,omitempty"`
@@ -23,6 +24,8 @@ type Config struct {
 	SSH           SSH            `yaml:"ssh,omitempty"`
 	LoginShell    *LoginShell    `yaml:"login_shell,omitempty"`
 	Shell         []ShellCommand `yaml:"shell,omitempty"`
+
+	topLevelCasksSet bool
 }
 
 // Brew describes Homebrew taps and packages managed by Kitout.
@@ -30,15 +33,6 @@ type Brew struct {
 	Taps     []string `yaml:"taps,omitempty"`
 	Packages []string `yaml:"packages,omitempty"`
 	Casks    []string `yaml:"casks,omitempty"`
-}
-
-// HomebrewCasks returns the active cask list. The top-level casks field is
-// kept for schema version 1 compatibility; validation rejects using both forms.
-func (cfg Config) HomebrewCasks() []string {
-	if len(cfg.Brew.Casks) > 0 {
-		return cfg.Brew.Casks
-	}
-	return cfg.Casks
 }
 
 // ASDF describes runtimes managed by asdf.

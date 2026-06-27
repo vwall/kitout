@@ -99,10 +99,8 @@ Current resource implementation coverage:
 
 ## Compatibility
 
-Top-level `casks` is still supported for schema version 1, but it is deprecated.
-New configs should use `brew.casks`. Kitout reports a warning when top-level
-`casks` contains entries, and validation rejects configs that set both
-top-level `casks` and `brew.casks`.
+Homebrew casks must be configured under `brew.casks`. Top-level `casks` is no
+longer supported; Kitout rejects it with migration guidance.
 
 ## Required fields
 
@@ -113,7 +111,6 @@ Scalar resource entries must not be empty:
 - `brew.taps[]`
 - `brew.packages[]`
 - `brew.casks[]`
-- legacy `casks[]`
 - `directories[]`
 
 `brew.packages[]` entries may be simple formula names such as `git` or

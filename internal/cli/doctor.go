@@ -403,7 +403,7 @@ func (checker doctorChecker) checkConfig(path string) (doctorItem, config.Loaded
 			Name:    "Config",
 			State:   doctorWarn,
 			Message: "config is valid, but " + loaded.Warnings[0].Message,
-			Fix:     "Move cask entries under brew.casks.",
+			Fix:     "Update the config to remove this warning.",
 			Details: map[string]string{
 				"path":    resolvedPath,
 				"warning": loaded.Warnings[0].Message,

@@ -133,12 +133,18 @@ func LoadFile(path string) (LoadedConfig, error) {
 		return LoadedConfig{}, fmt.Errorf("read config %s: %w", resolvedPath, err)
 	}
 
+	topLevelCasksSet, err := hasRootYAMLField(contents, "casks")
+	if err != nil {
+		return LoadedConfig{}, ParseError{Path: resolvedPath, Err: err}
+	}
+
 	var cfg Config
 	decoder := yaml.NewDecoder(bytes.NewReader(contents))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&cfg); err != nil {
 		return LoadedConfig{}, ParseError{Path: resolvedPath, Err: err}
 	}
+	cfg.topLevelCasksSet = topLevelCasksSet
 
 	if err := validateDecodedConfig(cfg); err != nil {
 		return LoadedConfig{}, err
@@ -155,6 +161,30 @@ func LoadFile(path string) (LoadedConfig, error) {
 		Config:   cfg,
 		Warnings: warnings,
 	}, nil
+}
+
+func hasRootYAMLField(contents []byte, field string) (bool, error) {
+	var document yaml.Node
+	if err := yaml.NewDecoder(bytes.NewReader(contents)).Decode(&document); err != nil {
+		return false, err
+	}
+
+	if document.Kind == yaml.DocumentNode {
+		if len(document.Content) == 0 {
+			return false, nil
+		}
+		document = *document.Content[0]
+	}
+	if document.Kind != yaml.MappingNode {
+		return false, nil
+	}
+
+	for i := 0; i+1 < len(document.Content); i += 2 {
+		if document.Content[i].Value == field {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func resolveResourcePaths(baseDir string, cfg Config) Config {

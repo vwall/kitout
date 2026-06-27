@@ -194,7 +194,7 @@ repos:
 	if got := loaded.Config.Brew.Packages[0]; got != "git" {
 		t.Fatalf("first brew package = %q, want git", got)
 	}
-	if got := loaded.Config.HomebrewCasks()[0]; got != "ghostty" {
+	if got := loaded.Config.Brew.Casks[0]; got != "ghostty" {
 		t.Fatalf("first brew cask = %q, want ghostty", got)
 	}
 	if got := loaded.Config.Repos[0].Branch; got != "main" {
@@ -205,26 +205,36 @@ repos:
 	}
 }
 
-func TestLoadFileWarnsForDeprecatedTopLevelCasks(t *testing.T) {
+func TestLoadFileRejectsTopLevelCasks(t *testing.T) {
 	configPath := writeConfigFile(t, `version: 1
 
 casks:
   - ghostty
 `)
 
-	loaded, err := LoadFile(configPath)
-	if err != nil {
-		t.Fatalf("LoadFile returned error: %v", err)
+	_, err := LoadFile(configPath)
+
+	assertValidationError(t, err, "casks", "is not supported; move entries under brew.casks")
+}
+
+func TestLoadFileRejectsPresentTopLevelCasks(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "empty list", body: "casks: []\n"},
+		{name: "bare key", body: "casks:\n"},
+		{name: "null", body: "casks: null\n"},
 	}
 
-	if got := loaded.Config.HomebrewCasks(); !slices.Equal(got, []string{"ghostty"}) {
-		t.Fatalf("HomebrewCasks() = %#v, want legacy cask", got)
-	}
-	if len(loaded.Warnings) != 1 {
-		t.Fatalf("len(warnings) = %d, want 1: %#v", len(loaded.Warnings), loaded.Warnings)
-	}
-	if loaded.Warnings[0].Field != "casks" {
-		t.Fatalf("warning field = %q, want casks", loaded.Warnings[0].Field)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			configPath := writeConfigFile(t, "version: 1\n\n"+tt.body)
+
+			_, err := LoadFile(configPath)
+
+			assertValidationError(t, err, "casks", "is not supported; move entries under brew.casks")
+		})
 	}
 }
 

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Removed support for top-level `casks`; Homebrew cask apps must now be listed
+  under `brew.casks`.
+
 ## 1.3.0 - Preferred Homebrew cask config
 
 ### Added

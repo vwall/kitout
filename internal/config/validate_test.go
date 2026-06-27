@@ -38,7 +38,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 				{},
 			},
 		},
-		Casks:         []string{""},
+		Casks:         caskList("ghostty"),
 		Directories:   []string{""},
 		Repos:         []Repo{{}},
 		Copies:        []Copy{{}},
@@ -69,7 +69,6 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 		"asdf.plugins[0].versions[0]",
 		"asdf.tool_versions[0].path",
 		"asdf.tool_versions[0].tools",
-		"casks[0]",
 		"directories[0]",
 		"repos[0].path",
 		"repos[0].url",
@@ -96,6 +95,7 @@ func TestValidateReportsStructuredRequiredFieldErrors(t *testing.T) {
 	} {
 		assertValidationError(t, err, field, "is required")
 	}
+	assertValidationError(t, err, "casks", "is not supported; move entries under brew.casks")
 }
 
 func TestValidateRejectsDuplicateResources(t *testing.T) {
@@ -166,45 +166,61 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 	}
 }
 
-func TestValidateStillChecksLegacyTopLevelCasks(t *testing.T) {
+func TestValidateRejectsTopLevelCasks(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
-		Casks:   []string{"ghostty", "ghostty"},
+		Casks:   caskList("ghostty", "ghostty"),
 	}
 
 	err := Validate(cfg)
 
-	assertValidationErrorContains(t, err, "casks[1]", "duplicates")
+	assertValidationError(t, err, "casks", "is not supported; move entries under brew.casks")
 }
 
-func TestValidateRejectsBothCaskLocations(t *testing.T) {
+func TestValidateRejectsEmptyTopLevelCasks(t *testing.T) {
+	cfg := Config{
+		Version: CurrentVersion,
+		Casks:   caskList(),
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "casks", "is not supported; move entries under brew.casks")
+}
+
+func TestValidateRejectsPresentTopLevelCasksWithoutDecodedValue(t *testing.T) {
+	cfg := Config{
+		Version:          CurrentVersion,
+		topLevelCasksSet: true,
+	}
+
+	err := Validate(cfg)
+
+	assertValidationError(t, err, "casks", "is not supported; move entries under brew.casks")
+}
+
+func TestValidateRejectsTopLevelCasksEvenWhenBrewCasksIsSet(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
 		Brew:    Brew{Casks: []string{"ghostty"}},
-		Casks:   []string{"visual-studio-code"},
+		Casks:   caskList("visual-studio-code"),
 	}
 
 	err := Validate(cfg)
 
-	assertValidationError(t, err, "casks", "cannot be used with brew.casks; move entries to brew.casks")
+	assertValidationError(t, err, "casks", "is not supported; move entries under brew.casks")
 }
 
-func TestWarningsReportDeprecatedTopLevelCasks(t *testing.T) {
+func TestWarningsDoNotReportRejectedTopLevelCasks(t *testing.T) {
 	cfg := Config{
 		Version: CurrentVersion,
-		Casks:   []string{"ghostty"},
+		Casks:   caskList("ghostty"),
 	}
 
 	warnings := Warnings(cfg)
 
-	if len(warnings) != 1 {
-		t.Fatalf("len(Warnings) = %d, want 1: %#v", len(warnings), warnings)
-	}
-	if warnings[0].Field != "casks" {
-		t.Fatalf("warning field = %q, want casks", warnings[0].Field)
-	}
-	if !strings.Contains(warnings[0].Message, "top-level casks is deprecated") {
-		t.Fatalf("warning message = %q, want deprecation guidance", warnings[0].Message)
+	if len(warnings) != 0 {
+		t.Fatalf("len(Warnings) = %d, want 0: %#v", len(warnings), warnings)
 	}
 }
 
@@ -370,6 +386,10 @@ func TestValidationErrorsRenderSpecificMessage(t *testing.T) {
 	if got, want := err.Error(), "Invalid config: symlinks[0].target is required"; got != want {
 		t.Fatalf("Error() = %q, want %q", got, want)
 	}
+}
+
+func caskList(values ...string) []string {
+	return values
 }
 
 func assertValidationError(t *testing.T, err error, field, message string) {
