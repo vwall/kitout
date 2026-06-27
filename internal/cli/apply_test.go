@@ -722,6 +722,83 @@ asdf:
 	}
 }
 
+func TestApplyDryRunRejectsCopySymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	outsideTarget := filepath.Join(outside, "target")
+	if err := os.WriteFile(source, []byte("contents\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+copies:
+  - source: `+source+`
+    target: `+filepath.Join(linkedAncestor, "target")+`
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--dry-run"}, nil, &stdout, &stderr)
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d; stdout: %s; stderr: %s", code, exitRuntimeError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "copy target ancestor") {
+		t.Fatalf("stdout = %q, want copy target ancestor failure", stdout.String())
+	}
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
+	}
+}
+
+func TestApplyRejectsDirectoryCopySymlinkAncestor(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	linkedAncestor := filepath.Join(dir, "linked")
+	outside := filepath.Join(dir, "outside")
+	outsideTarget := filepath.Join(outside, "profile", "settings.toml")
+	if err := os.MkdirAll(source, 0o755); err != nil {
+		t.Fatalf("MkdirAll source returned error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "settings.toml"), []byte("theme = \"system\"\n"), 0o644); err != nil {
+		t.Fatalf("write source file: %v", err)
+	}
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("MkdirAll outside returned error: %v", err)
+	}
+	if err := os.Symlink(outside, linkedAncestor); err != nil {
+		t.Fatalf("Symlink returned error: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+copies:
+  - source: `+source+`
+    target: `+filepath.Join(linkedAncestor, "profile")+`
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath}, nil, &stdout, &stderr)
+	if code != exitApplyFailure {
+		t.Fatalf("exit code = %d, want %d; stdout: %s; stderr: %s", code, exitApplyFailure, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "copy target ancestor") {
+		t.Fatalf("stdout = %q, want copy target ancestor failure", stdout.String())
+	}
+	if _, err := os.Lstat(outsideTarget); !os.IsNotExist(err) {
+		t.Fatalf("Lstat(%q) error = %v, want outside target to remain missing", outsideTarget, err)
+	}
+}
+
 func TestApplyRejectsASDFToolVersionsSymlinkAncestor(t *testing.T) {
 	dir := t.TempDir()
 	linkedAncestor := filepath.Join(dir, "linked")
