@@ -2,10 +2,50 @@
 
 ## Unreleased
 
-### Changed
+No changes yet.
+
+## 2.0.0 - Security and config hardening
+
+Kitout 2.0.0 is a major release that removes the deprecated top-level cask
+config while adding the security, system prerequisite, SSH key, and path
+hardening work needed for safer fresh-Mac runs.
+
+### Breaking
 
 - Removed support for top-level `casks`; Homebrew cask apps must now be listed
   under `brew.casks`.
+
+### Added
+
+- Added macOS security resources for FileVault and the application firewall.
+- Added system prerequisite resources for Xcode Command Line Tools and Rosetta.
+- Added SSH key management for missing Ed25519 keys.
+- Added early duplicate resource ID validation.
+- Added Homebrew freshness advisories so outdated formulae and casks can be
+  reported without treating them as config drift.
+
+### Changed
+
+- Hardened shell command execution and implicit dependency checks against
+  ambient `PATH` changes.
+- Hardened symlink handling for copy targets, `.tool-versions` files, and SSH
+  public key paths.
+- Rejected control characters in login shell paths.
+- Updated docs, examples, and CLI output for the current resource set.
+
+### Distribution
+
+- Updated release validation, release workflow tests, and smoke coverage for
+  safer release tagging.
+- Updated the Homebrew formula template for `v2.0.0` macOS arm64 and amd64
+  artifacts.
+
+### Notes
+
+- This is a breaking CLI release because previously accepted top-level `casks`
+  config is now rejected with migration guidance.
+- Supported config files still use `version: 1`; move cask entries under
+  `brew.casks` before upgrading.
 
 ## 1.3.0 - Preferred Homebrew cask config
 
