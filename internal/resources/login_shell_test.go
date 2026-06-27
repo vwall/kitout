@@ -193,6 +193,51 @@ func TestLoginShellApplyAppendsEtcShellsAndRunsChsh(t *testing.T) {
 	})
 }
 
+func TestLoginShellApplyRejectsControlCharactersBeforeAppendingEtcShells(t *testing.T) {
+	for _, path := range []string{
+		"/opt/homebrew/bin/fish\n/bin/bash",
+		"/opt/homebrew/bin/fish\r/bin/bash",
+		"/opt/homebrew/bin/fish\t",
+		"/opt/homebrew/bin/fish\x00",
+	} {
+		runner := &fakeRunner{}
+		resource := newLoginShell(path, true, runner, fakeLoginShellSystem{}, "/tmp/shells")
+
+		result, err := resource.Apply(context.Background())
+		if err == nil {
+			t.Fatalf("Apply(%q) returned nil error, want control-character error", path)
+		}
+
+		expectApply(t, result, resource.ID(), loginShellType, "fail", false, "login shell path must not contain control characters")
+		expectCalls(t, runner.calls, nil)
+	}
+}
+
+func TestLoginShellApplyRejectsControlCharactersInResolvedHomebrewPath(t *testing.T) {
+	resolvedPath := "/opt/homebrew\n/evil/bin/fish"
+	system := fakeLoginShellSystem{
+		files: map[string]bool{resolvedPath: true},
+		contents: map[string]string{
+			"/tmp/shells": "/bin/zsh\n",
+		},
+	}
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: resultWithStdout("brew", []string{"--prefix"}, "/opt/homebrew\n/evil\n")},
+		{result: resultWithStdout("id", []string{"-un"}, "nix\n")},
+		{result: resultWithStdout("dscl", []string{".", "-read", "/Users/nix", "UserShell"}, "UserShell: /bin/zsh\n")},
+		{result: commandResult("sudo", []string{"sh", "-c", "printf '%s\\n' \"$1\" >> \"$2\"", "kitout", resolvedPath, "/tmp/shells"}, 0)},
+	}}
+	resource := newLoginShell("homebrew:fish", true, runner, system, "/tmp/shells")
+
+	result, err := resource.Apply(context.Background())
+	if err == nil {
+		t.Fatal("Apply returned nil error, want resolved control-character error")
+	}
+
+	expectApply(t, result, resource.ID(), loginShellType, "fail", false, "resolved login shell path must not contain control characters")
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"--prefix"}}})
+}
+
 func TestLoginShellApplyRunsOnlyChshWhenShellIsAllowed(t *testing.T) {
 	path := "/opt/homebrew/bin/fish"
 	system := fakeLoginShellSystem{

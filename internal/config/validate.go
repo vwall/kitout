@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 // ValidationError describes one specific config schema problem.
@@ -11,6 +12,8 @@ type ValidationError struct {
 	Field   string
 	Message string
 }
+
+const loginShellPathValidationMessage = "must be an absolute path or homebrew:<binary> without control characters"
 
 func (err ValidationError) Error() string {
 	if err.Field == "" {
@@ -211,7 +214,7 @@ func validate(cfg Config, opts validationOptions) error {
 	if cfg.LoginShell != nil {
 		errs.requireString("login_shell.path", cfg.LoginShell.Path)
 		if strings.TrimSpace(cfg.LoginShell.Path) != "" && !validLoginShellPath(cfg.LoginShell.Path) {
-			errs.add("login_shell.path", "must be an absolute path or homebrew:<binary>")
+			errs.add("login_shell.path", loginShellPathValidationMessage)
 		}
 	}
 
@@ -431,6 +434,10 @@ func validMacOSDefaultType(value string) bool {
 }
 
 func validLoginShellPath(value string) bool {
+	if containsControlCharacter(value) {
+		return false
+	}
+
 	value = strings.TrimSpace(value)
 	if strings.HasPrefix(value, "homebrew:") {
 		binary := strings.TrimPrefix(value, "homebrew:")
@@ -438,6 +445,15 @@ func validLoginShellPath(value string) bool {
 	}
 
 	return filepath.IsAbs(value) && !strings.ContainsAny(value, "$`")
+}
+
+func containsControlCharacter(value string) bool {
+	for _, char := range value {
+		if unicode.IsControl(char) {
+			return true
+		}
+	}
+	return false
 }
 
 func validHomebrewBinary(binary string) bool {

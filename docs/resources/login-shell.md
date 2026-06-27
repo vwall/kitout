@@ -19,6 +19,7 @@ login_shell:
 
 `homebrew:fish` resolves to `$(brew --prefix)/bin/fish` during status and apply
 without evaluating arbitrary shell text from the config.
+Configured and resolved shell paths must not contain control characters.
 
 An explicit absolute path is also valid:
 

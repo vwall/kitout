@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+const wantLoginShellPathValidationMessage = "must be an absolute path or homebrew:<binary> without control characters"
+
 func TestValidateAcceptsCurrentVersion(t *testing.T) {
 	cfg := Config{Version: CurrentVersion}
 
@@ -336,7 +338,27 @@ func TestValidateRejectsInvalidLoginShellPaths(t *testing.T) {
 		}
 
 		err := Validate(cfg)
-		assertValidationError(t, err, "login_shell.path", "must be an absolute path or homebrew:<binary>")
+		assertValidationError(t, err, "login_shell.path", wantLoginShellPathValidationMessage)
+	}
+}
+
+func TestValidateRejectsLoginShellPathsWithControlCharacters(t *testing.T) {
+	for _, path := range []string{
+		"/opt/homebrew/bin/fish\n/bin/bash",
+		"/opt/homebrew/bin/fish\r/bin/bash",
+		"/opt/homebrew/bin/fish\t",
+		"/opt/homebrew/bin/fish\x00",
+		"homebrew:fish\n",
+		"homebrew:fish\r",
+		"homebrew:fish\t",
+	} {
+		cfg := Config{
+			Version:    CurrentVersion,
+			LoginShell: &LoginShell{Path: path},
+		}
+
+		err := Validate(cfg)
+		assertValidationError(t, err, "login_shell.path", wantLoginShellPathValidationMessage)
 	}
 }
 

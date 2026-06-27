@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/vwall/kitout/internal/engine"
 	"github.com/vwall/kitout/internal/platform"
@@ -121,6 +122,10 @@ func (resource LoginShellResource) inspect(ctx context.Context) (loginShellState
 		state.message = "could not resolve login shell path"
 		return state, err
 	}
+	if err := validateResolvedLoginShellPath(resolved); err != nil {
+		state.message = err.Error()
+		return state, err
+	}
 
 	exists, err := resource.system.fileExists(resolved)
 	if err != nil {
@@ -180,6 +185,9 @@ func (resource LoginShellResource) validate() error {
 	if resource.etcShellsPath == "" {
 		return errors.New("/etc/shells path is required")
 	}
+	if loginShellPathContainsControlCharacter(resource.path) {
+		return errors.New("login shell path must not contain control characters")
+	}
 	return nil
 }
 
@@ -202,6 +210,9 @@ func (resource LoginShellResource) resolvePath(ctx context.Context) (string, err
 }
 
 func (resource LoginShellResource) appendEtcShells(ctx context.Context, path string) error {
+	if err := validateResolvedLoginShellPath(path); err != nil {
+		return err
+	}
 	_, err := resource.runner.Run(ctx, "sudo", "sh", "-c", "printf '%s\\n' \"$1\" >> \"$2\"", "kitout", path, resource.etcShellsPath)
 	return err
 }
@@ -273,6 +284,22 @@ func (osLoginShellSystem) readFile(path string) ([]byte, error) {
 func lineSetContains(contents, value string) bool {
 	for _, line := range strings.Split(contents, "\n") {
 		if strings.TrimSpace(line) == value {
+			return true
+		}
+	}
+	return false
+}
+
+func validateResolvedLoginShellPath(path string) error {
+	if loginShellPathContainsControlCharacter(path) {
+		return errors.New("resolved login shell path must not contain control characters")
+	}
+	return nil
+}
+
+func loginShellPathContainsControlCharacter(path string) bool {
+	for _, char := range path {
+		if unicode.IsControl(char) {
 			return true
 		}
 	}

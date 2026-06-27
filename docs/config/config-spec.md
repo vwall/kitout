@@ -173,7 +173,8 @@ config.
 
 `login_shell.path` must be either an absolute path or a `homebrew:<binary>`
 resolver. `homebrew:fish` resolves to `$(brew --prefix)/bin/fish` during
-resource status and apply checks. Arbitrary shell interpolation is rejected.
+resource status and apply checks. Control characters and arbitrary shell
+interpolation are rejected.
 
 `shell[].when` is optional. When omitted, the shell command resource treats the
 command as always needed. Supported conditions are:
@@ -322,7 +323,8 @@ The implemented path-bearing resource fields are:
 
 `login_shell.path` is intentionally stricter. It accepts only absolute paths
 and `homebrew:<binary>` resolvers so Kitout can resolve the path without
-evaluating arbitrary shell text from YAML.
+evaluating arbitrary shell text from YAML. Control characters are rejected in
+both the configured path and the resolved shell path.
 
 `symlink_groups[].paths[]` entries are relative path fragments below their
 group roots. They are cleaned internally, but they do not resolve relative to
