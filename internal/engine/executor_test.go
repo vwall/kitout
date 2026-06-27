@@ -168,6 +168,37 @@ func TestExecutorReportsProgressBeforeApply(t *testing.T) {
 	}
 }
 
+func TestExecutorRejectsDuplicateResourceIDsBeforeApply(t *testing.T) {
+	first := &fakeResource{id: "copy:/tmp/kitout-target", typ: "copy", state: StateMissing}
+	second := &fakeResource{id: "copy:/tmp/kitout-target", typ: "copy", state: StateMissing}
+	plan := Plan{
+		Items: []PlanItem{
+			{ResourceID: "copy:/tmp/kitout-target", Type: "copy", State: StateMissing, Action: ActionApply},
+		},
+	}
+
+	report := NewExecutor().Apply(context.Background(), []Resource{first, second}, plan)
+
+	if first.applyCalls != 0 || second.applyCalls != 0 {
+		t.Fatalf("applyCalls = %d, %d; want no apply calls", first.applyCalls, second.applyCalls)
+	}
+	if len(report.Items) != 2 {
+		t.Fatalf("len(report.Items) = %d, want 2", len(report.Items))
+	}
+	for _, item := range report.Items {
+		want := `duplicate resource ID "copy:/tmp/kitout-target"; resource IDs must be unique`
+		if item.ResourceID != "copy:/tmp/kitout-target" || item.Type != "copy" || item.Action != "fail" {
+			t.Fatalf("duplicate item = %+v, want copy failure", item)
+		}
+		if item.Error != want || item.Message != want {
+			t.Fatalf("duplicate item = %+v, want error %q", item, want)
+		}
+	}
+	if report.Summary.Failed != 2 {
+		t.Fatalf("summary = %+v, want 2 failed", report.Summary)
+	}
+}
+
 type recordingApplyObserver struct {
 	items         []PlanItem
 	applyCalls    []int

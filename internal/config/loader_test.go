@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -391,6 +392,90 @@ ssh:
 	want := filepath.Join(configDir, "home", ".ssh", "id_ed25519")
 	if got := loaded.Config.SSH.Keys[0].Path; got != want {
 		t.Fatalf("ssh key path = %q, want %q", got, want)
+	}
+}
+
+func TestLoadFileRejectsCanonicalPathDuplicateResources(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	configDir := t.TempDir()
+	envTarget := filepath.Join(configDir, "env-target")
+	t.Setenv("KITOUT_DUP_TARGET", envTarget)
+
+	homeTarget := filepath.Join(home, "Library", "Kitout")
+	absoluteTarget := filepath.Join(configDir, "absolute", "target")
+	configRelativeTarget := filepath.Join(configDir, "var", "cache")
+
+	tests := []struct {
+		name     string
+		contents string
+		field    string
+	}{
+		{
+			name: "environment expansion",
+			contents: `version: 1
+
+copies:
+  - source: source-a
+    target: $KITOUT_DUP_TARGET
+  - source: source-b
+    target: $KITOUT_DUP_TARGET/.
+`,
+			field: "copies[1].target",
+		},
+		{
+			name: "home expansion",
+			contents: fmt.Sprintf(`version: 1
+
+directories:
+  - ~/Library/Kitout
+  - %s
+`, homeTarget),
+			field: "directories[1]",
+		},
+		{
+			name: "absolute clean path",
+			contents: fmt.Sprintf(`version: 1
+
+directories:
+  - %s
+  - %s/.
+`, absoluteTarget, absoluteTarget),
+			field: "directories[1]",
+		},
+		{
+			name: "relative clean path",
+			contents: `version: 1
+
+directories:
+  - var/cache
+  - var/./cache
+`,
+			field: "directories[1]",
+		},
+		{
+			name: "config-relative path",
+			contents: fmt.Sprintf(`version: 1
+
+directories:
+  - var/cache
+  - %s
+`, configRelativeTarget),
+			field: "directories[1]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			configPath := writeConfigFileInDir(t, configDir, tt.contents)
+
+			_, err := LoadFile(configPath)
+			if err == nil {
+				t.Fatal("LoadFile returned nil error, want duplicate resource validation error")
+			}
+			assertValidationErrorContains(t, err, tt.field, "duplicates")
+		})
 	}
 }
 

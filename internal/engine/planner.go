@@ -71,6 +71,17 @@ func (p Planner) Build(ctx context.Context, resources []Resource) Plan {
 
 // BuildWithObserver checks resource status and reports progress before each check.
 func (p Planner) BuildWithObserver(ctx context.Context, resources []Resource, observer PlanObserver) Plan {
+	if items := duplicateResourceIDPlanItems(resources); len(items) > 0 {
+		plan := Plan{
+			Items: make([]PlanItem, 0, len(items)),
+		}
+		for _, item := range items {
+			plan.Items = append(plan.Items, item)
+			plan.Summary.add(item)
+		}
+		return plan
+	}
+
 	plan := Plan{
 		Items: make([]PlanItem, 0, len(resources)),
 	}

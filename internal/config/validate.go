@@ -58,6 +58,18 @@ func Warnings(cfg Config) []ConfigWarning {
 
 // Validate checks the decoded config against Kitout's documented schema.
 func Validate(cfg Config) error {
+	return validate(cfg, validationOptions{checkPathDuplicates: true})
+}
+
+type validationOptions struct {
+	checkPathDuplicates bool
+}
+
+func validateDecodedConfig(cfg Config) error {
+	return validate(cfg, validationOptions{checkPathDuplicates: false})
+}
+
+func validate(cfg Config, opts validationOptions) error {
 	var errs ValidationErrors
 
 	if cfg.Version == 0 {
@@ -76,7 +88,9 @@ func Validate(cfg Config) error {
 	errs.detectDuplicateStrings("brew.packages", cfg.Brew.Packages)
 	errs.detectDuplicateStrings("brew.casks", cfg.Brew.Casks)
 	errs.detectDuplicateStrings("casks", cfg.Casks)
-	errs.detectDuplicateStrings("directories", cfg.Directories)
+	if opts.checkPathDuplicates {
+		errs.detectDuplicateStrings("directories", cfg.Directories)
+	}
 	if len(cfg.Brew.Casks) > 0 && len(cfg.Casks) > 0 {
 		errs.add("casks", "cannot be used with brew.casks; move entries to brew.casks")
 	}
@@ -110,19 +124,25 @@ func Validate(cfg Config) error {
 			}
 		}
 	}
-	errs.detectDuplicates(asdfToolVersionPathKeys(cfg.ASDF.ToolVersions))
+	if opts.checkPathDuplicates {
+		errs.detectDuplicates(asdfToolVersionPathKeys(cfg.ASDF.ToolVersions))
+	}
 
 	for i, repo := range cfg.Repos {
 		errs.requireString(fmt.Sprintf("repos[%d].path", i), repo.Path)
 		errs.requireString(fmt.Sprintf("repos[%d].url", i), repo.URL)
 	}
-	errs.detectDuplicates(repoPathKeys(cfg.Repos))
+	if opts.checkPathDuplicates {
+		errs.detectDuplicates(repoPathKeys(cfg.Repos))
+	}
 
 	for i, copy := range cfg.Copies {
 		errs.requireString(fmt.Sprintf("copies[%d].source", i), copy.Source)
 		errs.requireString(fmt.Sprintf("copies[%d].target", i), copy.Target)
 	}
-	errs.detectDuplicates(copyTargetKeys(cfg.Copies))
+	if opts.checkPathDuplicates {
+		errs.detectDuplicates(copyTargetKeys(cfg.Copies))
+	}
 
 	for i, symlink := range cfg.Symlinks {
 		errs.requireString(fmt.Sprintf("symlinks[%d].source", i), symlink.Source)
@@ -141,7 +161,9 @@ func Validate(cfg Config) error {
 			}
 		}
 	}
-	errs.detectDuplicates(symlinkTargetKeys(cfg))
+	if opts.checkPathDuplicates {
+		errs.detectDuplicates(symlinkTargetKeys(cfg))
+	}
 
 	for i, item := range cfg.MacOSDefaults {
 		errs.requireString(fmt.Sprintf("macos_defaults[%d].domain", i), item.Domain)
@@ -182,7 +204,9 @@ func Validate(cfg Config) error {
 			errs.add(fmt.Sprintf("ssh.keys[%d].type", i), "must be ed25519")
 		}
 	}
-	errs.detectDuplicates(sshKeyPathKeys(cfg.SSH.Keys))
+	if opts.checkPathDuplicates {
+		errs.detectDuplicates(sshKeyPathKeys(cfg.SSH.Keys))
+	}
 
 	if cfg.LoginShell != nil {
 		errs.requireString("login_shell.path", cfg.LoginShell.Path)

@@ -125,6 +125,30 @@ func TestPlannerDefaultsIncompleteStatusResults(t *testing.T) {
 	}
 }
 
+func TestPlannerRejectsDuplicateResourceIDsBeforeStatus(t *testing.T) {
+	first := &fakeResource{id: "copy:/tmp/kitout-target", typ: "copy", state: StateMissing}
+	second := &fakeResource{id: "copy:/tmp/kitout-target", typ: "copy", state: StateSatisfied}
+
+	plan := NewPlanner().Build(context.Background(), []Resource{first, second})
+
+	if first.statusCalls != 0 || second.statusCalls != 0 {
+		t.Fatalf("statusCalls = %d, %d; want no status calls", first.statusCalls, second.statusCalls)
+	}
+	if len(plan.Items) != 2 {
+		t.Fatalf("len(plan.Items) = %d, want 2", len(plan.Items))
+	}
+	for _, item := range plan.Items {
+		assertPlanItem(t, item, "copy:/tmp/kitout-target", "copy", StateFailed, ActionFail)
+		want := `duplicate resource ID "copy:/tmp/kitout-target"; resource IDs must be unique`
+		if item.Error != want || item.Message != want {
+			t.Fatalf("duplicate item = %+v, want error %q", item, want)
+		}
+	}
+	if plan.Summary.Failed != 2 || plan.Summary.ToApply != 0 {
+		t.Fatalf("summary = %+v, want 2 failed and 0 to apply", plan.Summary)
+	}
+}
+
 func assertPlanItem(t *testing.T, item PlanItem, id, typ string, state ResourceState, action PlanAction) {
 	t.Helper()
 

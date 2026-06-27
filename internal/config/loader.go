@@ -140,12 +140,15 @@ func LoadFile(path string) (LoadedConfig, error) {
 		return LoadedConfig{}, ParseError{Path: resolvedPath, Err: err}
 	}
 
-	if err := Validate(cfg); err != nil {
+	if err := validateDecodedConfig(cfg); err != nil {
 		return LoadedConfig{}, err
 	}
 	warnings := Warnings(cfg)
 
 	cfg = resolveResourcePaths(filepath.Dir(resolvedPath), cfg)
+	if err := Validate(cfg); err != nil {
+		return LoadedConfig{}, err
+	}
 
 	return LoadedConfig{
 		Path:     resolvedPath,

@@ -55,6 +55,17 @@ func (executor Executor) Apply(ctx context.Context, resources []Resource, plan P
 
 // ApplyWithObserver runs Apply and reports progress before each mutating action.
 func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Resource, plan Plan, observer ApplyObserver) ApplyReport {
+	if items := duplicateResourceIDApplyItems(resources); len(items) > 0 {
+		report := ApplyReport{
+			Items: make([]ApplyItem, 0, len(items)),
+		}
+		for _, item := range items {
+			report.Items = append(report.Items, item)
+			report.Summary.add(item)
+		}
+		return report
+	}
+
 	resourceByID := make(map[string]Resource, len(resources))
 	for _, resource := range resources {
 		resourceByID[resource.ID()] = resource
