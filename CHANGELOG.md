@@ -4,6 +4,34 @@
 
 No changes yet.
 
+## 2.2.0 - Repo-local agent guidance
+
+Kitout 2.2.0 makes private setup repos easier for coding agents to work with
+safely by generating compact repo-local `AGENTS.md` guidance and warning when
+that guidance is missing.
+
+### Added
+
+- Added `kitout init --agents` to create or update `AGENTS.md` with safe
+  Kitout workflow guidance for coding agents.
+- Added a `doctor` advisory for missing repo-local `AGENTS.md` when the
+  selected config lives inside a Git repo.
+
+### Documentation
+
+- Updated agent workflow docs, README guidance, and the CLI spec for generated
+  `AGENTS.md` support.
+
+### Distribution
+
+- Updated the Homebrew formula template for `v2.2.0` macOS arm64 and amd64
+  artifacts.
+
+### Notes
+
+- This is an additive `version: 1` schema release. Existing `2.1.0` configs do
+  not need to change.
+
 ## 2.1.0 - Agent context and resource explain commands
 
 Kitout 2.1.0 adds agent-friendly inspection commands that make it easier to

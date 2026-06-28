@@ -151,7 +151,7 @@ ssh:
 
 ## Current scope
 
-Kitout 2.1.0 is macOS-focused and covers Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, macOS defaults, security prerequisites, system prerequisites, SSH keys, login shell management, shell commands, agent-friendly context and explain commands, and a safe dry-run mode.
+Kitout 2.2.0 is macOS-focused and covers Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, macOS defaults, security prerequisites, system prerequisites, SSH keys, login shell management, shell commands, agent-friendly context and explain commands, repo-local `AGENTS.md` guidance, and a safe dry-run mode.
 
 Do not start with Linux support, secrets, templates, plugins, or a package manager abstraction. Those can come later.
 

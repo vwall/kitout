@@ -44,9 +44,10 @@ bin/kitout version
 ## Release baseline
 
 Kitout is distributed through GitHub releases and an external Homebrew tap. The
-project is now at the `v2.1.0` minor release. Supported config files still use
+project is now at the `v2.2.0` minor release. Supported config files still use
 `version: 1`, cask apps must be listed under `brew.casks`, and the command
-surface includes agent-friendly `context` and `explain` inspection commands.
+surface includes agent-friendly `context`, `explain`, and repo-local
+`AGENTS.md` guidance.
 
 The intended Homebrew install path is:
 
@@ -198,6 +199,7 @@ Example:
 1.3.0 preferred Homebrew cask config
 2.0.0 security resources, system prerequisites, SSH keys, and top-level casks removal
 2.1.0 agent context and resource explain commands
+2.2.0 repo-local agent guidance
 ```
 
 ## Build metadata
