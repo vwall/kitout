@@ -4,6 +4,37 @@
 
 No changes yet.
 
+## 2.1.0 - Agent context and resource explain commands
+
+Kitout 2.1.0 adds agent-friendly inspection commands that make it easier to
+understand configured resources, safe next steps, and the risk profile of an
+individual planned change without mutating the machine.
+
+### Added
+
+- Added `kitout context` for listing declared resources, safe status and
+  dry-run commands, approval-required actions, and setup guidance.
+- Added `kitout explain <resource-id>` for checking one configured resource,
+  reporting its planned action, and showing related commands.
+- Added JSON output for the new context and explain reports.
+
+### Documentation
+
+- Added agent context documentation and expanded the CLI and config specs for
+  the new commands.
+- Updated examples and first-run guidance for the current agent-facing command
+  surface.
+
+### Distribution
+
+- Updated the Homebrew formula template for `v2.1.0` macOS arm64 and amd64
+  artifacts.
+
+### Notes
+
+- This is an additive `version: 1` schema release. Existing `2.0.0` configs do
+  not need to change.
+
 ## 2.0.0 - Security and config hardening
 
 Kitout 2.0.0 is a major release that removes the deprecated top-level cask
