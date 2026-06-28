@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+No changes yet.
+
+## 2.3.0 - Local-first init
+
+Kitout 2.3.0 makes setup-repo workflows the default by creating
+`./kitout.yaml` from plain `kitout init`, while keeping a shortcut for users who
+want the home config path.
+
 ### Added
 
 - Added `kitout init --no-agents-warning` to record a repo-local opt-out for
@@ -13,6 +21,21 @@
 
 - Changed `kitout init` to use `./kitout.yaml` in the current directory by
   default when `--config` is omitted.
+
+### Documentation
+
+- Updated README, agent workflow docs, and the CLI spec for local-first init,
+  `--home`, and missing `AGENTS.md` warning opt-outs.
+
+### Distribution
+
+- Updated the Homebrew formula template for `v2.3.0` macOS arm64 and amd64
+  artifacts.
+
+### Notes
+
+- This is an additive `version: 1` schema release. Existing `2.2.0` configs do
+  not need to change.
 
 ## 2.2.0 - Repo-local agent guidance
 
