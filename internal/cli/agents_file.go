@@ -6,13 +6,24 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
-	agentsFileName          = "AGENTS.md"
-	kitoutAgentsStartMarker = "<!-- kitout:agents:start -->"
-	kitoutAgentsEndMarker   = "<!-- kitout:agents:end -->"
+	agentsFileName                           = "AGENTS.md"
+	agentGuidancePreferencesDirName          = ".kitout"
+	agentGuidancePreferencesFileName         = "agent-guidance.yaml"
+	suppressMissingAgentsWarningKey          = "suppress_missing_agents_warning"
+	kitoutAgentsStartMarker                  = "<!-- kitout:agents:start -->"
+	kitoutAgentsEndMarker                    = "<!-- kitout:agents:end -->"
+	agentGuidancePreferencesHeader           = "# Kitout repo-local agent guidance preferences.\n"
+	suppressMissingAgentsWarningFileContents = agentGuidancePreferencesHeader + suppressMissingAgentsWarningKey + ": true\n"
 )
+
+type agentGuidancePreferences struct {
+	SuppressMissingAgentsWarning bool `yaml:"suppress_missing_agents_warning"`
+}
 
 type agentsWriteResult string
 
@@ -57,6 +68,80 @@ func writeKitoutAgentsFile(configPath string) (string, agentsWriteResult, error)
 		return agentsPath, "", err
 	}
 	return agentsPath, agentsUpdated, nil
+}
+
+func writeSuppressMissingAgentsWarningPreference(configPath string) (string, error) {
+	repoRoot, ok := nearestGitRepo(filepath.Dir(configPath))
+	if !ok {
+		return "", fmt.Errorf("agent guidance warning preferences require a config inside a Git repo")
+	}
+
+	preferencesPath := agentGuidancePreferencesPath(repoRoot)
+	if err := os.MkdirAll(filepath.Dir(preferencesPath), 0o755); err != nil {
+		return preferencesPath, err
+	}
+
+	existing, err := os.ReadFile(preferencesPath)
+	if errors.Is(err, os.ErrNotExist) {
+		if err := os.WriteFile(preferencesPath, []byte(suppressMissingAgentsWarningFileContents), 0o644); err != nil {
+			return preferencesPath, err
+		}
+		return preferencesPath, nil
+	}
+	if err != nil {
+		return preferencesPath, err
+	}
+
+	var preferences agentGuidancePreferences
+	if err := yaml.Unmarshal(existing, &preferences); err != nil {
+		return preferencesPath, err
+	}
+	if preferences.SuppressMissingAgentsWarning {
+		return preferencesPath, nil
+	}
+	if err := os.WriteFile(preferencesPath, []byte(mergeSuppressMissingAgentsWarningPreference(string(existing))), 0o644); err != nil {
+		return preferencesPath, err
+	}
+	return preferencesPath, nil
+}
+
+func missingAgentsWarningSuppressed(repoRoot string) (bool, string, error) {
+	preferencesPath := agentGuidancePreferencesPath(repoRoot)
+	contents, err := os.ReadFile(preferencesPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, preferencesPath, nil
+	}
+	if err != nil {
+		return false, preferencesPath, err
+	}
+
+	var preferences agentGuidancePreferences
+	if err := yaml.Unmarshal(contents, &preferences); err != nil {
+		return false, preferencesPath, err
+	}
+	return preferences.SuppressMissingAgentsWarning, preferencesPath, nil
+}
+
+func agentGuidancePreferencesPath(repoRoot string) string {
+	return filepath.Join(repoRoot, agentGuidancePreferencesDirName, agentGuidancePreferencesFileName)
+}
+
+func mergeSuppressMissingAgentsWarningPreference(existing string) string {
+	trimmed := strings.TrimRight(existing, "\n")
+	if strings.TrimSpace(trimmed) == "" {
+		return suppressMissingAgentsWarningFileContents
+	}
+
+	lines := strings.Split(trimmed, "\n")
+	for index, line := range lines {
+		key, _, ok := strings.Cut(strings.TrimSpace(line), ":")
+		if ok && key == suppressMissingAgentsWarningKey {
+			lines[index] = suppressMissingAgentsWarningKey + ": true"
+			return strings.Join(lines, "\n") + "\n"
+		}
+	}
+
+	return strings.Join(append(lines, suppressMissingAgentsWarningKey+": true"), "\n") + "\n"
 }
 
 func agentsPathForConfig(configPath string) string {

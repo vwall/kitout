@@ -156,9 +156,11 @@ func (checker doctorChecker) checkAgentsGuidance(configPath string) (doctorItem,
 	}
 
 	agentsPath := filepath.Join(repoRoot, agentsFileName)
+	preferencesPath := agentGuidancePreferencesPath(repoRoot)
 	details := map[string]string{
-		"path":      agentsPath,
-		"repo_root": repoRoot,
+		"path":             agentsPath,
+		"preferences_path": preferencesPath,
+		"repo_root":        repoRoot,
 	}
 	if _, err := os.Stat(agentsPath); err == nil {
 		return doctorItem{
@@ -178,11 +180,27 @@ func (checker doctorChecker) checkAgentsGuidance(configPath string) (doctorItem,
 		}, true
 	}
 
+	suppressed, preferencesPath, err := missingAgentsWarningSuppressed(repoRoot)
+	details["preferences_path"] = preferencesPath
+	if err != nil {
+		details["error"] = err.Error()
+		return doctorItem{
+			Name:    "Agent guidance",
+			State:   doctorWarn,
+			Message: "AGENTS.md preference could not be checked",
+			Fix:     "Check " + preferencesPath + ", then rerun `kitout doctor`.",
+			Details: details,
+		}, true
+	}
+	if suppressed {
+		return doctorItem{}, false
+	}
+
 	return doctorItem{
 		Name:    "Agent guidance",
 		State:   doctorWarn,
 		Message: "AGENTS.md is missing for this Kitout repo",
-		Fix:     "Run `kitout init --config " + quoteCommandArg(configPath) + " --agents` to add compact Kitout guidance for coding agents.",
+		Fix:     "Run `kitout init --config " + quoteCommandArg(configPath) + " --agents` to add guidance, or `kitout init --config " + quoteCommandArg(configPath) + " --no-agents-warning` to stop this warning for the repo.",
 		Details: details,
 	}, true
 }

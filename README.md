@@ -35,6 +35,13 @@ kitout apply
 kitout doctor
 ```
 
+Plain `kitout init` creates `./kitout.yaml` in the current directory. To create
+the home config instead, pass `--home`:
+
+```sh
+kitout init --home
+```
+
 When using a cloned setup repo with `kitout.yaml` at its root, run Kitout from
 that directory. If you also have `~/.config/kitout/kitout.yaml`, pass
 `--config ./kitout.yaml` so Kitout knows you intend to trust the repo-local
@@ -56,14 +63,17 @@ When using Codex or another coding agent with a private dotfiles repo, give the
 agent Kitout's local context instead of asking it to guess:
 
 ```sh
-kitout init --config ./kitout.yaml --agents
+kitout init --agents
 kitout context --config ./kitout.yaml
 kitout status --config ./kitout.yaml --json
 kitout apply --config ./kitout.yaml --dry-run --json
 ```
 
-`init --agents` creates or updates repo-local `AGENTS.md` guidance without
-duplicating the full CLI manual. Use
+Run `init --agents` from the setup repo root. It creates or uses
+`./kitout.yaml` and creates or updates repo-local `AGENTS.md` guidance
+without duplicating the full CLI manual. If you intentionally do not want an
+`AGENTS.md` file in the repo, run `kitout init --no-agents-warning` to disable
+the missing file doctor warning for that repo. Use
 `kitout explain --config ./kitout.yaml <resource-id>` when the question is about
 one managed file, package, repo, or command. Agents should edit repo source
 files, not managed targets in `$HOME`, and should ask before running

@@ -2,7 +2,17 @@
 
 ## Unreleased
 
-No changes yet.
+### Added
+
+- Added `kitout init --no-agents-warning` to record a repo-local opt-out for
+  the missing `AGENTS.md` doctor advisory.
+- Added `kitout init --home` as a shortcut for creating
+  `~/.config/kitout/kitout.yaml`.
+
+### Changed
+
+- Changed `kitout init` to use `./kitout.yaml` in the current directory by
+  default when `--config` is omitted.
 
 ## 2.2.0 - Repo-local agent guidance
 

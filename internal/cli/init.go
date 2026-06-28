@@ -78,23 +78,44 @@ directories:
 func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 	force := false
 	agents := false
+	home := false
+	noAgentsWarning := false
 
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	addGlobalFlags(fs, &opts)
 	fs.BoolVar(&force, "force", false, "Overwrite an existing config file")
 	fs.BoolVar(&agents, "agents", false, "Create or update AGENTS.md with Kitout guidance")
+	fs.BoolVar(&home, "home", false, "Create config at ~/.config/kitout/kitout.yaml")
+	fs.BoolVar(&noAgentsWarning, "no-agents-warning", false, "Stop doctor from warning about a missing AGENTS.md in this repo")
 
 	if err := fs.Parse(args); err != nil {
+		return exitValidation
+	}
+	if agents && noAgentsWarning {
+		fmt.Fprintln(stderr, "Use either --agents or --no-agents-warning, not both.")
+		return exitValidation
+	}
+	if home && opts.configPath != "" {
+		fmt.Fprintln(stderr, "Use either --home or --config, not both.")
 		return exitValidation
 	}
 
 	configPath := opts.configPath
 	if configPath == "" {
-		configPath = config.DefaultPath
+		if home {
+			configPath = config.DefaultPath
+		} else {
+			configPath = config.LocalPath
+		}
 	}
 
 	resolvedPath, err := config.ResolvePath(configPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "Invalid config path: %v\n", err)
+		return exitValidation
+	}
+	resolvedPath, err = filepath.Abs(resolvedPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "Invalid config path: %v\n", err)
 		return exitValidation
@@ -105,6 +126,10 @@ func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 			if agents {
 				fmt.Fprintf(stdout, "Config already exists: %s\n", resolvedPath)
 				return writeAgentsForInit(resolvedPath, stdout, stderr)
+			}
+			if noAgentsWarning {
+				fmt.Fprintf(stdout, "Config already exists: %s\n", resolvedPath)
+				return writeNoAgentsWarningPreferenceForInit(resolvedPath, stdout, stderr)
 			}
 			fmt.Fprintf(stderr, "Config already exists: %s\nUse --force to overwrite it.\n", resolvedPath)
 			return exitValidation
@@ -117,6 +142,9 @@ func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "Created config: %s\n", resolvedPath)
 	if agents {
 		return writeAgentsForInit(resolvedPath, stdout, stderr)
+	}
+	if noAgentsWarning {
+		return writeNoAgentsWarningPreferenceForInit(resolvedPath, stdout, stderr)
 	}
 	return exitOK
 }
@@ -137,6 +165,22 @@ func writeAgentsForInit(configPath string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "AGENTS.md already includes Kitout guidance: %s\n", agentsPath)
 	}
 
+	return exitOK
+}
+
+func writeNoAgentsWarningPreferenceForInit(configPath string, stdout, stderr io.Writer) int {
+	if _, ok := nearestGitRepo(filepath.Dir(configPath)); !ok {
+		fmt.Fprintln(stdout, "No missing AGENTS.md warning applies because the config is not inside a Git repo.")
+		return exitOK
+	}
+
+	preferencesPath, err := writeSuppressMissingAgentsWarningPreference(configPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "Failed to disable AGENTS.md warning: %v\n", err)
+		return exitRuntimeError
+	}
+
+	fmt.Fprintf(stdout, "Disabled missing AGENTS.md warning for this repo: %s\n", preferencesPath)
 	return exitOK
 }
 

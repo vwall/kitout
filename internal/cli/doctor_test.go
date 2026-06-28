@@ -73,6 +73,62 @@ func TestDoctorCheckerWarnsWhenKitoutRepoIsMissingAgentsFile(t *testing.T) {
 	if !strings.Contains(item.Fix, "kitout init --config "+configPath+" --agents") {
 		t.Fatalf("fix = %q, want init --agents guidance", item.Fix)
 	}
+	if !strings.Contains(item.Fix, "kitout init --config "+configPath+" --no-agents-warning") {
+		t.Fatalf("fix = %q, want no-agents-warning guidance", item.Fix)
+	}
+}
+
+func TestDoctorCheckerSkipsMissingAgentsWarningWhenSuppressed(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatalf("create .git directory: %v", err)
+	}
+	configPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(configPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	preferencesDir := filepath.Join(dir, ".kitout")
+	if err := os.Mkdir(preferencesDir, 0o755); err != nil {
+		t.Fatalf("create preferences directory: %v", err)
+	}
+	preferencesPath := filepath.Join(preferencesDir, "agent-guidance.yaml")
+	if err := os.WriteFile(preferencesPath, []byte("suppress_missing_agents_warning: true\n"), 0o644); err != nil {
+		t.Fatalf("write preferences: %v", err)
+	}
+	checker := newDoctorChecker(&fakeDoctorRunner{}, healthyDoctorInfo(t, "arm64"))
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	if doctorItemExists(report, "Agent guidance") {
+		t.Fatalf("Agent guidance item was reported despite opt-out: %+v", report.Items)
+	}
+}
+
+func TestDoctorCheckerWarnsWhenAgentGuidancePreferenceIsInvalid(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatalf("create .git directory: %v", err)
+	}
+	configPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(configPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	preferencesDir := filepath.Join(dir, ".kitout")
+	if err := os.Mkdir(preferencesDir, 0o755); err != nil {
+		t.Fatalf("create preferences directory: %v", err)
+	}
+	preferencesPath := filepath.Join(preferencesDir, "agent-guidance.yaml")
+	if err := os.WriteFile(preferencesPath, []byte("suppress_missing_agents_warning: maybe\n"), 0o644); err != nil {
+		t.Fatalf("write preferences: %v", err)
+	}
+	checker := newDoctorChecker(&fakeDoctorRunner{}, healthyDoctorInfo(t, "arm64"))
+
+	report := checker.Check(context.Background(), configPath)
+
+	assertDoctorItem(t, report, "Agent guidance", doctorWarn, "preference could not be checked")
 }
 
 func TestDoctorCheckerReportsPresentAgentsFile(t *testing.T) {
@@ -549,6 +605,15 @@ func doctorItemByName(t *testing.T, report doctorReport, name string) doctorItem
 	}
 	t.Fatalf("doctor item %q was not found in %+v", name, report.Items)
 	return doctorItem{}
+}
+
+func doctorItemExists(report doctorReport, name string) bool {
+	for _, item := range report.Items {
+		if item.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 type fakeDoctorRunner struct {

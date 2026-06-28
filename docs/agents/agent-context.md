@@ -15,17 +15,28 @@ To give coding agents a durable, repo-local note about Kitout, generate
 `AGENTS.md` from the setup repo:
 
 ```sh
-kitout init --config ./kitout.yaml --agents
+kitout init --agents
 ```
 
-The generated section lists the safe Kitout workflow, warns against secrets and
-unrequested shell commands, and points agents to `kitout --help` instead of
-duplicating every command option. If `AGENTS.md` already exists, Kitout preserves
-the existing content and appends or refreshes only its marked Kitout section.
+When `--config` is omitted, `init` uses `./kitout.yaml` in the current
+directory. With `--agents`, the generated section lists the safe Kitout
+workflow, warns against secrets and unrequested shell commands, and points
+agents to `kitout --help` instead of duplicating every command option. If
+`AGENTS.md` already exists, Kitout preserves the existing content and appends or
+refreshes only its marked Kitout section.
 
 `kitout doctor --config ./kitout.yaml` reports a warning when the selected
 config is inside a Git repo and `AGENTS.md` is missing. This is advisory only;
 Kitout can still run without agent guidance.
+
+If the repo intentionally does not want an `AGENTS.md` file, disable that
+advisory without creating a placeholder:
+
+```sh
+kitout init --no-agents-warning
+```
+
+Kitout records the preference in `.kitout/agent-guidance.yaml` at the repo root.
 
 ## Safe Agent Loop
 

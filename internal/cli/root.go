@@ -93,7 +93,9 @@ Commands:
 
 Examples:
   kitout init
-  kitout init --config ./kitout.yaml --agents
+  kitout init --home
+  kitout init --agents
+  kitout init --no-agents-warning
   kitout context
   kitout status
   kitout apply --dry-run

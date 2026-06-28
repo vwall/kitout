@@ -22,8 +22,9 @@ These flags are currently parsed by the root command and by implemented
 subcommands. `doctor`, `status`, and `apply` use `--config` when it is passed.
 Without `--config`, they use `./kitout.yaml` only when no home config exists,
 use `~/.config/kitout/kitout.yaml` only when no local config exists, and fail
-with guidance when both files exist. `init` still writes
-`~/.config/kitout/kitout.yaml` by default unless `--config` is passed. Human
+with guidance when both files exist. `init` writes `./kitout.yaml` in the
+current directory by default; pass `--home` to create the home config instead.
+Human
 output colors status, progress, and action markers when stdout is an interactive terminal;
 redirected output remains plain text by default, `--color` forces ANSI color,
 and `--no-color` disables ANSI color markers. Human output includes both
@@ -68,20 +69,34 @@ Creates a starter config file and, when requested, repo-local agent guidance.
 
 ```sh
 kitout init
+kitout init --home
+kitout init --agents
+kitout init --no-agents-warning
 kitout init --config ./kitout.yaml
+kitout init --config ~/.config/kitout/kitout.yaml
 kitout init --config ./kitout.yaml --agents
+kitout init --config ./kitout.yaml --no-agents-warning
 ```
 
 Behavior:
 
+- without `--config`, create or use `./kitout.yaml` in the current directory
+- with `--home`, create or use `~/.config/kitout/kitout.yaml`
+- reject combining `--home` and `--config`
 - create parent config directory if missing
 - refuse to overwrite existing config unless `--force` is passed
 - write a starter config that validates and can be checked by `status` without
   manual edits
 - with `--agents`, create or update `AGENTS.md` with compact Kitout guidance
   for coding agents
+- with `--no-agents-warning`, create or update
+  `.kitout/agent-guidance.yaml` so `doctor` does not warn about a missing
+  repo-local `AGENTS.md`
 - when `--agents` is passed and the config already exists, leave the config
   unchanged and still create or update `AGENTS.md`
+- when `--no-agents-warning` is passed and the config already exists, leave the
+  config unchanged and still create or update the repo-local preference
+- reject combining `--agents` and `--no-agents-warning`
 - place generated `AGENTS.md` at the nearest Git repo root when the config is
   inside a repo; otherwise place it next to the selected config
 - preserve existing `AGENTS.md` content by appending or refreshing only the
@@ -292,6 +307,7 @@ Checks:
 - config file validity
 - write permissions for configured filesystem targets
 - repo-local `AGENTS.md` presence when the selected config is inside a Git repo
+  and `.kitout/agent-guidance.yaml` has not disabled the warning
 
 Current output:
 
