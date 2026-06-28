@@ -136,6 +136,9 @@ func (checker doctorChecker) Check(ctx context.Context, configPath string) docto
 	}
 	if configOK {
 		report.Items = append(report.Items, checker.checkPathPermissions(loaded.Config))
+		if agentsItem, ok := checker.checkAgentsGuidance(loaded.Path); ok {
+			report.Items = append(report.Items, agentsItem)
+		}
 	}
 
 	for _, item := range report.Items {
@@ -143,6 +146,45 @@ func (checker doctorChecker) Check(ctx context.Context, configPath string) docto
 	}
 
 	return report
+}
+
+func (checker doctorChecker) checkAgentsGuidance(configPath string) (doctorItem, bool) {
+	configDir := filepath.Dir(configPath)
+	repoRoot, ok := nearestGitRepo(configDir)
+	if !ok {
+		return doctorItem{}, false
+	}
+
+	agentsPath := filepath.Join(repoRoot, agentsFileName)
+	details := map[string]string{
+		"path":      agentsPath,
+		"repo_root": repoRoot,
+	}
+	if _, err := os.Stat(agentsPath); err == nil {
+		return doctorItem{
+			Name:    "Agent guidance",
+			State:   doctorOK,
+			Message: "AGENTS.md is present",
+			Details: details,
+		}, true
+	} else if !errors.Is(err, os.ErrNotExist) {
+		details["error"] = err.Error()
+		return doctorItem{
+			Name:    "Agent guidance",
+			State:   doctorWarn,
+			Message: "AGENTS.md could not be checked",
+			Fix:     "Check AGENTS.md permissions, then rerun `kitout doctor`.",
+			Details: details,
+		}, true
+	}
+
+	return doctorItem{
+		Name:    "Agent guidance",
+		State:   doctorWarn,
+		Message: "AGENTS.md is missing for this Kitout repo",
+		Fix:     "Run `kitout init --config " + quoteCommandArg(configPath) + " --agents` to add compact Kitout guidance for coding agents.",
+		Details: details,
+	}, true
 }
 
 func (checker doctorChecker) checkHomebrewPath(ctx context.Context, homebrewItem doctorItem) doctorItem {

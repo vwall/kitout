@@ -56,13 +56,16 @@ When using Codex or another coding agent with a private dotfiles repo, give the
 agent Kitout's local context instead of asking it to guess:
 
 ```sh
+kitout init --config ./kitout.yaml --agents
 kitout context --config ./kitout.yaml
 kitout status --config ./kitout.yaml --json
 kitout apply --config ./kitout.yaml --dry-run --json
 ```
 
-Use `kitout explain --config ./kitout.yaml <resource-id>` when the question is
-about one managed file, package, repo, or command. Agents should edit repo source
+`init --agents` creates or updates repo-local `AGENTS.md` guidance without
+duplicating the full CLI manual. Use
+`kitout explain --config ./kitout.yaml <resource-id>` when the question is about
+one managed file, package, repo, or command. Agents should edit repo source
 files, not managed targets in `$HOME`, and should ask before running
 `kitout apply`.
 

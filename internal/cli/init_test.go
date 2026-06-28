@@ -117,6 +117,107 @@ func TestInitGeneratedConfigLoadsAndStatusParsesWithoutEdits(t *testing.T) {
 	}
 }
 
+func TestInitAgentsCreatesRepoGuidance(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatalf("create .git directory: %v", err)
+	}
+	configPath := filepath.Join(dir, "kitout.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"init", "--config", configPath, "--agents"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	contents := string(mustReadFile(t, agentsPath))
+	for _, fragment := range []string{
+		"# AGENTS.md",
+		"## Kitout",
+		"kitout status --config ./kitout.yaml",
+		"kitout apply --config ./kitout.yaml --dry-run",
+		"Use `kitout --help` and `kitout <command> --help`",
+	} {
+		if !strings.Contains(contents, fragment) {
+			t.Fatalf("AGENTS.md = %q, want fragment %q", contents, fragment)
+		}
+	}
+	if !strings.Contains(stdout.String(), "Created AGENTS.md: "+agentsPath) {
+		t.Fatalf("stdout = %q, want created AGENTS path %q", stdout.String(), agentsPath)
+	}
+}
+
+func TestInitAgentsUsesNestedConfigPathInRepoGuidance(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatalf("create .git directory: %v", err)
+	}
+	configPath := filepath.Join(dir, "configs", "kitout.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"init", "--config", configPath, "--agents"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	contents := string(mustReadFile(t, agentsPath))
+	if !strings.Contains(contents, "kitout status --config ./configs/kitout.yaml") {
+		t.Fatalf("AGENTS.md = %q, want nested config path", contents)
+	}
+	if strings.Contains(contents, "kitout status --config ./kitout.yaml") {
+		t.Fatalf("AGENTS.md = %q, want no root config path for nested config", contents)
+	}
+}
+
+func TestInitAgentsUpdatesExistingRepoGuidanceWithoutOverwritingConfig(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatalf("create .git directory: %v", err)
+	}
+	configPath := filepath.Join(dir, "kitout.yaml")
+	configContents := "version: 1\ncustom: true\n"
+	if err := os.WriteFile(configPath, []byte(configContents), 0o644); err != nil {
+		t.Fatalf("write existing config: %v", err)
+	}
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	agentsContents := "# Project agents\n\nKeep existing project guidance.\n"
+	if err := os.WriteFile(agentsPath, []byte(agentsContents), 0o644); err != nil {
+		t.Fatalf("write existing AGENTS.md: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"init", "--config", configPath, "--agents"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+
+	if got := string(mustReadFile(t, configPath)); got != configContents {
+		t.Fatalf("config = %q, want unchanged %q", got, configContents)
+	}
+
+	updatedAgents := string(mustReadFile(t, agentsPath))
+	if !strings.Contains(updatedAgents, agentsContents) {
+		t.Fatalf("AGENTS.md = %q, want existing guidance preserved", updatedAgents)
+	}
+	if !strings.Contains(updatedAgents, kitoutAgentsStartMarker) {
+		t.Fatalf("AGENTS.md = %q, want Kitout section appended", updatedAgents)
+	}
+	if !strings.Contains(stdout.String(), "Config already exists: "+configPath) {
+		t.Fatalf("stdout = %q, want existing config notice", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Updated AGENTS.md: "+agentsPath) {
+		t.Fatalf("stdout = %q, want updated AGENTS path %q", stdout.String(), agentsPath)
+	}
+}
+
 func mustReadFile(t *testing.T, path string) []byte {
 	t.Helper()
 

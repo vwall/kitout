@@ -9,6 +9,24 @@ Kitout does not embed AI behavior. The pattern is:
 - Agents read Kitout context, status, doctor, dry-run, and explain output.
 - Humans approve mutation before `kitout apply`.
 
+## Repo Guidance
+
+To give coding agents a durable, repo-local note about Kitout, generate
+`AGENTS.md` from the setup repo:
+
+```sh
+kitout init --config ./kitout.yaml --agents
+```
+
+The generated section lists the safe Kitout workflow, warns against secrets and
+unrequested shell commands, and points agents to `kitout --help` instead of
+duplicating every command option. If `AGENTS.md` already exists, Kitout preserves
+the existing content and appends or refreshes only its marked Kitout section.
+
+`kitout doctor --config ./kitout.yaml` reports a warning when the selected
+config is inside a Git repo and `AGENTS.md` is missing. This is advisory only;
+Kitout can still run without agent guidance.
+
 ## Safe Agent Loop
 
 From a dotfiles or setup repo, select the repo config explicitly:
@@ -74,4 +92,3 @@ symlink, the agent should edit the configured source path, not `~/.zshrc`.
 - resource details
 - whether apply would require confirmation
 - related commands to gather more evidence
-

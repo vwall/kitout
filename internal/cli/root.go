@@ -87,12 +87,13 @@ Commands:
   context  Show agent-friendly config context and safe commands
   doctor   Check local prerequisites and common problems
   explain  Explain one configured resource
-  init      Create a starter config file
+  init      Create a starter config file and optional agent guidance
   status    Check configured resources
   version   Print version metadata
 
 Examples:
   kitout init
+  kitout init --config ./kitout.yaml --agents
   kitout context
   kitout status
   kitout apply --dry-run

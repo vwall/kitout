@@ -64,11 +64,12 @@ intentionally listed in config and require apply confirmation.
 
 ### `kitout init`
 
-Creates a starter config file.
+Creates a starter config file and, when requested, repo-local agent guidance.
 
 ```sh
 kitout init
 kitout init --config ./kitout.yaml
+kitout init --config ./kitout.yaml --agents
 ```
 
 Behavior:
@@ -77,6 +78,14 @@ Behavior:
 - refuse to overwrite existing config unless `--force` is passed
 - write a starter config that validates and can be checked by `status` without
   manual edits
+- with `--agents`, create or update `AGENTS.md` with compact Kitout guidance
+  for coding agents
+- when `--agents` is passed and the config already exists, leave the config
+  unchanged and still create or update `AGENTS.md`
+- place generated `AGENTS.md` at the nearest Git repo root when the config is
+  inside a repo; otherwise place it next to the selected config
+- preserve existing `AGENTS.md` content by appending or refreshing only the
+  marked Kitout section
 - keep only deterministic directory resources active by default, including the
   parent directory for real Codex skill copies
 - keep package, repo, copy, symlink, security, system, SSH key, and login-shell
@@ -277,10 +286,12 @@ Checks:
 - Xcode Command Line Tools
 - Homebrew installation
 - Homebrew install path for the current CPU architecture
+- Homebrew metadata freshness
 - Git installation
 - shell environment
 - config file validity
 - write permissions for configured filesystem targets
+- repo-local `AGENTS.md` presence when the selected config is inside a Git repo
 
 Current output:
 
@@ -294,12 +305,13 @@ ok:   CPU architecture           running on Apple Silicon
 ok:   Xcode Command Line Tools   /Library/Developer/CommandLineTools
 ok:   Homebrew                   Homebrew 4.0.0
 ok:   Homebrew path              Homebrew prefix is /opt/homebrew
+ok:   Homebrew freshness         Homebrew metadata looks current; last updated today
 ok:   Git                        git version 2.45.0
 ok:   Shell environment          SHELL and PATH look usable
 ok:   Config                     config is valid
 ok:   Path permissions           no configured filesystem write targets
 
-9 total, 9 ok, 0 warnings, 0 failed
+10 total, 10 ok, 0 warnings, 0 failed
 ```
 
 ### `kitout explain <resource-id>`

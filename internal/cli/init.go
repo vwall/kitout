@@ -77,11 +77,13 @@ directories:
 
 func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 	force := false
+	agents := false
 
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	addGlobalFlags(fs, &opts)
 	fs.BoolVar(&force, "force", false, "Overwrite an existing config file")
+	fs.BoolVar(&agents, "agents", false, "Create or update AGENTS.md with Kitout guidance")
 
 	if err := fs.Parse(args); err != nil {
 		return exitValidation
@@ -100,6 +102,10 @@ func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 
 	if err := writeStarterConfig(resolvedPath, force); err != nil {
 		if errors.Is(err, os.ErrExist) {
+			if agents {
+				fmt.Fprintf(stdout, "Config already exists: %s\n", resolvedPath)
+				return writeAgentsForInit(resolvedPath, stdout, stderr)
+			}
 			fmt.Fprintf(stderr, "Config already exists: %s\nUse --force to overwrite it.\n", resolvedPath)
 			return exitValidation
 		}
@@ -109,6 +115,28 @@ func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 	}
 
 	fmt.Fprintf(stdout, "Created config: %s\n", resolvedPath)
+	if agents {
+		return writeAgentsForInit(resolvedPath, stdout, stderr)
+	}
+	return exitOK
+}
+
+func writeAgentsForInit(configPath string, stdout, stderr io.Writer) int {
+	agentsPath, result, err := writeKitoutAgentsFile(configPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "Failed to create AGENTS.md: %v\n", err)
+		return exitRuntimeError
+	}
+
+	switch result {
+	case agentsCreated:
+		fmt.Fprintf(stdout, "Created AGENTS.md: %s\n", agentsPath)
+	case agentsUpdated:
+		fmt.Fprintf(stdout, "Updated AGENTS.md: %s\n", agentsPath)
+	case agentsUnchanged:
+		fmt.Fprintf(stdout, "AGENTS.md already includes Kitout guidance: %s\n", agentsPath)
+	}
+
 	return exitOK
 }
 

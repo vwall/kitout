@@ -52,6 +52,51 @@ func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
 	assertDoctorItem(t, report, "Path permissions", doctorOK, "no configured filesystem write targets")
 }
 
+func TestDoctorCheckerWarnsWhenKitoutRepoIsMissingAgentsFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatalf("create .git directory: %v", err)
+	}
+	configPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(configPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	checker := newDoctorChecker(&fakeDoctorRunner{}, healthyDoctorInfo(t, "arm64"))
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	assertDoctorItem(t, report, "Agent guidance", doctorWarn, "AGENTS.md is missing")
+	item := doctorItemByName(t, report, "Agent guidance")
+	if !strings.Contains(item.Fix, "kitout init --config "+configPath+" --agents") {
+		t.Fatalf("fix = %q, want init --agents guidance", item.Fix)
+	}
+}
+
+func TestDoctorCheckerReportsPresentAgentsFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatalf("create .git directory: %v", err)
+	}
+	configPath := filepath.Join(dir, "kitout.yaml")
+	if err := os.WriteFile(configPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("# AGENTS.md\n"), 0o644); err != nil {
+		t.Fatalf("write AGENTS.md: %v", err)
+	}
+	checker := newDoctorChecker(&fakeDoctorRunner{}, healthyDoctorInfo(t, "arm64"))
+
+	report := checker.Check(context.Background(), configPath)
+
+	if report.HasFailures() {
+		t.Fatalf("HasFailures() = true, want false: %+v", report)
+	}
+	assertDoctorItem(t, report, "Agent guidance", doctorOK, "AGENTS.md is present")
+}
+
 func TestDoctorCheckerWarnsWhenHomebrewMetadataIsStale(t *testing.T) {
 	configPath := writeCLIConfigFile(t, "version: 1\n")
 	runner := &fakeDoctorRunner{responses: []fakeDoctorResponse{
