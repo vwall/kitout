@@ -45,12 +45,16 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "-h", "--help", "help":
 		printRootHelp(stdout)
 		return exitOK
+	case "context":
+		return runContext(remainingArgs[1:], opts, stdout, stderr)
 	case "init":
 		return runInit(remainingArgs[1:], opts, stdout, stderr)
 	case "apply":
 		return runApply(remainingArgs[1:], opts, stdin, stdout, stderr)
 	case "doctor":
 		return runDoctor(remainingArgs[1:], opts, stdout, stderr)
+	case "explain":
+		return runExplain(remainingArgs[1:], opts, stdout, stderr)
 	case "status":
 		return runStatus(remainingArgs[1:], opts, stdout, stderr)
 	case "version":
@@ -80,16 +84,20 @@ Usage:
 
 Commands:
   apply    Apply missing or incorrect resources
+  context  Show agent-friendly config context and safe commands
   doctor   Check local prerequisites and common problems
+  explain  Explain one configured resource
   init      Create a starter config file
   status    Check configured resources
   version   Print version metadata
 
 Examples:
   kitout init
+  kitout context
   kitout status
   kitout apply --dry-run
   kitout doctor
+  kitout explain directory:$HOME/code
   kitout status --config ./kitout.yaml
   kitout version
 

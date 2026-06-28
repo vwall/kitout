@@ -41,7 +41,8 @@ runs, `--verbose` renders each
 resource status check, renders each subprocess command before it starts, and
 streams that subprocess stdout and stderr as it runs. `--verbose` does not
 stream output for `--dry-run`, `--json`, or `--quiet` runs. `--json` and
-`--quiet` currently affect `status`, `apply`, and `doctor`.
+`--quiet` currently affect `context`, `status`, `apply`, `doctor`, and
+`explain`.
 
 When running from a private setup repo that contains `kitout.yaml`, pass
 `--config ./kitout.yaml` if a home config also exists. Kitout prints the selected
@@ -80,6 +81,54 @@ Behavior:
   parent directory for real Codex skill copies
 - keep package, repo, copy, symlink, security, system, SSH key, and login-shell
   examples commented until the user customizes them
+
+### `kitout context`
+
+Prints agent-friendly context for the selected config without checking live
+resource state or applying changes.
+
+```sh
+kitout context
+kitout context --config ./kitout.yaml
+kitout context --config ./kitout.yaml --json
+```
+
+Behavior:
+
+- load and validate the selected config file
+- print the selected config path and config directory
+- summarize safe read-only commands an agent may use for evidence gathering
+- summarize commands that require explicit user approval
+- list declared managed resource IDs in config execution order
+- include guidance for dotfiles repos, shell commands, dry-run, and secrets
+- never call resource `Status` or `Apply`
+
+Example human output:
+
+```txt
+Kitout agent context
+Config: /Users/example/code/setup/kitout.yaml
+Config directory: /Users/example/code/setup
+Schema: version 1
+
+Safe read-only commands:
+- kitout context --config /Users/example/code/setup/kitout.yaml
+- kitout status --config /Users/example/code/setup/kitout.yaml
+- kitout apply --config /Users/example/code/setup/kitout.yaml --dry-run
+
+Requires explicit user approval:
+- kitout apply --config /Users/example/code/setup/kitout.yaml
+- configured shell resources
+
+Managed resources:
+- directory:/Users/example/code
+- symlink:/Users/example/.zshrc
+- shell:Enable Corepack
+
+Agent guidance:
+- Edit files in the setup repo or declared source paths, not managed targets in $HOME.
+- Run status and apply --dry-run before recommending a real apply.
+```
 
 ### `kitout status`
 
@@ -253,6 +302,47 @@ ok:   Path permissions           no configured filesystem write targets
 9 total, 9 ok, 0 warnings, 0 failed
 ```
 
+### `kitout explain <resource-id>`
+
+Explains one configured resource by ID.
+
+```sh
+kitout explain --config ./kitout.yaml 'symlink:/Users/example/.zshrc'
+kitout explain --config ./kitout.yaml --json 'shell:Enable Corepack'
+```
+
+Behavior:
+
+- load and validate the selected config file
+- find the requested resource ID
+- run status for only that resource
+- report state, planned action, details, and apply safety
+- identify whether apply would require explicit user approval
+- return `2` when the resource ID is not configured
+- return `3` when the requested resource fails or cannot be inspected
+
+Example human output:
+
+```txt
+Resource: symlink:/Users/example/.zshrc
+Type: symlink
+Config: /Users/example/code/setup/kitout.yaml
+
+Current state:
+  state: changed
+  action: apply
+  message: symlink points elsewhere
+
+Details:
+  replace: false
+  source: /Users/example/code/setup/home/.zshrc
+  target: /Users/example/.zshrc
+
+Apply safety:
+  would_apply: true
+  requires_approval: true (symlink replacement may remove an existing target)
+```
+
 ### `kitout version`
 
 Prints version metadata.
@@ -282,7 +372,11 @@ Default output should be concise and readable.
 
 JSON output should be stable enough for tests and automation.
 
-Example:
+Status, dry-run apply, doctor, context, and explain all use the same envelope:
+`command`, `ok`, optional `config`, one command-specific payload, and optional
+`error`.
+
+Example status output:
 
 ```json
 {
@@ -312,6 +406,92 @@ Example:
         "message": "directory is missing"
       }
     ]
+  }
+}
+```
+
+Example context payload:
+
+```json
+{
+  "command": "context",
+  "ok": true,
+  "config": {
+    "path": "/Users/example/code/setup/kitout.yaml",
+    "valid": true
+  },
+  "context": {
+    "schema_version": 1,
+    "config_dir": "/Users/example/code/setup",
+    "safe_commands": [
+      {
+        "command": "kitout status --config /Users/example/code/setup/kitout.yaml --json",
+        "reason": "Return current resource state in stable JSON."
+      }
+    ],
+    "requires_approval": [
+      {
+        "command": "kitout apply --config /Users/example/code/setup/kitout.yaml",
+        "reason": "Applies changes to the user's machine."
+      }
+    ],
+    "resources": [
+      {
+        "resource_id": "symlink:/Users/example/.zshrc",
+        "type": "symlink",
+        "label": "symlink: /Users/example/.zshrc",
+        "details": {
+          "source": "/Users/example/code/setup/home/.zshrc",
+          "target": "/Users/example/.zshrc",
+          "replace": "false"
+        }
+      }
+    ],
+    "guidance": [
+      "Edit files in the setup repo or declared source paths, not managed targets in $HOME."
+    ]
+  }
+}
+```
+
+Example explain payload:
+
+```json
+{
+  "command": "explain",
+  "ok": true,
+  "config": {
+    "path": "/Users/example/code/setup/kitout.yaml",
+    "valid": true
+  },
+  "explain": {
+    "resource": {
+      "resource_id": "shell:Enable Corepack",
+      "type": "shell",
+      "label": "shell: Enable Corepack",
+      "details": {
+        "name": "Enable Corepack",
+        "command": "corepack enable",
+        "when": "missing-command:pnpm"
+      }
+    },
+    "status": {
+      "resource_id": "shell:Enable Corepack",
+      "type": "shell",
+      "state": "missing",
+      "action": "apply",
+      "message": "command should run",
+      "details": {
+        "name": "Enable Corepack",
+        "command": "corepack enable",
+        "when": "missing-command:pnpm"
+      }
+    },
+    "safety": {
+      "would_apply": true,
+      "requires_approval": true,
+      "reason": "shell resources run explicit configured commands during apply"
+    }
   }
 }
 ```

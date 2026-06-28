@@ -115,7 +115,7 @@ prefer:
 ```yaml
 symlink_groups:
   - source_root: ./home
-    target_root: ~
+    target_root: "~"
     replace: false
     paths:
       - .zshrc

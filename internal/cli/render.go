@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -152,6 +153,15 @@ func renderIndentedDetail(writer io.Writer, indent, label, text string) {
 	}
 }
 
+func sortedDetailKeys(details map[string]string) []string {
+	keys := make([]string, 0, len(details))
+	for key := range details {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func (r humanRenderer) renderPlanAdvisories(plan engine.Plan) {
 	if plan.Summary.Advisories == 0 {
 		return
@@ -223,6 +233,77 @@ func (r humanRenderer) renderDoctorReport(report doctorReport) {
 		report.Summary.Warn,
 		report.Summary.Fail,
 	)
+}
+
+func (r humanRenderer) renderAgentContext(report agentContextReport) {
+	if r.quiet {
+		return
+	}
+
+	fmt.Fprintln(r.stdout, "Kitout agent context")
+	fmt.Fprintf(r.stdout, "Config: %s\n", report.ConfigPath)
+	fmt.Fprintf(r.stdout, "Config directory: %s\n", report.ConfigDir)
+	fmt.Fprintf(r.stdout, "Schema: version %d\n", report.SchemaVersion)
+	fmt.Fprintln(r.stdout, "\nSafe read-only commands:")
+	for _, command := range report.SafeCommands {
+		fmt.Fprintf(r.stdout, "- %s\n", command.Command)
+	}
+	fmt.Fprintln(r.stdout, "\nRequires explicit user approval:")
+	for _, command := range report.RequiresApproval {
+		fmt.Fprintf(r.stdout, "- %s\n", command.Command)
+	}
+	fmt.Fprintln(r.stdout, "\nManaged resources:")
+	if len(report.ManagedResources) == 0 {
+		fmt.Fprintln(r.stdout, "- none")
+	} else {
+		for _, resource := range report.ManagedResources {
+			fmt.Fprintf(r.stdout, "- %s\n", resource.ResourceID)
+		}
+	}
+	fmt.Fprintln(r.stdout, "\nAgent guidance:")
+	for _, item := range report.Guidance {
+		fmt.Fprintf(r.stdout, "- %s\n", item)
+	}
+}
+
+func (r humanRenderer) renderAgentExplain(report agentExplainReport) {
+	if r.quiet {
+		return
+	}
+
+	fmt.Fprintf(r.stdout, "Resource: %s\n", report.Resource.ResourceID)
+	fmt.Fprintf(r.stdout, "Type: %s\n", report.Resource.Type)
+	fmt.Fprintf(r.stdout, "Config: %s\n\n", report.ConfigPath)
+	fmt.Fprintln(r.stdout, "Current state:")
+	fmt.Fprintf(r.stdout, "  state: %s\n", report.Item.State)
+	fmt.Fprintf(r.stdout, "  action: %s\n", report.Item.Action)
+	if report.Item.Message != "" {
+		fmt.Fprintf(r.stdout, "  message: %s\n", report.Item.Message)
+	}
+	if report.Item.Error != "" {
+		fmt.Fprintf(r.stdout, "  error: %s\n", report.Item.Error)
+	}
+	if len(report.Item.Details) > 0 {
+		fmt.Fprintln(r.stdout, "\nDetails:")
+		for _, key := range sortedDetailKeys(report.Item.Details) {
+			fmt.Fprintf(r.stdout, "  %s: %s\n", key, report.Item.Details[key])
+		}
+	}
+	fmt.Fprintln(r.stdout, "\nApply safety:")
+	fmt.Fprintf(r.stdout, "  would_apply: %t\n", report.Item.Action == engine.ActionApply)
+	if report.RiskyApply {
+		fmt.Fprintf(r.stdout, "  requires_approval: true (%s)\n", report.ApprovalReason)
+	} else {
+		fmt.Fprintln(r.stdout, "  requires_approval: false")
+	}
+	fmt.Fprintln(r.stdout, "\nRelated commands:")
+	for _, command := range report.RelatedCommands {
+		fmt.Fprintf(r.stdout, "- %s\n", command.Command)
+	}
+	fmt.Fprintln(r.stdout, "\nAgent guidance:")
+	for _, item := range report.AgentGuidance {
+		fmt.Fprintf(r.stdout, "- %s\n", item)
+	}
 }
 
 func (r humanRenderer) renderInvalidConfigDetails(err error) {

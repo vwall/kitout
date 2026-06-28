@@ -234,13 +234,13 @@ copies:
     replace: false
 
 symlinks:
-  - source: ~/dotfiles/home/zshrc
+  - source: ./home/zshrc
     target: ~/.zshrc
     replace: false
 
 symlink_groups:
   - source_root: ./home
-    target_root: ~
+    target_root: "~"
     replace: false
     paths:
       - .zshrc
@@ -305,6 +305,59 @@ This matters for dotfile repos. If the selected config is
 `~/code/setup/kitout.yaml`, then `./home/.zshrc` resolves to
 `~/code/setup/home/.zshrc`, not the process working directory.
 
+## Agent and dotfiles guidance
+
+Kitout configs should stay useful to both humans and coding agents. No special
+`agents:` schema is required for the first pass; the ordinary resource schema is
+the source of truth.
+
+When a user works from a private dotfiles repo:
+
+- pass `--config ./kitout.yaml` so the selected config is explicit
+- use relative source paths such as `./home/.zshrc` so managed source files stay
+  inside the repo
+- edit source paths, not symlink or copy targets in `$HOME`
+- run `kitout context`, `kitout status --json`, and
+  `kitout apply --dry-run --json` before applying changes
+- run `kitout explain <resource-id>` when the question is about one resource
+- avoid secrets in config and managed dotfiles
+- keep `shell` resources explicit, idempotent, and rare because they run
+  configured commands during apply and require confirmation
+
+Example dotfiles layout:
+
+```txt
+kitout.yaml
+home/
+  .zshrc
+  .gitconfig
+codex/
+  skills/
+    nuxt-practices/
+```
+
+Example config:
+
+```yaml
+version: 1
+
+directories:
+  - ~/.codex/skills
+
+copies:
+  - source: ./codex/skills/nuxt-practices
+    target: ~/.codex/skills/nuxt-practices
+    replace: false
+
+symlink_groups:
+  - source_root: ./home
+    target_root: "~"
+    replace: false
+    paths:
+      - .zshrc
+      - .gitconfig
+```
+
 The implemented path-bearing resource fields are:
 
 - `directories[]`
@@ -342,7 +395,7 @@ Config:
 ```yaml
 symlink_groups:
   - source_root: ./home
-    target_root: ~
+    target_root: "~"
     paths:
       - .zshrc
       - .gitconfig

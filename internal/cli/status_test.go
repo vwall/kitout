@@ -360,6 +360,41 @@ func TestStatusJSONReportsValidConfig(t *testing.T) {
 	}
 }
 
+func TestStatusJSONIncludesResourceDetailsForAgentContext(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "zshrc")
+	target := filepath.Join(dir, ".zshrc")
+	if err := os.WriteFile(source, []byte("alias ll='ls -lah'\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	configPath := writeCLIConfigFile(t, `version: 1
+
+copies:
+  - source: `+source+`
+    target: `+target+`
+    replace: false
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"status", "--config", configPath, "--json"}, nil, &stdout, &stderr)
+	if code != exitChanges {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitChanges, stderr.String())
+	}
+	response := decodeStatusJSON(t, stdout.String())
+	if response.Plan == nil || len(response.Plan.Items) != 1 {
+		t.Fatalf("plan = %+v, want one copy item", response.Plan)
+	}
+	item := response.Plan.Items[0]
+	if item.ResourceID != "copy:"+target {
+		t.Fatalf("resource_id = %q, want copy:%s", item.ResourceID, target)
+	}
+	if item.Details["source"] != source || item.Details["target"] != target || item.Details["replace"] != "false" {
+		t.Fatalf("details = %+v, want source, target, and replace=false", item.Details)
+	}
+}
+
 func TestStatusJSONReportsValidationErrors(t *testing.T) {
 	configPath := writeCLIConfigFile(t, `version: 1
 
@@ -516,6 +551,7 @@ type statusJSONPlanItem struct {
 	Action     string               `json:"action"`
 	Message    string               `json:"message"`
 	Error      string               `json:"error"`
+	Details    map[string]string    `json:"details"`
 	Advisories []statusJSONAdvisory `json:"advisories"`
 }
 

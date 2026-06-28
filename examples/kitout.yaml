@@ -37,6 +37,7 @@ asdf:
 directories:
   - ~/code
   - ~/.config
+  # A setup repo can copy approved Codex skills into this directory.
   - ~/.codex/skills
 
 repos:
@@ -45,18 +46,22 @@ repos:
     branch: main
 
 copies:
+  # Copies materialize real files or directories. Use this for Codex skills or
+  # other content that should not be symlinked from the setup repo.
   - source: ./codex/skills/nuxt-practices
     target: ~/.codex/skills/nuxt-practices
     replace: false
 
 symlinks:
-  - source: ~/dotfiles/home/zshrc
+  # Agents should edit this source file, not the managed target in $HOME.
+  - source: ./home/zshrc
     target: ~/.zshrc
     replace: false
 
 symlink_groups:
-  - source_root: ~/dotfiles/home
-    target_root: ~
+  # Relative paths resolve from this config file, which keeps dotfiles portable.
+  - source_root: ./home
+    target_root: "~"
     replace: false
     paths:
       - .gitconfig

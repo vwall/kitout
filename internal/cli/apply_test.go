@@ -409,6 +409,42 @@ directories:
 	}
 }
 
+func TestApplyJSONDryRunDoesNotRunShellCommand(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "marker")
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Create marker
+    command: touch `+marker+`
+    when: always
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"apply", "--config", configPath, "--dry-run", "--json"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	response := decodeStatusJSON(t, stdout.String())
+	if response.Command != "apply" {
+		t.Fatalf("command = %q, want apply", response.Command)
+	}
+	if response.Plan == nil || !response.Plan.DryRun || len(response.Plan.Items) != 1 {
+		t.Fatalf("plan = %+v, want one dry-run shell item", response.Plan)
+	}
+	item := response.Plan.Items[0]
+	if item.ResourceID != "shell:Create marker" || item.Action != "apply" {
+		t.Fatalf("item = %+v, want shell apply plan item", item)
+	}
+	if item.Details["command"] != "touch "+marker {
+		t.Fatalf("details = %+v, want shell command detail", item.Details)
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatalf("Stat(%q) error = %v, want shell command marker to remain missing", marker, err)
+	}
+}
+
 func TestApplyRequiresConfirmationForShellCommand(t *testing.T) {
 	outputPath := filepath.Join(t.TempDir(), "created")
 	configPath := writeCLIConfigFile(t, `version: 1

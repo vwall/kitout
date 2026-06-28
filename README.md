@@ -50,6 +50,24 @@ kitout apply --config ./kitout.yaml --dry-run
 See `docs/setup/first-real-run.md` for the practical first-run loop and common
 fresh-machine friction.
 
+## Ask questions safely with agents
+
+When using Codex or another coding agent with a private dotfiles repo, give the
+agent Kitout's local context instead of asking it to guess:
+
+```sh
+kitout context --config ./kitout.yaml
+kitout status --config ./kitout.yaml --json
+kitout apply --config ./kitout.yaml --dry-run --json
+```
+
+Use `kitout explain --config ./kitout.yaml <resource-id>` when the question is
+about one managed file, package, repo, or command. Agents should edit repo source
+files, not managed targets in `$HOME`, and should ask before running
+`kitout apply`.
+
+See `docs/agents/agent-context.md` for the agent-safe dotfiles workflow.
+
 ## Example config
 
 ```yaml
@@ -98,12 +116,12 @@ copies:
     replace: false
 
 symlinks:
-  - source: ~/dotfiles/home/zshrc
+  - source: ./home/zshrc
     target: ~/.zshrc
 
 symlink_groups:
-  - source_root: ~/dotfiles/home
-    target_root: ~
+  - source_root: ./home
+    target_root: "~"
     paths:
       - .gitconfig
       - .config/ghostty
@@ -136,6 +154,7 @@ Do not start with Linux support, secrets, templates, plugins, or a package manag
 
 ## Documentation map
 
+- `docs/agents/agent-context.md`
 - `docs/architecture/architecture-overview.md`
 - `docs/runtime/resource-model.md`
 - `docs/cli/cli-spec.md`

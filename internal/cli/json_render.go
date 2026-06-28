@@ -20,6 +20,8 @@ type jsonStatusResponse struct {
 	Plan    *jsonPlan         `json:"plan,omitempty"`
 	Apply   *jsonApplyReport  `json:"apply,omitempty"`
 	Doctor  *jsonDoctorReport `json:"doctor,omitempty"`
+	Context *jsonAgentContext `json:"context,omitempty"`
+	Explain *jsonAgentExplain `json:"explain,omitempty"`
 	Error   *jsonError        `json:"error,omitempty"`
 }
 
@@ -64,6 +66,41 @@ type jsonApplyItem struct {
 type jsonDoctorReport struct {
 	Summary doctorSummary    `json:"summary"`
 	Items   []jsonDoctorItem `json:"items"`
+}
+
+type jsonAgentContext struct {
+	SchemaVersion    int                 `json:"schema_version"`
+	ConfigDir        string              `json:"config_dir"`
+	SafeCommands     []jsonAgentCommand  `json:"safe_commands"`
+	RequiresApproval []jsonAgentCommand  `json:"requires_approval"`
+	Resources        []jsonAgentResource `json:"resources"`
+	Guidance         []string            `json:"guidance"`
+}
+
+type jsonAgentExplain struct {
+	Resource        jsonAgentResource  `json:"resource"`
+	Status          jsonPlanItem       `json:"status"`
+	Safety          jsonExplainSafety  `json:"safety"`
+	RelatedCommands []jsonAgentCommand `json:"related_commands"`
+	Guidance        []string           `json:"guidance"`
+}
+
+type jsonAgentCommand struct {
+	Command string `json:"command"`
+	Reason  string `json:"reason"`
+}
+
+type jsonAgentResource struct {
+	ResourceID string            `json:"resource_id"`
+	Type       string            `json:"type"`
+	Label      string            `json:"label"`
+	Details    map[string]string `json:"details,omitempty"`
+}
+
+type jsonExplainSafety struct {
+	WouldApply       bool   `json:"would_apply"`
+	RequiresApproval bool   `json:"requires_approval"`
+	Reason           string `json:"reason,omitempty"`
 }
 
 type jsonDoctorItem struct {
@@ -133,6 +170,43 @@ func (r jsonRenderer) renderDoctorReport(report doctorReport) error {
 			Warnings: jsonWarningsFromConfig(report.ConfigWarnings),
 		},
 		Doctor: jsonDoctorReportFromCLI(report),
+	})
+}
+
+func (r jsonRenderer) renderAgentContext(report agentContextReport) error {
+	return r.write(jsonStatusResponse{
+		Command: "context",
+		OK:      true,
+		Config: &jsonConfigStatus{
+			Path:     report.ConfigPath,
+			Valid:    true,
+			Warnings: jsonWarningsFromConfig(report.ConfigWarnings),
+		},
+		Context: jsonAgentContextFromCLI(report),
+	})
+}
+
+func (r jsonRenderer) renderAgentExplain(report agentExplainReport) error {
+	return r.write(jsonStatusResponse{
+		Command: "explain",
+		OK:      report.ResourceWasFound && report.Item.State != engine.StateFailed && report.Item.State != engine.StateUnknown,
+		Config: &jsonConfigStatus{
+			Path:     report.ConfigPath,
+			Valid:    true,
+			Warnings: jsonWarningsFromConfig(report.ConfigWarnings),
+		},
+		Explain: jsonAgentExplainFromCLI(report),
+	})
+}
+
+func (r jsonRenderer) renderValidationMessage(command, message string) error {
+	return r.write(jsonStatusResponse{
+		Command: command,
+		OK:      false,
+		Error: &jsonError{
+			Type:    "validation",
+			Message: message,
+		},
 	})
 }
 
@@ -281,6 +355,68 @@ func jsonDoctorReportFromCLI(report doctorReport) *jsonDoctorReport {
 	return &jsonDoctorReport{
 		Summary: report.Summary,
 		Items:   items,
+	}
+}
+
+func jsonAgentContextFromCLI(report agentContextReport) *jsonAgentContext {
+	return &jsonAgentContext{
+		SchemaVersion:    report.SchemaVersion,
+		ConfigDir:        report.ConfigDir,
+		SafeCommands:     jsonAgentCommandsFromCLI(report.SafeCommands),
+		RequiresApproval: jsonAgentCommandsFromCLI(report.RequiresApproval),
+		Resources:        jsonAgentResourcesFromCLI(report.ManagedResources),
+		Guidance:         report.Guidance,
+	}
+}
+
+func jsonAgentExplainFromCLI(report agentExplainReport) *jsonAgentExplain {
+	return &jsonAgentExplain{
+		Resource: jsonAgentResourceFromCLI(report.Resource),
+		Status: jsonPlanItem{
+			ResourceID: report.Item.ResourceID,
+			Type:       report.Item.Type,
+			State:      string(report.Item.State),
+			Action:     string(report.Item.Action),
+			Message:    report.Item.Message,
+			Error:      report.Item.Error,
+			Details:    report.Item.Details,
+			Advisories: jsonAdvisoriesFromEngine(report.Item.Advisories),
+		},
+		Safety: jsonExplainSafety{
+			WouldApply:       report.Item.Action == engine.ActionApply,
+			RequiresApproval: report.RiskyApply,
+			Reason:           report.ApprovalReason,
+		},
+		RelatedCommands: jsonAgentCommandsFromCLI(report.RelatedCommands),
+		Guidance:        report.AgentGuidance,
+	}
+}
+
+func jsonAgentCommandsFromCLI(commands []agentCommand) []jsonAgentCommand {
+	items := make([]jsonAgentCommand, 0, len(commands))
+	for _, command := range commands {
+		items = append(items, jsonAgentCommand{
+			Command: command.Command,
+			Reason:  command.Reason,
+		})
+	}
+	return items
+}
+
+func jsonAgentResourcesFromCLI(resources []agentResourceSummary) []jsonAgentResource {
+	items := make([]jsonAgentResource, 0, len(resources))
+	for _, resource := range resources {
+		items = append(items, jsonAgentResourceFromCLI(resource))
+	}
+	return items
+}
+
+func jsonAgentResourceFromCLI(resource agentResourceSummary) jsonAgentResource {
+	return jsonAgentResource{
+		ResourceID: resource.ResourceID,
+		Type:       resource.Type,
+		Label:      resource.Label,
+		Details:    resource.Details,
 	}
 }
 

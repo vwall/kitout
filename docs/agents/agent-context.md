@@ -1,0 +1,77 @@
+# Agent Context
+
+Kitout can give coding agents enough local evidence to answer setup questions
+without guessing or changing the user's Mac.
+
+Kitout does not embed AI behavior. The pattern is:
+
+- Kitout owns desired state in `kitout.yaml`.
+- Agents read Kitout context, status, doctor, dry-run, and explain output.
+- Humans approve mutation before `kitout apply`.
+
+## Safe Agent Loop
+
+From a dotfiles or setup repo, select the repo config explicitly:
+
+```sh
+kitout context --config ./kitout.yaml
+kitout doctor --config ./kitout.yaml --json
+kitout status --config ./kitout.yaml --json
+kitout apply --config ./kitout.yaml --dry-run --json
+```
+
+Use `explain` when the user asks about one resource:
+
+```sh
+kitout explain --config ./kitout.yaml 'symlink:/Users/example/.zshrc'
+```
+
+These commands are read-only or dry-run. They can inspect local state, but they
+do not apply resources.
+
+## What Agents Should Do
+
+- Edit source files in the setup repo, not managed targets in `$HOME`.
+- Run `kitout status` or `kitout apply --dry-run` before recommending apply.
+- Ask before running `kitout apply`.
+- Explain shell resources before any apply run.
+- Never put secrets in Kitout config or managed dotfiles.
+
+## Example Questions
+
+If the user asks how to install `jq`, an agent can suggest:
+
+```yaml
+brew:
+  packages:
+    - jq
+```
+
+Then it should use:
+
+```sh
+kitout status --config ./kitout.yaml
+kitout apply --config ./kitout.yaml --dry-run
+```
+
+If the user asks how to add a shell alias and Kitout manages `.zshrc` through a
+symlink, the agent should edit the configured source path, not `~/.zshrc`.
+
+## Output Surfaces
+
+`kitout context` reports:
+
+- selected config path
+- safe read-only commands
+- commands requiring explicit user approval
+- declared resource IDs and details
+- agent guidance
+
+`kitout explain <resource-id>` reports:
+
+- the requested resource ID and type
+- current state and planned action
+- resource details
+- whether apply would require confirmation
+- related commands to gather more evidence
+
