@@ -221,9 +221,8 @@ kitout apply --config ./kitout.yaml --dry-run --json</code></pre>
         <div class="section-intro">
           <h2 id="schema-title">YAML that explains itself.</h2>
           <p>
-            The current schema keeps resources explicit: packages, apps,
-            runtimes, files, repos, defaults, system prerequisites, SSH keys,
-            login shell, and approved shell commands.
+            The starter config stays complete, and the legend maps each block to
+            the Mac setup resource Kitout checks before apply.
           </p>
         </div>
         <div class="schema-grid">
@@ -286,23 +285,73 @@ ssh:
 login_shell:
   path: homebrew:fish</code></pre>
           </div>
-          <div class="resource-coverage" aria-label="Supported resource coverage">
-            <h3>Current resource coverage</h3>
-            <div class="resource-matrix">
-              <a href="resources/brew.md"><span>brew</span><small>taps, packages</small></a>
-              <a href="resources/cask.md"><span>cask</span><small>desktop apps</small></a>
-              <a href="resources/asdf.md"><span>asdf</span><small>developer runtimes</small></a>
-              <a href="resources/directory.md"><span>directory</span><small>folders</small></a>
-              <a href="resources/repo.md"><span>repo</span><small>Git checkouts</small></a>
-              <a href="resources/copy.md"><span>copy</span><small>real files</small></a>
-              <a href="resources/symlink.md"><span>symlink</span><small>dotfiles</small></a>
-              <a href="resources/macos-defaults.md"><span>defaults</span><small>macOS preferences</small></a>
-              <a href="resources/security.md"><span>security</span><small>FileVault, firewall</small></a>
-              <a href="resources/system.md"><span>system</span><small>Xcode, Rosetta</small></a>
-              <a href="resources/ssh.md"><span>ssh</span><small>Ed25519 keys</small></a>
-              <a href="resources/login-shell.md"><span>login_shell</span><small>macOS shell</small></a>
-              <a href="resources/shell.md"><span>shell</span><small>approved commands</small></a>
+          <div class="resource-coverage" aria-label="Config legend and supported resources">
+            <div class="resource-coverage-heading">
+              <h3>Config legend</h3>
+              <p>
+                Read the file by job. Each group links to the resource behavior
+                behind that YAML block.
+              </p>
             </div>
+            <div class="resource-map">
+              <article class="resource-group">
+                <div class="resource-group-copy">
+                  <span>install</span>
+                  <p>Bring command-line tools and desktop apps onto the Mac.</p>
+                </div>
+                <div class="resource-links">
+                  <a href="resources/brew.md"><span>brew</span><small>taps, packages</small></a>
+                  <a href="resources/cask.md"><span>cask</span><small>desktop apps</small></a>
+                  <a href="resources/asdf.md"><span>asdf</span><small>developer runtimes</small></a>
+                </div>
+              </article>
+              <article class="resource-group">
+                <div class="resource-group-copy">
+                  <span>files</span>
+                  <p>Create folders, copy real files, and link dotfiles.</p>
+                </div>
+                <div class="resource-links">
+                  <a href="resources/directory.md"><span>directory</span><small>folders</small></a>
+                  <a href="resources/copy.md"><span>copy</span><small>real files</small></a>
+                  <a href="resources/symlink.md"><span>symlink</span><small>dotfiles</small></a>
+                </div>
+              </article>
+              <article class="resource-group">
+                <div class="resource-group-copy">
+                  <span>code</span>
+                  <p>Keep named Git checkouts present in predictable paths.</p>
+                </div>
+                <div class="resource-links">
+                  <a href="resources/repo.md"><span>repo</span><small>Git checkouts</small></a>
+                </div>
+              </article>
+              <article class="resource-group">
+                <div class="resource-group-copy">
+                  <span>macOS</span>
+                  <p>Capture machine preferences, shells, and prerequisites.</p>
+                </div>
+                <div class="resource-links">
+                  <a href="resources/macos-defaults.md"><span>defaults</span><small>preferences</small></a>
+                  <a href="resources/login-shell.md"><span>login_shell</span><small>user shell</small></a>
+                  <a href="resources/system.md"><span>system</span><small>Xcode, Rosetta</small></a>
+                </div>
+              </article>
+              <article class="resource-group">
+                <div class="resource-group-copy">
+                  <span>safety</span>
+                  <p>Name guarded resources before any real apply can run.</p>
+                </div>
+                <div class="resource-links">
+                  <a href="resources/security.md"><span>security</span><small>FileVault, firewall</small></a>
+                  <a href="resources/ssh.md"><span>ssh</span><small>Ed25519 keys</small></a>
+                  <a href="resources/shell.md"><span>shell</span><small>approved commands</small></a>
+                </div>
+              </article>
+            </div>
+            <p class="schema-note">
+              Riskier sections stay visible in status and dry-run output before
+              a real apply asks for approval.
+            </p>
           </div>
         </div>
       </section>
