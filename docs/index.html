@@ -231,59 +231,59 @@ kitout apply --config ./kitout.yaml --dry-run --json</code></pre>
               <span>kitout.yaml</span>
               <button type="button" data-copy-target="starter-config">Copy</button>
             </div>
-            <pre><code id="starter-config">version: 1
+            <pre><code id="starter-config" class="syntax-yaml"><span class="yaml-key">version</span><span class="yaml-punct">:</span> <span class="yaml-number">1</span>
 
-brew:
-  taps:
-    - vwall/kitout
-  packages:
-    - git
-    - gh
-    - asdf
-  casks:
-    - ghostty
-    - visual-studio-code
+<span class="yaml-section">brew</span><span class="yaml-punct">:</span>
+  <span class="yaml-key">taps</span><span class="yaml-punct">:</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">vwall/kitout</span>
+  <span class="yaml-key">packages</span><span class="yaml-punct">:</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">git</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">gh</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">asdf</span>
+  <span class="yaml-key">casks</span><span class="yaml-punct">:</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">ghostty</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">visual-studio-code</span>
 
-directories:
-  - ~/.config
-  - ~/.codex/skills
+<span class="yaml-section">directories</span><span class="yaml-punct">:</span>
+  <span class="yaml-dash">-</span> <span class="yaml-value">~/.config</span>
+  <span class="yaml-dash">-</span> <span class="yaml-value">~/.codex/skills</span>
 
-asdf:
-  plugins:
-    - name: ruby
-      url: https://github.com/asdf-vm/asdf-ruby.git
-      versions:
-        - 3.3.6
+<span class="yaml-section">asdf</span><span class="yaml-punct">:</span>
+  <span class="yaml-key">plugins</span><span class="yaml-punct">:</span>
+    <span class="yaml-dash">-</span> <span class="yaml-key">name</span><span class="yaml-punct">:</span> <span class="yaml-value">ruby</span>
+      <span class="yaml-key">url</span><span class="yaml-punct">:</span> <span class="yaml-value">https://github.com/asdf-vm/asdf-ruby.git</span>
+      <span class="yaml-key">versions</span><span class="yaml-punct">:</span>
+        <span class="yaml-dash">-</span> <span class="yaml-number">3.3.6</span>
 
-repos:
-  - path: ~/code/example
-    url: git@github.com:example/example.git
-    branch: main
+<span class="yaml-section">repos</span><span class="yaml-punct">:</span>
+  <span class="yaml-dash">-</span> <span class="yaml-key">path</span><span class="yaml-punct">:</span> <span class="yaml-value">~/code/example</span>
+    <span class="yaml-key">url</span><span class="yaml-punct">:</span> <span class="yaml-value">git@github.com:example/example.git</span>
+    <span class="yaml-key">branch</span><span class="yaml-punct">:</span> <span class="yaml-value">main</span>
 
-copies:
-  - source: ./codex/skills/nuxt-practices
-    target: ~/.codex/skills/nuxt-practices
+<span class="yaml-section">copies</span><span class="yaml-punct">:</span>
+  <span class="yaml-dash">-</span> <span class="yaml-key">source</span><span class="yaml-punct">:</span> <span class="yaml-value">./codex/skills/nuxt-practices</span>
+    <span class="yaml-key">target</span><span class="yaml-punct">:</span> <span class="yaml-value">~/.codex/skills/nuxt-practices</span>
 
-symlink_groups:
-  - source_root: ./home
-    target_root: "~"
-    paths:
-      - .zshrc
-      - .gitconfig
+<span class="yaml-section">symlink_groups</span><span class="yaml-punct">:</span>
+  <span class="yaml-dash">-</span> <span class="yaml-key">source_root</span><span class="yaml-punct">:</span> <span class="yaml-value">./home</span>
+    <span class="yaml-key">target_root</span><span class="yaml-punct">:</span> <span class="yaml-string">"~"</span>
+    <span class="yaml-key">paths</span><span class="yaml-punct">:</span>
+      <span class="yaml-dash">-</span> <span class="yaml-value">.zshrc</span>
+      <span class="yaml-dash">-</span> <span class="yaml-value">.gitconfig</span>
 
-security:
-  filevault:
-    required: true
-  firewall:
-    enabled: true
+<span class="yaml-section">security</span><span class="yaml-punct">:</span>
+  <span class="yaml-key">filevault</span><span class="yaml-punct">:</span>
+    <span class="yaml-key">required</span><span class="yaml-punct">:</span> <span class="yaml-bool">true</span>
+  <span class="yaml-key">firewall</span><span class="yaml-punct">:</span>
+    <span class="yaml-key">enabled</span><span class="yaml-punct">:</span> <span class="yaml-bool">true</span>
 
-ssh:
-  keys:
-    - path: ~/.ssh/id_ed25519
-      type: ed25519
+<span class="yaml-section">ssh</span><span class="yaml-punct">:</span>
+  <span class="yaml-key">keys</span><span class="yaml-punct">:</span>
+    <span class="yaml-dash">-</span> <span class="yaml-key">path</span><span class="yaml-punct">:</span> <span class="yaml-value">~/.ssh/id_ed25519</span>
+      <span class="yaml-key">type</span><span class="yaml-punct">:</span> <span class="yaml-value">ed25519</span>
 
-login_shell:
-  path: homebrew:fish</code></pre>
+<span class="yaml-section">login_shell</span><span class="yaml-punct">:</span>
+  <span class="yaml-key">path</span><span class="yaml-punct">:</span> <span class="yaml-value">homebrew:fish</span></code></pre>
           </div>
           <div class="resource-coverage" aria-label="Config legend and supported resources">
             <div class="resource-coverage-heading">

@@ -711,6 +711,36 @@ pre {
   max-height: clamp(34rem, 72vh, 56rem);
 }
 
+.syntax-yaml {
+  color: #eaf4ef;
+}
+
+.syntax-yaml .yaml-section {
+  color: #b7f2cb;
+  font-weight: 800;
+}
+
+.syntax-yaml .yaml-key {
+  color: #8dc8ff;
+  font-weight: 800;
+}
+
+.syntax-yaml .yaml-punct,
+.syntax-yaml .yaml-dash {
+  color: #8fa19a;
+}
+
+.syntax-yaml .yaml-value {
+  color: #eef7f2;
+}
+
+.syntax-yaml .yaml-string,
+.syntax-yaml .yaml-number,
+.syntax-yaml .yaml-bool {
+  color: #f1c84c;
+  font-weight: 800;
+}
+
 .resource-stack {
   display: grid;
   overflow: hidden;
