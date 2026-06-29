@@ -83,7 +83,7 @@
                 class="artifact-terminal"
                 aria-label="Dry-run output excerpt"
               >
-<pre><code><span class="terminal-line"><span class="term-prompt">$</span> kitout apply --config ./kitout.yaml --dry-run</span>
+<pre><code><span class="terminal-line"><span class="term-prompt">$</span> kitout apply --dry-run</span>
 <span class="terminal-gap"></span>
 <span class="terminal-line"><span class="term-ok">[dry-run]</span> Kitout is running in dry-run mode. No changes will be made.</span>
 <span class="terminal-line">Config: ./kitout.yaml</span>
@@ -138,7 +138,7 @@
               <h3>Run doctor</h3>
               <p>Check macOS, Homebrew, Git, shell, config validity, and paths.</p>
             </div>
-            <code>kitout doctor --config ./kitout.yaml</code>
+            <code>kitout doctor</code>
           </li>
           <li>
             <span class="step-number">3</span>
@@ -146,7 +146,7 @@
               <h3>Read status</h3>
               <p>See satisfied, missing, changed, skipped, and failed resources.</p>
             </div>
-            <code>kitout status --config ./kitout.yaml</code>
+            <code>kitout status</code>
           </li>
           <li>
             <span class="step-number">4</span>
@@ -154,12 +154,15 @@
               <h3>Preview before apply</h3>
               <p>Preview changes without filesystem writes or shell execution.</p>
             </div>
-            <code>kitout apply --config ./kitout.yaml --dry-run</code>
+            <code>kitout apply --dry-run</code>
           </li>
         </ol>
         <p class="source-note">
           Preview command:
-          <code>kitout apply --config ./kitout.yaml --dry-run</code>
+          <code>kitout apply --dry-run</code>
+          ·
+          Other config:
+          <code>--config /path/to/kitout.yaml</code>
           ·
           Detailed guide:
           <a href="setup/first-real-run.md">first real run</a>
@@ -183,16 +186,16 @@
                 <button type="button" data-copy-target="agent-setup">Copy</button>
               </div>
               <pre><code id="agent-setup">kitout init --agents
-kitout context --config ./kitout.yaml
-kitout status --config ./kitout.yaml --json
-kitout apply --config ./kitout.yaml --dry-run --json</code></pre>
+kitout context
+kitout status --json
+kitout apply --dry-run --json</code></pre>
             </div>
             <div class="code-panel">
               <div class="panel-bar">
                 <span>One resource</span>
                 <button type="button" data-copy-target="agent-explain">Copy</button>
               </div>
-              <pre><code id="agent-explain">kitout explain --config ./kitout.yaml 'symlink:/Users/example/.zshrc'</code></pre>
+              <pre><code id="agent-explain">kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
             </div>
           </div>
           <div class="agent-rules" aria-label="Agent workflow rules">
@@ -366,10 +369,12 @@ kitout apply --config ./kitout.yaml --dry-run --json</code></pre>
 
       <section id="output" class="output-section" aria-labelledby="output-title">
         <div class="section-intro">
-          <h2 id="output-title">The plan is the artifact.</h2>
+          <h2 id="output-title">Apply follows the plan.</h2>
           <p>
-            Human output stays plain, and JSON output gives tools a stable
-            envelope for status, dry-run, doctor, context, and explain.
+            Dry-run shows what would change. Real apply checks the same
+            resources again, applies only what needs work, and ends with a
+            results table. Add <code>--json</code> when tools need structured
+            output.
           </p>
         </div>
         <div class="output-proof">
@@ -378,23 +383,29 @@ kitout apply --config ./kitout.yaml --dry-run --json</code></pre>
               <span></span>
               <span></span>
               <span></span>
-              <strong>kitout apply --dry-run</strong>
+              <strong>kitout apply</strong>
             </div>
-            <pre><code><span class="term-prompt">$</span> kitout apply --config ./kitout.yaml --dry-run
+            <pre><code><span class="term-prompt">$</span> kitout apply
 
-[dry-run] Kitout is running in dry-run mode. No changes will be made.
+Kitout is planning changes for your Mac setup...
 Config: ./kitout.yaml
 
 <span class="term-progress">&gt;</span> Inspecting Homebrew packages...
+<span class="term-progress">&gt;</span> Inspecting Homebrew casks...
+<span class="term-progress">&gt;</span> Checking directory: ~/.config...
 <span class="term-progress">&gt;</span> Checking repo: ~/code/example...
-<span class="term-progress">&gt;</span> Checking symlink: ~/.zshrc...
 
-[dry-run] Previewing planned changes:
-<span class="term-warn">dry-run </span> Would install formula gh
-<span class="term-warn">dry-run </span> Would clone repository ~/code/example
-<span class="term-warn">dry-run </span> Would replace symlink ~/.zshrc
+Applying changes:
+<span class="term-progress">&gt;</span> Installing formula gh...
+<span class="term-progress">&gt;</span> Cloning repository ~/code/example...
 
-<span class="term-ok">[dry-run] No changes made because --dry-run was used.</span></code></pre>
+Results:
+<span class="term-ok">&#10003; done </span> brew: gh              installed formula
+<span class="term-ok">&#10003; done </span> repo: ~/code/example   cloned repository
+<span class="term-ok">&#10003; ok   </span> directory: ~/.config   directory exists
+<span class="term-ok">&#10003; ok   </span> cask: ghostty          cask is installed
+
+Summary: 2 changed, 2 unchanged</code></pre>
           </div>
           <div class="output-notes" aria-label="Output guide">
             <article>
@@ -505,9 +516,9 @@ brew install kitout</code></pre>
               <button type="button" data-copy-target="install-first-pass">Copy</button>
             </div>
             <pre><code id="install-first-pass">kitout init --agents
-kitout doctor --config ./kitout.yaml
-kitout status --config ./kitout.yaml
-kitout apply --config ./kitout.yaml --dry-run</code></pre>
+kitout doctor
+kitout status
+kitout apply --dry-run</code></pre>
           </div>
         </div>
       </section>

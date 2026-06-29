@@ -530,7 +530,7 @@ p code {
 
 .artifact-shell {
   overflow: hidden;
-  border: 1px solid var(--glass-edge);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
     linear-gradient(
@@ -552,13 +552,13 @@ p code {
   justify-content: space-between;
   gap: var(--space-sm);
   padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid var(--glass-line);
+  border-bottom: 1px solid var(--line);
   color: var(--ink);
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.84),
-      rgba(255, 255, 255, 0.52)
+      rgba(255, 255, 255, 0.96),
+      rgba(247, 248, 247, 0.84)
     );
   font-size: 0.84rem;
   font-weight: 800;
