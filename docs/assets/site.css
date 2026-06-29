@@ -173,7 +173,6 @@ p code {
   outline-offset: 3px;
 }
 
-.site-header,
 .command-loop,
 .agent-section,
 .schema-section,
@@ -188,17 +187,22 @@ p code {
 
 .site-header {
   position: sticky;
-  top: 0.75rem;
+  top: 0;
   z-index: 10;
   display: flex;
+  width: 100%;
   min-height: 64px;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  margin-block: 0.75rem 0;
-  padding: 0.55rem 0.65rem 0.55rem 0.85rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: calc(var(--radius) + 4px);
+  margin: 0;
+  padding-block: 0.55rem;
+  padding-inline: max(var(--gutter), calc((100vw - var(--content)) / 2));
+  border-block: 0 1px;
+  border-inline: 0;
+  border-style: solid;
+  border-color: var(--glass-edge);
+  border-radius: 0;
   background:
     linear-gradient(
       180deg,
@@ -1492,8 +1496,7 @@ pre {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     display: grid;
-    margin-block-start: 0.5rem;
-    padding: 0.55rem;
+    padding-block: 0.55rem;
   }
 
   .brand {
