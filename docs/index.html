@@ -21,12 +21,20 @@
         <span class="brand-line">Mac setup as declared state</span>
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
-        <a href="#commands">Runbook</a>
-        <a href="#agents">Agents</a>
-        <a href="#schema">Resources</a>
-        <a href="#output">Plan</a>
-        <a href="#install">Install</a>
-        <a href="#docs">Docs</a>
+        <a class="nav-runbook" href="#commands">Runbook</a>
+        <a class="nav-plan" href="#output">Plan</a>
+        <details class="nav-more">
+          <summary>More</summary>
+          <div class="nav-menu">
+            <a href="#agents">Agents</a>
+            <a href="#schema">Resources</a>
+            <a href="#install">Install</a>
+            <a href="#docs">Docs</a>
+            <a class="nav-menu-github" href="https://github.com/vwall/kitout"
+              >GitHub</a
+            >
+          </div>
+        </details>
         <a class="nav-strong" href="https://github.com/vwall/kitout"
           >GitHub</a
         >
@@ -590,6 +598,27 @@ kitout apply --config ./kitout.yaml --dry-run</code></pre>
             button.textContent = "Select command";
           }
         });
+      });
+
+      const navMore = document.querySelector(".nav-more");
+
+      navMore?.addEventListener("click", (event) => {
+        if (event.target.closest(".nav-menu a")) {
+          navMore.removeAttribute("open");
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        if (navMore?.open && !navMore.contains(event.target)) {
+          navMore.removeAttribute("open");
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && navMore?.open) {
+          navMore.removeAttribute("open");
+          navMore.querySelector("summary")?.focus();
+        }
       });
     </script>
   </body>
