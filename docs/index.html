@@ -371,10 +371,10 @@ kitout apply --dry-run --json</code></pre>
         <div class="section-intro">
           <h2 id="output-title">Apply follows the plan.</h2>
           <p>
-            Dry-run shows what would change. Real apply checks the same
-            resources again, applies only what needs work, and ends with a
-            results table. Add <code>--json</code> when tools need structured
-            output.
+            Dry-run shows what would change. Real apply rechecks current state,
+            makes the needed changes, and reports what changed, stayed
+            unchanged, or failed. Add <code>--json</code> when tools need
+            structured output.
           </p>
         </div>
         <div class="output-proof">
