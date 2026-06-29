@@ -9,8 +9,9 @@
     <title>Kitout | Declarative Mac setup</title>
     <meta
       name="description"
-      content="Kitout is a Go CLI for declaring, checking, previewing, and applying a Mac setup from YAML."
+      content="Kitout is a Go CLI for declaring, checking, previewing, and applying a Mac setup from YAML, with safe context for setup repos and coding agents."
     />
+    <link rel="icon" href="assets/retro-mac-computer.png" />
     <link rel="stylesheet" href="assets/site.css" />
   </head>
   <body>
@@ -21,9 +22,11 @@
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
         <a href="#commands">Runbook</a>
-        <a href="#schema">Config</a>
+        <a href="#agents">Agents</a>
+        <a href="#schema">Resources</a>
         <a href="#output">Plan</a>
         <a href="#install">Install</a>
+        <a href="#docs">Docs</a>
         <a class="nav-strong" href="https://github.com/vwall/kitout"
           >GitHub</a
         >
@@ -34,30 +37,29 @@
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-inner">
           <div class="hero-copy">
-            <p class="eyebrow">Review before apply</p>
             <h1 id="hero-title">Kitout</h1>
             <p class="hero-text">
-              Declare your Mac setup in YAML, pick the config you intend to
-              trust, and read the plan before Kitout writes anything.
+              Declare a Mac setup in YAML, check what already matches, and
+              read the dry-run plan before Kitout touches the machine.
             </p>
             <div class="hero-actions" aria-label="Primary links">
               <a class="button primary" href="#commands">Start runbook</a>
-              <a class="button secondary" href="config/config-spec.md"
-                >Config schema</a
-              >
-              <a class="button tertiary" href="#install">Install</a>
+              <a class="button secondary" href="#output">Read the plan</a>
             </div>
-            <div class="hero-command" aria-label="Safe first pass commands">
+            <div class="hero-command" aria-label="Dry-run command">
               <span class="prompt">$</span>
-              <code>kitout apply --config ./kitout.yaml --dry-run</code>
+              <code>kitout apply --dry-run</code>
               <button
                 type="button"
-                aria-label="Copy first pass commands"
-                data-copy-text="kitout doctor --config ./kitout.yaml&#10;kitout status --config ./kitout.yaml&#10;kitout apply --config ./kitout.yaml --dry-run"
+                aria-label="Copy dry-run command"
+                data-copy-text="kitout apply --dry-run"
               >
-                Copy
+                Copy command
               </button>
             </div>
+            <p class="hero-note">
+              Status and dry-run stay read-only. Real apply remains explicit.
+            </p>
           </div>
           <figure
             class="kitout-artifact"
@@ -67,68 +69,36 @@
             <div class="artifact-shell">
               <div class="artifact-titlebar">
                 <span id="artifact-title">kitout apply --dry-run</span>
-                <strong>review first</strong>
+                <strong>no changes made</strong>
               </div>
-              <div class="artifact-flow">
-                <div class="artifact-manifest" aria-label="Declared resources">
-                  <span class="artifact-label">manifest</span>
-<pre><code>brew:
-  packages: [git, gh]
-  casks:
-    - ghostty
-repos:
-  - ~/code/example
-symlinks:
-  - ~/.zshrc</code></pre>
-                </div>
-                <div
-                  class="artifact-proof"
-                  aria-label="First pass commands and plan output"
-                >
-                  <ol class="artifact-commands" aria-label="First pass commands">
-                    <li><code>kitout doctor --config ./kitout.yaml</code></li>
-                    <li><code>kitout status --config ./kitout.yaml</code></li>
-                    <li><code>kitout apply --config ./kitout.yaml --dry-run</code></li>
-                  </ol>
-                  <table class="artifact-ledger" aria-label="Apply plan ledger">
-                    <thead>
-                      <tr>
-                        <th scope="col">Resource</th>
-                        <th scope="col">Output</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><code>cask: ghostty</code></td>
-                        <td>Would install cask ghostty</td>
-                      </tr>
-                      <tr>
-                        <td><code>brew: gh</code></td>
-                        <td>Would install formula gh</td>
-                      </tr>
-                      <tr>
-                        <td><code>repo: ~/code/example</code></td>
-                        <td>Would clone repository ~/code/example</td>
-                      </tr>
-                      <tr>
-                        <td><code>symlink: ~/.zshrc</code></td>
-                        <td>Would replace symlink ~/.zshrc</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <div
+                class="artifact-terminal"
+                aria-label="Dry-run output excerpt"
+              >
+<pre><code><span class="terminal-line"><span class="term-prompt">$</span> kitout apply --config ./kitout.yaml --dry-run</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="term-ok">[dry-run]</span> Kitout is running in dry-run mode. No changes will be made.</span>
+<span class="terminal-line">Config: ./kitout.yaml</span>
+<span class="terminal-gap artifact-wide"></span>
+<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Inspecting Homebrew taps...</span>
+<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Checking symlink: /Users/example/.zshrc...</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="term-ok">[dry-run]</span> Previewing planned changes:</span>
+<span class="terminal-line artifact-wide"><span class="term-warn">dry-run</span> Would add Homebrew tap vwall/kitout</span>
+<span class="terminal-line"><span class="term-warn">dry-run</span> Would install cask ghostty</span>
+<span class="terminal-line"><span class="term-warn">dry-run</span> Would replace symlink /Users/example/.zshrc</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="term-ok">[dry-run]</span> No changes made because --dry-run was used.</span>
+<span class="terminal-line">No shell commands will run without explicit approval.</span></code></pre>
               </div>
               <div class="artifact-footer">
-                <span>Review the plan before changing the Mac.</span>
-                <span>No shell commands will run without explicit approval.</span>
+                <span>check state first</span>
+                <span>apply stays separate</span>
               </div>
             </div>
             <figcaption id="artifact-caption">
-              The useful artifact is the plan: run
-              <code>kitout doctor --config ./kitout.yaml</code> and
-              <code>kitout status --config ./kitout.yaml</code>, then read
-              <code>kitout apply --config ./kitout.yaml --dry-run</code> before
-              apply.
+              This excerpt follows Kitout's human dry-run output: inspect the
+              plan, then decide whether a real apply is appropriate.
             </figcaption>
           </figure>
         </div>
@@ -136,23 +106,23 @@ symlinks:
 
       <section id="commands" class="command-loop" aria-labelledby="commands-title">
         <div class="section-intro">
-          <h2 id="commands-title">First run, no guesswork.</h2>
+          <h2 id="commands-title">Local-first runbook.</h2>
           <p>
-            This page carries the minimum runbook. The source docs stay linked
-            for detail, but the safe path is visible before you leave.
+            Kitout now starts in the setup repo by default. Initialize the local
+            config, keep the selected file visible, and preview before apply.
           </p>
         </div>
         <ol class="runbook-list" aria-label="Recommended first-run sequence">
           <li>
             <span class="step-number">1</span>
             <div>
-              <h3>Select the config</h3>
+              <h3>Initialize the repo</h3>
               <p>
-                Pick the setup repo config whenever a repo file and home config
-                could both exist.
+                Create or reuse <code>./kitout.yaml</code>, with optional
+                repo-local agent guidance.
               </p>
             </div>
-            <code>./kitout.yaml</code>
+            <code>kitout init --agents</code>
           </li>
           <li>
             <span class="step-number">2</span>
@@ -183,8 +153,67 @@ symlinks:
           Preview command:
           <code>kitout apply --config ./kitout.yaml --dry-run</code>
           ·
-          Phase 0 source doc:
+          Detailed guide:
           <a href="setup/first-real-run.md">first real run</a>
+        </p>
+      </section>
+
+      <section id="agents" class="agent-section" aria-labelledby="agents-title">
+        <div class="section-intro">
+          <h2 id="agents-title">Agents get the same guardrails.</h2>
+          <p>
+            Kitout does not add AI behavior. It gives Codex and other coding
+            agents durable repo guidance, read-only context, JSON reports, and
+            one-resource explanations so they can answer without guessing.
+          </p>
+        </div>
+        <div class="agent-grid">
+          <div class="agent-panels">
+            <div class="code-panel">
+              <div class="panel-bar">
+                <span>Setup repo</span>
+                <button type="button" data-copy-target="agent-setup">Copy</button>
+              </div>
+              <pre><code id="agent-setup">kitout init --agents
+kitout context --config ./kitout.yaml
+kitout status --config ./kitout.yaml --json
+kitout apply --config ./kitout.yaml --dry-run --json</code></pre>
+            </div>
+            <div class="code-panel">
+              <div class="panel-bar">
+                <span>One resource</span>
+                <button type="button" data-copy-target="agent-explain">Copy</button>
+              </div>
+              <pre><code id="agent-explain">kitout explain --config ./kitout.yaml 'symlink:/Users/example/.zshrc'</code></pre>
+            </div>
+          </div>
+          <div class="agent-rules" aria-label="Agent workflow rules">
+            <article>
+              <span>context</span>
+              <p>Lists declared resources and safe commands without live checks.</p>
+            </article>
+            <article>
+              <span>json</span>
+              <p>Feeds stable status and dry-run output to tools and agents.</p>
+            </article>
+            <article>
+              <span>approval</span>
+              <p>Real apply, shell resources, and risky changes stay human-approved.</p>
+            </article>
+            <article>
+              <span>opt out</span>
+              <p>
+                Use <code>kitout init --no-agents-warning</code> when a repo
+                intentionally has no <code>AGENTS.md</code>.
+              </p>
+            </article>
+          </div>
+        </div>
+        <p class="source-note">
+          Agent workflow:
+          <a href="agents/agent-context.md">agent context guide</a>
+          · Release:
+          <a href="release/2.3.0.md">Kitout 2.3.0</a>
         </p>
       </section>
 
@@ -192,9 +221,9 @@ symlinks:
         <div class="section-intro">
           <h2 id="schema-title">YAML that explains itself.</h2>
           <p>
-            The MVP keeps resources explicit: packages, casks, directories,
-            symlinks, repositories, macOS defaults, security checks, system
-            prerequisites, SSH keys, and approved shell commands.
+            The current schema keeps resources explicit: packages, apps,
+            runtimes, files, repos, defaults, system prerequisites, SSH keys,
+            login shell, and approved shell commands.
           </p>
         </div>
         <div class="schema-grid">
@@ -218,16 +247,30 @@ brew:
 
 directories:
   - ~/.config
+  - ~/.codex/skills
+
+asdf:
+  plugins:
+    - name: ruby
+      url: https://github.com/asdf-vm/asdf-ruby.git
+      versions:
+        - 3.3.6
 
 repos:
   - path: ~/code/example
     url: git@github.com:example/example.git
     branch: main
 
-symlinks:
-  - source: ~/dotfiles/zshrc
-    target: ~/.zshrc
-    replace: true
+copies:
+  - source: ./codex/skills/nuxt-practices
+    target: ~/.codex/skills/nuxt-practices
+
+symlink_groups:
+  - source_root: ./home
+    target_root: "~"
+    paths:
+      - .zshrc
+      - .gitconfig
 
 security:
   filevault:
@@ -238,37 +281,28 @@ security:
 ssh:
   keys:
     - path: ~/.ssh/id_ed25519
-      type: ed25519</code></pre>
+      type: ed25519
+
+login_shell:
+  path: homebrew:fish</code></pre>
           </div>
-          <div class="resource-stack" aria-label="Supported resource examples">
-            <article>
-              <span>brew</span>
-              <p>Install packages after checking the current Homebrew state.</p>
-            </article>
-            <article>
-              <span>cask</span>
-              <p>Confirm app presence before installing desktop software.</p>
-            </article>
-            <article>
-              <span>repo</span>
-              <p>Clone or verify repositories at declared local paths.</p>
-            </article>
-            <article>
-              <span>symlink</span>
-              <p>Replace links only when config explicitly allows it.</p>
-            </article>
-            <article>
-              <span>security</span>
-              <p>Require FileVault and manage firewall state with typed checks.</p>
-            </article>
-            <article>
-              <span>ssh</span>
-              <p>Generate declared SSH keypairs without shell setup blocks.</p>
-            </article>
-            <article>
-              <span>shell</span>
-              <p>Run only commands that are explicitly listed in YAML.</p>
-            </article>
+          <div class="resource-coverage" aria-label="Supported resource coverage">
+            <h3>Current resource coverage</h3>
+            <div class="resource-matrix">
+              <a href="resources/brew.md"><span>brew</span><small>taps, packages</small></a>
+              <a href="resources/cask.md"><span>cask</span><small>desktop apps</small></a>
+              <a href="resources/asdf.md"><span>asdf</span><small>developer runtimes</small></a>
+              <a href="resources/directory.md"><span>directory</span><small>folders</small></a>
+              <a href="resources/repo.md"><span>repo</span><small>Git checkouts</small></a>
+              <a href="resources/copy.md"><span>copy</span><small>real files</small></a>
+              <a href="resources/symlink.md"><span>symlink</span><small>dotfiles</small></a>
+              <a href="resources/macos-defaults.md"><span>defaults</span><small>macOS preferences</small></a>
+              <a href="resources/security.md"><span>security</span><small>FileVault, firewall</small></a>
+              <a href="resources/system.md"><span>system</span><small>Xcode, Rosetta</small></a>
+              <a href="resources/ssh.md"><span>ssh</span><small>Ed25519 keys</small></a>
+              <a href="resources/login-shell.md"><span>login_shell</span><small>macOS shell</small></a>
+              <a href="resources/shell.md"><span>shell</span><small>approved commands</small></a>
+            </div>
           </div>
         </div>
       </section>
@@ -277,8 +311,8 @@ ssh:
         <div class="section-intro">
           <h2 id="output-title">The plan is the artifact.</h2>
           <p>
-            Apply output is deliberately plain: selected config, progress,
-            colored result rows, and a summary.
+            Human output stays plain, and JSON output gives tools a stable
+            envelope for status, dry-run, doctor, context, and explain.
           </p>
         </div>
         <div class="output-proof">
@@ -317,6 +351,10 @@ Config: ./kitout.yaml
             <article>
               <h3>Doctor explains blockers</h3>
               <p>Prerequisites fail early, before resource checks become noisy.</p>
+            </article>
+            <article>
+              <h3>JSON is for automation</h3>
+              <p>Agents and scripts can read stable reports without scraping text.</p>
             </article>
           </div>
         </div>
@@ -373,6 +411,10 @@ Config: ./kitout.yaml
             <strong>files</strong>
             <span>Are never deleted or overwritten unless config allows it.</span>
           </li>
+          <li>
+            <strong>agents</strong>
+            <span>Can inspect context and dry-runs, but real apply still needs approval.</span>
+          </li>
         </ul>
       </section>
 
@@ -381,7 +423,7 @@ Config: ./kitout.yaml
           <h2 id="install-title">Install after the runbook is clear.</h2>
           <p>
             The public install path is short. The first useful run still goes
-            through doctor, status, and apply after the preview step is clear.
+            through init, doctor, status, and dry-run before a real apply.
           </p>
         </div>
         <div class="install-grid">
@@ -405,18 +447,41 @@ brew install kitout</code></pre>
               <span>First pass</span>
               <button type="button" data-copy-target="install-first-pass">Copy</button>
             </div>
-            <pre><code id="install-first-pass">kitout doctor --config ./kitout.yaml
+            <pre><code id="install-first-pass">kitout init --agents
+kitout doctor --config ./kitout.yaml
 kitout status --config ./kitout.yaml
 kitout apply --config ./kitout.yaml --dry-run</code></pre>
           </div>
         </div>
-        <div class="doc-links" aria-label="Helpful documentation">
-          <a href="setup/first-real-run.md">Source doc: first run</a>
-          <a href="config/config-spec.md">Source doc: config</a>
-          <a href="cli/cli-spec.md">Source doc: CLI</a>
-          <a href="install/installation-and-distribution.md"
-            >Source doc: install</a
-          >
+      </section>
+
+      <section id="docs" class="docs-section" aria-labelledby="docs-title">
+        <div class="section-intro">
+          <h2 id="docs-title">Docs without a framework.</h2>
+          <p>
+            GitHub remains the source of truth. This page now acts as the front
+            door, with the Markdown docs grouped by the job you are doing.
+          </p>
+        </div>
+        <div class="docs-grid" aria-label="Documentation map">
+          <article>
+            <h3>Start</h3>
+            <a href="setup/first-real-run.md">First real run</a>
+            <a href="install/installation-and-distribution.md">Install and distribution</a>
+            <a href="release/2.3.0.md">Latest release notes</a>
+          </article>
+          <article>
+            <h3>Use</h3>
+            <a href="cli/cli-spec.md">CLI reference</a>
+            <a href="config/config-spec.md">Config schema</a>
+            <a href="agents/agent-context.md">Agent workflow</a>
+          </article>
+          <article>
+            <h3>Extend carefully</h3>
+            <a href="runtime/resource-model.md">Resource model</a>
+            <a href="architecture/architecture-overview.md">Architecture</a>
+            <a href="testing/test-strategy.md">Test strategy</a>
+          </article>
         </div>
       </section>
     </main>
