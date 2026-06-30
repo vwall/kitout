@@ -69,8 +69,8 @@ Missing when Homebrew is available but the formula is not installed.
 
 Still satisfied when the formula is installed and Homebrew reports that it is
 outdated. Kitout reports an advisory such as `formula update available for git`
-with a manual `brew upgrade git` fix, but it does not treat the resource as
-drift from config.
+with a `kitout upgrade brew:git` or manual `brew upgrade git` fix, but it does
+not treat the resource as drift from config.
 
 Kitout batches Homebrew installed and outdated checks for resources built from
 the same config, so `kitout status` and `kitout apply --dry-run` inspect each
@@ -113,6 +113,7 @@ Use:
 ```sh
 kitout upgrade --dry-run
 kitout upgrade
+kitout upgrade brew:git
 kitout upgrade --only brew
 ```
 
@@ -125,7 +126,8 @@ brew upgrade <name>
 
 Missing formulae are skipped with guidance to run `kitout apply` first. Formulae
 that are already current are reported unchanged. `kitout upgrade --dry-run`
-shows the formulae that would be upgraded without running `brew upgrade`.
+shows the formulae that would be upgraded without running `brew upgrade`. Pass a
+configured resource ID such as `brew:git` to upgrade only that formula.
 
 ## Notes
 

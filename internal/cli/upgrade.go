@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
@@ -66,6 +68,7 @@ func runUpgrade(args []string, opts globalOptions, stdout, stderr io.Writer) int
 		return exitValidation
 	}
 
+	targets := fs.Args()
 	only, err := normalizeUpgradeOnly(upgradeOpts.only)
 	renderer := newHumanRenderer(stdout, stderr, opts)
 	jsonRenderer := newJSONRenderer(stdout)
@@ -82,12 +85,16 @@ func runUpgrade(args []string, opts globalOptions, stdout, stderr io.Writer) int
 		return renderConfigError("upgrade", err, opts, renderer, jsonRenderer, stderr)
 	}
 
+	planResources, err := filterUpgradeResources(resources.Build(loaded.Config, newCLIExecRunner()), only, targets)
+	if err != nil {
+		return renderUpgradeValidationError(err, opts, jsonRenderer, stderr)
+	}
+
 	if !opts.json {
 		renderer.renderUpgradePlanStart(loaded.Path, upgradeOpts.dryRun)
 		renderer.renderConfigWarnings(loaded.Warnings)
 	}
 
-	planResources := filterUpgradeResources(resources.Build(loaded.Config, newCLIExecRunner()), only)
 	var planObserver engine.PlanObserver
 	if !opts.json {
 		planObserver = newApplyPlanObserver(renderer, opts.verbose)
@@ -126,7 +133,11 @@ func runUpgrade(args []string, opts globalOptions, stdout, stderr io.Writer) int
 	if verboseUpgradeOutputEnabled(opts, upgradeOpts) && plan.Summary.ToApply > 0 {
 		upgradeRunner = newCLIVerboseExecRunner(stdout, stderr)
 	}
-	upgradeResources := wrapUpgradeResources(filterUpgradeResources(resources.BuildUncached(loaded.Config, upgradeRunner), only))
+	rawUpgradeResources, err := filterUpgradeResources(resources.BuildUncached(loaded.Config, upgradeRunner), only, targets)
+	if err != nil {
+		return renderUpgradeValidationError(err, opts, jsonRenderer, stderr)
+	}
+	upgradeResources := wrapUpgradeResources(rawUpgradeResources)
 	report := engine.NewExecutor().ApplyWithObserver(context.Background(), upgradeResources, plan, observer)
 	if opts.json {
 		if err := jsonRenderer.renderUpgradeReport(loaded.Path, loaded.Warnings, report); err != nil {
@@ -172,7 +183,14 @@ func renderUpgradeValidationError(err error, opts globalOptions, jsonRenderer js
 	return exitValidation
 }
 
-func filterUpgradeResources(resourceList []engine.Resource, only string) []engine.Resource {
+func filterUpgradeResources(resourceList []engine.Resource, only string, targets []string) ([]engine.Resource, error) {
+	targetSet := stringSet(targets)
+	if len(targetSet) > 0 {
+		if err := validateUpgradeTargets(resourceList, only, uniqueStrings(targets)); err != nil {
+			return nil, err
+		}
+	}
+
 	filtered := make([]engine.Resource, 0, len(resourceList))
 	for _, resource := range resourceList {
 		if resource.Type() != "brew" && resource.Type() != "cask" {
@@ -181,9 +199,95 @@ func filterUpgradeResources(resourceList []engine.Resource, only string) []engin
 		if only != "" && resource.Type() != only {
 			continue
 		}
+		if len(targetSet) > 0 {
+			if _, ok := targetSet[resource.ID()]; !ok {
+				continue
+			}
+		}
 		filtered = append(filtered, resource)
 	}
-	return filtered
+	return filtered, nil
+}
+
+func validateUpgradeTargets(resourceList []engine.Resource, only string, targets []string) error {
+	typesByID := make(map[string]string, len(resourceList))
+	for _, resource := range resourceList {
+		if _, exists := typesByID[resource.ID()]; !exists {
+			typesByID[resource.ID()] = resource.Type()
+		}
+	}
+
+	var unknown []string
+	var unsupported []string
+	var excluded []string
+	for _, target := range targets {
+		typ, ok := typesByID[target]
+		if !ok {
+			unknown = append(unknown, target)
+			continue
+		}
+		if typ != "brew" && typ != "cask" {
+			unsupported = append(unsupported, target)
+			continue
+		}
+		if only != "" && typ != only {
+			excluded = append(excluded, target)
+		}
+	}
+
+	if len(unknown) > 0 {
+		return fmt.Errorf("unknown upgrade %s %s; use configured brew:<name> or cask:<name> resource IDs", pluralize("target", len(unknown)), quoteList(unknown))
+	}
+	if len(unsupported) > 0 {
+		return fmt.Errorf("upgrade %s %s %s not support upgrade; use configured brew:<name> or cask:<name> resource IDs", pluralize("target", len(unsupported)), quoteList(unsupported), pluralVerb("does", "do", len(unsupported)))
+	}
+	if len(excluded) > 0 {
+		return fmt.Errorf("upgrade %s %s %s excluded by --only %s", pluralize("target", len(excluded)), quoteList(excluded), pluralVerb("is", "are", len(excluded)), only)
+	}
+	return nil
+}
+
+func stringSet(values []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		set[value] = struct{}{}
+	}
+	return set
+}
+
+func uniqueStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	unique := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
+	}
+	return unique
+}
+
+func quoteList(values []string) string {
+	quoted := make([]string, 0, len(values))
+	for _, value := range values {
+		quoted = append(quoted, strconv.Quote(value))
+	}
+	return strings.Join(quoted, ", ")
+}
+
+func pluralize(word string, count int) string {
+	if count == 1 {
+		return word
+	}
+	return word + "s"
+}
+
+func pluralVerb(singular, plural string, count int) string {
+	if count == 1 {
+		return singular
+	}
+	return plural
 }
 
 func wrapUpgradeResources(resourceList []engine.Resource) []engine.Resource {

@@ -42,8 +42,8 @@ Missing when Homebrew is available but the cask is not installed.
 
 Still satisfied when the cask is installed and Homebrew reports that it is
 outdated. Kitout reports an advisory such as `cask update available for ghostty`
-with a manual `brew upgrade --cask ghostty` fix, but it does not treat the
-resource as drift from config.
+with a `kitout upgrade cask:ghostty` or manual `brew upgrade --cask ghostty`
+fix, but it does not treat the resource as drift from config.
 
 Failed when Homebrew is unavailable or the command errors unexpectedly.
 
@@ -73,6 +73,7 @@ Use:
 ```sh
 kitout upgrade --dry-run
 kitout upgrade
+kitout upgrade cask:ghostty
 kitout upgrade --only cask
 ```
 
@@ -85,7 +86,8 @@ brew upgrade --cask <name>
 
 Missing casks are skipped with guidance to run `kitout apply` first. Casks that
 are already current are reported unchanged. `kitout upgrade --dry-run` shows the
-casks that would be upgraded without running `brew upgrade`.
+casks that would be upgraded without running `brew upgrade`. Pass a configured
+resource ID such as `cask:ghostty` to upgrade only that cask.
 
 ## Safety
 

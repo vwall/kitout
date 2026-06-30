@@ -159,6 +159,43 @@ brew:
 	})
 }
 
+func TestUpgradeDryRunCanTargetManagedResourceID(t *testing.T) {
+	runner := &fakeApplyRunner{responses: []fakeApplyResponse{
+		{result: applyResultWithStdout("brew", []string{"list", "--formula", "--quiet"}, "git\ngo\n")},
+		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "go\n")},
+	}}
+	withCLIExecRunners(t, runner)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+brew:
+  packages:
+    - git
+    - go
+  casks:
+    - ghostty
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"upgrade", "--config", configPath, "--dry-run", "brew:go"}, nil, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Would upgrade formula go") {
+		t.Fatalf("stdout = %q, want targeted formula upgrade", stdout.String())
+	}
+	for _, fragment := range []string{"brew: git", "cask", "ghostty"} {
+		if strings.Contains(stdout.String(), fragment) {
+			t.Fatalf("stdout = %q, want %q omitted", stdout.String(), fragment)
+		}
+	}
+	expectApplyRunnerCalls(t, runner.calls, []applyCommandCall{
+		{name: "brew", args: []string{"list", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+	})
+}
+
 func TestUpgradeDryRunJSONReportsPlan(t *testing.T) {
 	runner := &fakeApplyRunner{responses: []fakeApplyResponse{
 		{result: applyResultWithStdout("brew", []string{"list", "--formula", "--quiet"}, "git\n")},
@@ -250,6 +287,34 @@ func TestUpgradeRejectsUnknownOnlyFilter(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), `kitout upgrade: --only must be brew or cask, got "repos"`) {
 		t.Fatalf("stderr = %q, want --only validation", stderr.String())
+	}
+}
+
+func TestUpgradeRejectsUnknownTarget(t *testing.T) {
+	runner := &fakeApplyRunner{}
+	withCLIExecRunners(t, runner)
+	configPath := writeCLIConfigFile(t, `version: 1
+
+brew:
+  packages:
+    - git
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"upgrade", "--config", configPath, "brew:go"}, nil, &stdout, &stderr)
+	if code != exitValidation {
+		t.Fatalf("exit code = %d, want %d", code, exitValidation)
+	}
+	if stdout.String() != "" {
+		t.Fatalf("stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), `kitout upgrade: unknown upgrade target "brew:go"`) {
+		t.Fatalf("stderr = %q, want unknown target validation", stderr.String())
+	}
+	if len(runner.calls) != 0 {
+		t.Fatalf("calls = %+v, want no Homebrew commands", runner.calls)
 	}
 }
 

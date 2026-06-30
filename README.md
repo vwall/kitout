@@ -33,6 +33,7 @@ kitout status
 kitout apply --dry-run
 kitout apply
 kitout upgrade --dry-run
+kitout upgrade brew:git
 kitout doctor
 ```
 
@@ -54,6 +55,7 @@ kitout doctor --config ./kitout.yaml
 kitout status --config ./kitout.yaml
 kitout apply --config ./kitout.yaml --dry-run
 kitout upgrade --config ./kitout.yaml --dry-run
+kitout upgrade --config ./kitout.yaml brew:git
 ```
 
 See `docs/setup/first-real-run.md` for the practical first-run loop and common
@@ -201,6 +203,7 @@ kitout init
 kitout status
 kitout apply --dry-run
 kitout upgrade --dry-run
+kitout upgrade brew:git
 ```
 
 When working from source, use `go run` as the developer-local equivalent:
@@ -211,6 +214,7 @@ go run ./cmd/kitout init
 go run ./cmd/kitout status
 go run ./cmd/kitout apply --dry-run
 go run ./cmd/kitout upgrade --dry-run
+go run ./cmd/kitout upgrade brew:git
 ```
 
 Run tests with:

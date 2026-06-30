@@ -221,7 +221,7 @@ func TestBrewPackageStatusAdvisesWhenFormulaIsOutdated(t *testing.T) {
 	}
 
 	expectStatus(t, result, resource.ID(), brewType, engine.StateSatisfied, "formula is installed")
-	expectAdvisory(t, result.Advisories, "homebrew_formula_outdated", "formula update available for git", "brew upgrade git")
+	expectAdvisory(t, result.Advisories, "homebrew_formula_outdated", "formula update available for git", "kitout upgrade brew:git")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
@@ -471,7 +471,7 @@ func TestBrewPackageDryRunPlanDoesNotUpgrade(t *testing.T) {
 	if plan.Items[0].Action != engine.ActionNoop {
 		t.Fatalf("Action = %q, want %q", plan.Items[0].Action, engine.ActionNoop)
 	}
-	expectAdvisory(t, plan.Items[0].Advisories, "homebrew_formula_outdated", "formula update available for git", "brew upgrade git")
+	expectAdvisory(t, plan.Items[0].Advisories, "homebrew_formula_outdated", "formula update available for git", "kitout upgrade brew:git")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
 		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
@@ -669,7 +669,7 @@ func TestCaskStatusAdvisesWhenOutdated(t *testing.T) {
 	}
 
 	expectStatus(t, result, resource.ID(), caskType, engine.StateSatisfied, "cask is installed")
-	expectAdvisory(t, result.Advisories, "homebrew_cask_outdated", "cask update available for ghostty", "brew upgrade --cask ghostty")
+	expectAdvisory(t, result.Advisories, "homebrew_cask_outdated", "cask update available for ghostty", "kitout upgrade cask:ghostty")
 }
 
 func TestCaskStatusWarnsWhenOutdatedCheckFails(t *testing.T) {

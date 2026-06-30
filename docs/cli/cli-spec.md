@@ -294,6 +294,8 @@ available update.
 ```sh
 kitout upgrade
 kitout upgrade --dry-run
+kitout upgrade brew:git
+kitout upgrade cask:ghostty
 kitout upgrade --only brew
 kitout upgrade --only cask
 kitout upgrade --json
@@ -309,6 +311,10 @@ Behavior:
 - leave current formulae and casks unchanged
 - run `brew upgrade <name>` for outdated managed formulae
 - run `brew upgrade --cask <name>` for outdated managed casks
+- when resource IDs are passed, inspect and upgrade only those configured
+  managed resources
+- reject unknown, unsupported, or `--only`-excluded resource IDs before running
+  Homebrew commands
 - with `--only brew`, inspect and upgrade only managed formulae
 - with `--only cask`, inspect and upgrade only managed casks
 - with `--dry-run`, show planned upgrades without running `brew upgrade`

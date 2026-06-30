@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Added resource ID targets for `kitout upgrade`, such as
+  `kitout upgrade brew:git` or `kitout upgrade cask:ghostty`.
+
 ## 2.4.0 - Managed Homebrew upgrades
 
 Kitout 2.4.0 adds an explicit upgrade workflow for managed Homebrew formulae

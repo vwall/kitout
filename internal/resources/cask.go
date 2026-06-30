@@ -169,7 +169,7 @@ func (resource CaskResource) updateAdvisories(ctx context.Context) []engine.Advi
 		Code:     HomebrewCaskOutdatedAdvisory,
 		Severity: engine.AdvisoryNotice,
 		Message:  fmt.Sprintf("cask update available for %s", resource.name),
-		Fix:      fmt.Sprintf("Run `brew upgrade --cask %s` when you want to update it.", resource.name),
+		Fix:      fmt.Sprintf("Run `kitout upgrade %s` or `brew upgrade --cask %s` when you want to update it.", resource.ID(), resource.name),
 		Details:  map[string]string{"name": resource.name},
 	}}
 }

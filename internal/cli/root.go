@@ -103,6 +103,7 @@ Examples:
   kitout status
   kitout apply --dry-run
   kitout upgrade --dry-run
+  kitout upgrade brew:git
   kitout doctor
   kitout explain directory:$HOME/code
   kitout status --config ./kitout.yaml

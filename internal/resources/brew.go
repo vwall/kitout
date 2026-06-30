@@ -172,7 +172,7 @@ func (resource BrewPackageResource) updateAdvisories(ctx context.Context) []engi
 		Code:     HomebrewFormulaOutdatedAdvisory,
 		Severity: engine.AdvisoryNotice,
 		Message:  fmt.Sprintf("formula update available for %s", resource.name),
-		Fix:      fmt.Sprintf("Run `brew upgrade %s` when you want to update it.", resource.name),
+		Fix:      fmt.Sprintf("Run `kitout upgrade %s` or `brew upgrade %s` when you want to update it.", resource.ID(), resource.name),
 		Details:  map[string]string{"name": resource.name},
 	}}
 }

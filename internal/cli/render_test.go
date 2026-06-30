@@ -98,7 +98,7 @@ func TestHumanRendererStatusShowsAdvisoriesWithoutAttention(t *testing.T) {
 					Code:     "homebrew_formula_outdated",
 					Severity: engine.AdvisoryNotice,
 					Message:  "formula update available for git",
-					Fix:      "Run `brew upgrade git` when you want to update it.",
+					Fix:      "Run `kitout upgrade brew:git` or `brew upgrade git` when you want to update it.",
 				}},
 			},
 		},
@@ -108,7 +108,7 @@ func TestHumanRendererStatusShowsAdvisoriesWithoutAttention(t *testing.T) {
 	for _, fragment := range []string{
 		"✓ satisfied brew: git",
 		"i brew: git: formula update available for git",
-		"fix: Run `brew upgrade git` when you want to update it.",
+		"fix: Run `kitout upgrade brew:git` or `brew upgrade git` when you want to update it.",
 		"Summary: 1 satisfied",
 		"1 advisory",
 	} {
@@ -140,7 +140,7 @@ func TestJSONRendererIncludesPlanAdvisories(t *testing.T) {
 					Code:     "homebrew_cask_outdated",
 					Severity: engine.AdvisoryNotice,
 					Message:  "cask update available for ghostty",
-					Fix:      "Run `brew upgrade --cask ghostty` when you want to update it.",
+					Fix:      "Run `kitout upgrade cask:ghostty` or `brew upgrade --cask ghostty` when you want to update it.",
 					Details:  map[string]string{"name": "ghostty"},
 				}},
 			},
