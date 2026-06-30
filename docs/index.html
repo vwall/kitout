@@ -161,6 +161,9 @@
           Preview command:
           <code>kitout apply --dry-run</code>
           ·
+          Managed upgrades:
+          <code>kitout upgrade --dry-run</code>
+          ·
           Other config:
           <code>--config /path/to/kitout.yaml</code>
           ·
@@ -374,7 +377,9 @@ kitout apply --dry-run --json</code></pre>
             Dry-run shows what would change. Real apply rechecks current state,
             makes the needed changes, and reports what changed, stayed
             unchanged, or failed. Add <code>--json</code> when tools need
-            structured output.
+            structured output. Managed Homebrew upgrades stay separate:
+            <code>kitout upgrade --dry-run</code> previews updates for
+            installed formulae and casks declared in the selected config.
           </p>
         </div>
         <div class="output-proof">
@@ -415,6 +420,10 @@ Summary: 2 changed, 2 unchanged</code></pre>
             <article>
               <h3>Apply starts from the same plan</h3>
               <p>Only resources that need work are applied, and risky changes ask first.</p>
+            </article>
+            <article>
+              <h3>Upgrade stays separate</h3>
+              <p>Apply installs missing managed Homebrew items; upgrade refreshes outdated installed ones.</p>
             </article>
             <article>
               <h3>Doctor explains blockers</h3>
@@ -518,7 +527,8 @@ brew install kitout</code></pre>
             <pre><code id="install-first-pass">kitout init --agents
 kitout doctor
 kitout status
-kitout apply --dry-run</code></pre>
+kitout apply --dry-run
+kitout upgrade --dry-run</code></pre>
           </div>
         </div>
       </section>
