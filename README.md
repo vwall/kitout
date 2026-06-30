@@ -32,6 +32,7 @@ kitout init
 kitout status
 kitout apply --dry-run
 kitout apply
+kitout upgrade --dry-run
 kitout doctor
 ```
 
@@ -52,6 +53,7 @@ cd ~/code/setup
 kitout doctor --config ./kitout.yaml
 kitout status --config ./kitout.yaml
 kitout apply --config ./kitout.yaml --dry-run
+kitout upgrade --config ./kitout.yaml --dry-run
 ```
 
 See `docs/setup/first-real-run.md` for the practical first-run loop and common
@@ -67,6 +69,7 @@ kitout init --agents
 kitout context --config ./kitout.yaml
 kitout status --config ./kitout.yaml --json
 kitout apply --config ./kitout.yaml --dry-run --json
+kitout upgrade --config ./kitout.yaml --dry-run --json
 ```
 
 Run `init --agents` from the setup repo root. It creates or uses
@@ -77,7 +80,7 @@ the missing file doctor warning for that repo. Use
 `kitout explain --config ./kitout.yaml <resource-id>` when the question is about
 one managed file, package, repo, or command. Agents should edit repo source
 files, not managed targets in `$HOME`, and should ask before running
-`kitout apply`.
+`kitout apply` or `kitout upgrade`.
 
 See `docs/agents/agent-context.md` for the agent-safe dotfiles workflow.
 
@@ -161,7 +164,7 @@ ssh:
 
 ## Current scope
 
-Kitout 2.3.0 is macOS-focused and covers Apple Silicon, Homebrew, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, macOS defaults, security prerequisites, system prerequisites, SSH keys, login shell management, shell commands, local-first init, agent-friendly context and explain commands, repo-local `AGENTS.md` guidance, and a safe dry-run mode.
+Kitout is macOS-focused and covers Apple Silicon, Homebrew, managed Homebrew upgrades, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, macOS defaults, security prerequisites, system prerequisites, SSH keys, login shell management, shell commands, local-first init, agent-friendly context and explain commands, repo-local `AGENTS.md` guidance, and a safe dry-run mode.
 
 Do not start with Linux support, secrets, templates, plugins, or a package manager abstraction. Those can come later.
 
@@ -197,6 +200,7 @@ kitout version
 kitout init
 kitout status
 kitout apply --dry-run
+kitout upgrade --dry-run
 ```
 
 When working from source, use `go run` as the developer-local equivalent:
@@ -206,6 +210,7 @@ go run ./cmd/kitout version
 go run ./cmd/kitout init
 go run ./cmd/kitout status
 go run ./cmd/kitout apply --dry-run
+go run ./cmd/kitout upgrade --dry-run
 ```
 
 Run tests with:

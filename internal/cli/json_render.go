@@ -19,6 +19,7 @@ type jsonStatusResponse struct {
 	Config  *jsonConfigStatus `json:"config,omitempty"`
 	Plan    *jsonPlan         `json:"plan,omitempty"`
 	Apply   *jsonApplyReport  `json:"apply,omitempty"`
+	Upgrade *jsonApplyReport  `json:"upgrade,omitempty"`
 	Doctor  *jsonDoctorReport `json:"doctor,omitempty"`
 	Context *jsonAgentContext `json:"context,omitempty"`
 	Explain *jsonAgentExplain `json:"explain,omitempty"`
@@ -157,6 +158,19 @@ func (r jsonRenderer) renderApplyReport(path string, warnings []config.ConfigWar
 			Warnings: jsonWarningsFromConfig(warnings),
 		},
 		Apply: jsonApplyReportFromEngine(report),
+	})
+}
+
+func (r jsonRenderer) renderUpgradeReport(path string, warnings []config.ConfigWarning, report engine.ApplyReport) error {
+	return r.write(jsonStatusResponse{
+		Command: "upgrade",
+		OK:      !report.HasFailures(),
+		Config: &jsonConfigStatus{
+			Path:     path,
+			Valid:    true,
+			Warnings: jsonWarningsFromConfig(warnings),
+		},
+		Upgrade: jsonApplyReportFromEngine(report),
 	})
 }
 

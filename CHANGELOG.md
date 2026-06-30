@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-No changes yet.
+### Added
+
+- Added `kitout upgrade` for explicitly upgrading outdated managed Homebrew
+  formulae and casks, with `--dry-run`, `--only brew`, `--only cask`, and JSON
+  output support.
 
 ## 2.3.0 - Local-first init
 

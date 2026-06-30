@@ -43,6 +43,18 @@ type Plan struct {
 	Summary PlanSummary
 }
 
+// NewPlanFromItems returns a plan with summary counts derived from the items.
+func NewPlanFromItems(items []PlanItem) Plan {
+	plan := Plan{
+		Items: make([]PlanItem, 0, len(items)),
+	}
+	for _, item := range items {
+		plan.Items = append(plan.Items, item)
+		plan.Summary.add(item)
+	}
+	return plan
+}
+
 // HasChanges reports whether the plan contains resources that should be applied.
 func (p Plan) HasChanges() bool {
 	return p.Summary.ToApply > 0

@@ -226,13 +226,15 @@ Common safe commands:
 kitout context --config %s
 kitout status --config %s
 kitout apply --config %s --dry-run
+kitout upgrade --config %s --dry-run
 kitout doctor --config %s
 `+"```"+`
 
-Only run this after reviewing the dry run and confirming the user wants machine changes:
+Only run these after reviewing the dry run and confirming the user wants machine changes:
 
 `+"```sh"+`
 kitout apply --config %s
+kitout upgrade --config %s
 `+"```"+`
 
 When editing this repo:
@@ -242,10 +244,10 @@ When editing this repo:
 - Do not add shell commands unless they are explicit, idempotent, and requested.
 - Do not assume Linux or Windows support.
 - Keep changes idempotent.
-- Run `+"`kitout status`"+` and `+"`kitout apply --dry-run`"+` before recommending a real apply.
+- Run `+"`kitout status`"+` and the relevant dry-run command before recommending a real apply or upgrade.
 - Do not overwrite user files unless the config explicitly allows it.
 - Use `+"`kitout --help`"+` and `+"`kitout <command> --help`"+` for the full command reference.
 
 %s
-`, kitoutAgentsStartMarker, configArg, configArg, configArg, configArg, configArg, configArg, kitoutAgentsEndMarker)
+`, kitoutAgentsStartMarker, configArg, configArg, configArg, configArg, configArg, configArg, configArg, configArg, kitoutAgentsEndMarker)
 }

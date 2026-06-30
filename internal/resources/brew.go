@@ -12,6 +12,13 @@ import (
 
 const brewType = "brew"
 
+const (
+	// HomebrewFormulaOutdatedAdvisory identifies an installed formula with an available update.
+	HomebrewFormulaOutdatedAdvisory = "homebrew_formula_outdated"
+	// HomebrewFormulaUpdateCheckFailedAdvisory identifies a failed formula update check.
+	HomebrewFormulaUpdateCheckFailedAdvisory = "homebrew_formula_update_check_failed"
+)
+
 // BrewPackageResource ensures a Homebrew formula is installed.
 type BrewPackageResource struct {
 	name      string
@@ -79,6 +86,38 @@ func (resource BrewPackageResource) Apply(ctx context.Context) (engine.ApplyResu
 	}
 }
 
+// Upgrade updates an installed Homebrew formula when Homebrew reports an
+// available update. Missing formulae are left for apply.
+func (resource BrewPackageResource) Upgrade(ctx context.Context) (engine.ApplyResult, error) {
+	status, err := resource.Status(ctx)
+	if err != nil {
+		return resource.applyResult("fail", false, status.Message), err
+	}
+
+	switch status.State {
+	case engine.StateSatisfied:
+		if advisory, ok := advisoryWithCode(status.Advisories, HomebrewFormulaUpdateCheckFailedAdvisory); ok {
+			err := fmt.Errorf("could not inspect formula updates for %s", resource.name)
+			if detail := advisory.Details["error"]; detail != "" {
+				err = fmt.Errorf("%s: %s", err.Error(), detail)
+			}
+			return resource.applyResult("fail", false, advisory.Message), err
+		}
+		if _, ok := advisoryWithCode(status.Advisories, HomebrewFormulaOutdatedAdvisory); !ok {
+			return resource.applyResult("noop", false, "formula already current"), nil
+		}
+		if _, err := resource.runner.Run(ctx, "brew", "upgrade", resource.name); err != nil {
+			return resource.applyResult("upgrade", false, "could not upgrade formula"), err
+		}
+		return resource.applyResult("upgrade", true, "upgraded formula"), nil
+	case engine.StateMissing:
+		return resource.applyResult("skip", false, "formula is missing; run `kitout apply` first"), nil
+	default:
+		err := fmt.Errorf("cannot upgrade formula %s from state %s", resource.name, status.State)
+		return resource.applyResult("fail", false, err.Error()), err
+	}
+}
+
 func (resource BrewPackageResource) validate() error {
 	if resource.name == "" {
 		return errors.New("brew package name is required")
@@ -115,7 +154,7 @@ func (resource BrewPackageResource) updateAdvisories(ctx context.Context) []engi
 	isOutdated, err := resource.outdated.Contains(ctx, resource.name)
 	if err != nil {
 		return []engine.Advisory{{
-			Code:     "homebrew_formula_update_check_failed",
+			Code:     HomebrewFormulaUpdateCheckFailedAdvisory,
 			Severity: engine.AdvisoryWarning,
 			Message:  fmt.Sprintf("could not inspect formula updates for %s", resource.name),
 			Fix:      "Run `brew doctor`, then try the update check again.",
@@ -130,7 +169,7 @@ func (resource BrewPackageResource) updateAdvisories(ctx context.Context) []engi
 	}
 
 	return []engine.Advisory{{
-		Code:     "homebrew_formula_outdated",
+		Code:     HomebrewFormulaOutdatedAdvisory,
 		Severity: engine.AdvisoryNotice,
 		Message:  fmt.Sprintf("formula update available for %s", resource.name),
 		Fix:      fmt.Sprintf("Run `brew upgrade %s` when you want to update it.", resource.name),
@@ -141,6 +180,15 @@ func (resource BrewPackageResource) updateAdvisories(ctx context.Context) []engi
 func isExitCode(err error, code int) bool {
 	var commandError platform.CommandError
 	return errors.As(err, &commandError) && commandError.Result.ExitCode == code
+}
+
+func advisoryWithCode(advisories []engine.Advisory, code string) (engine.Advisory, bool) {
+	for _, advisory := range advisories {
+		if advisory.Code == code {
+			return advisory, true
+		}
+	}
+	return engine.Advisory{}, false
 }
 
 type brewInstalledChecker interface {

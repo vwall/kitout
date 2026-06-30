@@ -68,6 +68,14 @@ func safeAgentCommands(configPath string) []agentCommand {
 			Reason:  "Return the dry-run plan in stable JSON.",
 		},
 		{
+			Command: "kitout upgrade --config " + quoteCommandArg(configPath) + " --dry-run",
+			Reason:  "Preview managed Homebrew formula and cask upgrades without making changes.",
+		},
+		{
+			Command: "kitout upgrade --config " + quoteCommandArg(configPath) + " --dry-run --json",
+			Reason:  "Return the managed Homebrew upgrade plan in stable JSON.",
+		},
+		{
 			Command: "kitout doctor --config " + quoteCommandArg(configPath),
 			Reason:  "Check prerequisites, config validity, and path permissions.",
 		},
@@ -93,6 +101,10 @@ func approvalRequiredCommands(configPath string) []agentCommand {
 			Reason:  "Bypasses confirmations for risky apply actions.",
 		},
 		{
+			Command: "kitout upgrade --config " + quoteCommandArg(configPath),
+			Reason:  "Upgrades managed Homebrew formulae and casks on the user's machine.",
+		},
+		{
 			Command: "configured shell resources",
 			Reason:  "Shell resources run explicit user-provided commands during apply.",
 		},
@@ -102,8 +114,8 @@ func approvalRequiredCommands(configPath string) []agentCommand {
 func agentGuidance() []string {
 	return []string{
 		"Edit files in the setup repo or declared source paths, not managed targets in $HOME.",
-		"Run status and apply --dry-run before recommending a real apply.",
-		"Do not run kitout apply unless the user explicitly asks for machine changes.",
+		"Run status and dry-run commands before recommending a real apply or upgrade.",
+		"Do not run kitout apply or kitout upgrade unless the user explicitly asks for machine changes.",
 		"Do not add shell resources unless the command is explicit, idempotent, and requested.",
 		"Do not store secrets in Kitout config or managed dotfiles.",
 	}

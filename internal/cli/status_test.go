@@ -518,6 +518,7 @@ type statusJSONResponse struct {
 	OK      bool              `json:"ok"`
 	Config  *statusJSONConfig `json:"config"`
 	Plan    *statusJSONPlan   `json:"plan"`
+	Upgrade *statusJSONApply  `json:"upgrade"`
 	Error   *statusJSONError  `json:"error"`
 }
 
@@ -561,6 +562,31 @@ type statusJSONAdvisory struct {
 	Message  string            `json:"message"`
 	Fix      string            `json:"fix"`
 	Details  map[string]string `json:"details"`
+}
+
+type statusJSONApply struct {
+	Summary statusJSONApplySummary `json:"summary"`
+	Items   []statusJSONApplyItem  `json:"items"`
+}
+
+type statusJSONApplySummary struct {
+	Total     int `json:"total"`
+	Changed   int `json:"changed"`
+	Noop      int `json:"noop"`
+	Skipped   int `json:"skipped"`
+	Failed    int `json:"failed"`
+	Applied   int `json:"applied"`
+	Unchanged int `json:"unchanged"`
+}
+
+type statusJSONApplyItem struct {
+	ResourceID string            `json:"resource_id"`
+	Type       string            `json:"type"`
+	Action     string            `json:"action"`
+	Changed    bool              `json:"changed"`
+	Message    string            `json:"message"`
+	Error      string            `json:"error"`
+	Details    map[string]string `json:"details"`
 }
 
 type statusJSONError struct {

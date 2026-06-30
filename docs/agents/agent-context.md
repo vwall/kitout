@@ -7,7 +7,7 @@ Kitout does not embed AI behavior. The pattern is:
 
 - Kitout owns desired state in `kitout.yaml`.
 - Agents read Kitout context, status, doctor, dry-run, and explain output.
-- Humans approve mutation before `kitout apply`.
+- Humans approve mutation before `kitout apply` or `kitout upgrade`.
 
 ## Repo Guidance
 
@@ -47,6 +47,7 @@ kitout context --config ./kitout.yaml
 kitout doctor --config ./kitout.yaml --json
 kitout status --config ./kitout.yaml --json
 kitout apply --config ./kitout.yaml --dry-run --json
+kitout upgrade --config ./kitout.yaml --dry-run --json
 ```
 
 Use `explain` when the user asks about one resource:
@@ -62,7 +63,8 @@ do not apply resources.
 
 - Edit source files in the setup repo, not managed targets in `$HOME`.
 - Run `kitout status` or `kitout apply --dry-run` before recommending apply.
-- Ask before running `kitout apply`.
+- Run `kitout upgrade --dry-run` before recommending managed Homebrew upgrades.
+- Ask before running `kitout apply` or `kitout upgrade`.
 - Explain shell resources before any apply run.
 - Never put secrets in Kitout config or managed dotfiles.
 

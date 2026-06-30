@@ -12,6 +12,13 @@ import (
 
 const caskType = "cask"
 
+const (
+	// HomebrewCaskOutdatedAdvisory identifies an installed cask with an available update.
+	HomebrewCaskOutdatedAdvisory = "homebrew_cask_outdated"
+	// HomebrewCaskUpdateCheckFailedAdvisory identifies a failed cask update check.
+	HomebrewCaskUpdateCheckFailedAdvisory = "homebrew_cask_update_check_failed"
+)
+
 // CaskResource ensures a Homebrew cask is installed.
 type CaskResource struct {
 	name      string
@@ -76,6 +83,38 @@ func (resource CaskResource) Apply(ctx context.Context) (engine.ApplyResult, err
 	}
 }
 
+// Upgrade updates an installed Homebrew cask when Homebrew reports an available
+// update. Missing casks are left for apply.
+func (resource CaskResource) Upgrade(ctx context.Context) (engine.ApplyResult, error) {
+	status, err := resource.Status(ctx)
+	if err != nil {
+		return resource.applyResult("fail", false, status.Message), err
+	}
+
+	switch status.State {
+	case engine.StateSatisfied:
+		if advisory, ok := advisoryWithCode(status.Advisories, HomebrewCaskUpdateCheckFailedAdvisory); ok {
+			err := fmt.Errorf("could not inspect cask updates for %s", resource.name)
+			if detail := advisory.Details["error"]; detail != "" {
+				err = fmt.Errorf("%s: %s", err.Error(), detail)
+			}
+			return resource.applyResult("fail", false, advisory.Message), err
+		}
+		if _, ok := advisoryWithCode(status.Advisories, HomebrewCaskOutdatedAdvisory); !ok {
+			return resource.applyResult("noop", false, "cask already current"), nil
+		}
+		if _, err := resource.runner.Run(ctx, "brew", "upgrade", "--cask", resource.name); err != nil {
+			return resource.applyResult("upgrade", false, "could not upgrade cask"), err
+		}
+		return resource.applyResult("upgrade", true, "upgraded cask"), nil
+	case engine.StateMissing:
+		return resource.applyResult("skip", false, "cask is missing; run `kitout apply` first"), nil
+	default:
+		err := fmt.Errorf("cannot upgrade cask %s from state %s", resource.name, status.State)
+		return resource.applyResult("fail", false, err.Error()), err
+	}
+}
+
 func (resource CaskResource) validate() error {
 	if resource.name == "" {
 		return errors.New("cask name is required")
@@ -112,7 +151,7 @@ func (resource CaskResource) updateAdvisories(ctx context.Context) []engine.Advi
 	isOutdated, err := resource.outdated.Contains(ctx, resource.name)
 	if err != nil {
 		return []engine.Advisory{{
-			Code:     "homebrew_cask_update_check_failed",
+			Code:     HomebrewCaskUpdateCheckFailedAdvisory,
 			Severity: engine.AdvisoryWarning,
 			Message:  fmt.Sprintf("could not inspect cask updates for %s", resource.name),
 			Fix:      "Run `brew doctor`, then try the update check again.",
@@ -127,7 +166,7 @@ func (resource CaskResource) updateAdvisories(ctx context.Context) []engine.Advi
 	}
 
 	return []engine.Advisory{{
-		Code:     "homebrew_cask_outdated",
+		Code:     HomebrewCaskOutdatedAdvisory,
 		Severity: engine.AdvisoryNotice,
 		Message:  fmt.Sprintf("cask update available for %s", resource.name),
 		Fix:      fmt.Sprintf("Run `brew upgrade --cask %s` when you want to update it.", resource.name),

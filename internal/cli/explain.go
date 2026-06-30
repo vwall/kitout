@@ -165,6 +165,10 @@ func explainRelatedCommands(configPath, resourceID string) []agentCommand {
 			Reason:  "Preview all changes without applying them.",
 		},
 		{
+			Command: "kitout upgrade --config " + quoteCommandArg(configPath) + " --dry-run --json",
+			Reason:  "Preview managed Homebrew upgrades without applying them.",
+		},
+		{
 			Command: "kitout explain --config " + quoteCommandArg(configPath) + " --json " + quoteCommandArg(resourceID),
 			Reason:  "Explain this resource in stable JSON.",
 		},
@@ -174,7 +178,7 @@ func explainRelatedCommands(configPath, resourceID string) []agentCommand {
 func explainAgentGuidance(item engine.PlanItem) []string {
 	guidance := []string{
 		"Use status or dry-run output as evidence when answering the user.",
-		"Ask the user before running kitout apply.",
+		"Ask the user before running kitout apply or kitout upgrade.",
 	}
 	if item.Type == "symlink" || item.Type == "copy" {
 		guidance = append(guidance, "When changing managed dotfiles, edit the source path instead of the target path.")

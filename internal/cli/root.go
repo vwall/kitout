@@ -57,6 +57,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runExplain(remainingArgs[1:], opts, stdout, stderr)
 	case "status":
 		return runStatus(remainingArgs[1:], opts, stdout, stderr)
+	case "upgrade":
+		return runUpgrade(remainingArgs[1:], opts, stdout, stderr)
 	case "version":
 		return runVersion(remainingArgs[1:], opts, stdout, stderr)
 	default:
@@ -68,7 +70,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func addGlobalFlags(fs *flag.FlagSet, opts *globalOptions) {
 	fs.StringVar(&opts.configPath, "config", opts.configPath, "Path to config file")
-	fs.BoolVar(&opts.verbose, "verbose", opts.verbose, "Show status progress and stream subprocess output during apply")
+	fs.BoolVar(&opts.verbose, "verbose", opts.verbose, "Show status progress and stream subprocess output during apply or upgrade")
 	fs.BoolVar(&opts.quiet, "quiet", opts.quiet, "Reduce output")
 	fs.BoolVar(&opts.color, "color", opts.color, "Force colored output")
 	fs.BoolVar(&opts.noColor, "no-color", opts.noColor, "Disable colored output")
@@ -89,6 +91,7 @@ Commands:
   explain  Explain one configured resource
   init      Create a starter config file and optional agent guidance
   status    Check configured resources
+  upgrade   Upgrade outdated managed Homebrew formulae and casks
   version   Print version metadata
 
 Examples:
@@ -99,6 +102,7 @@ Examples:
   kitout context
   kitout status
   kitout apply --dry-run
+  kitout upgrade --dry-run
   kitout doctor
   kitout explain directory:$HOME/code
   kitout status --config ./kitout.yaml
@@ -106,7 +110,7 @@ Examples:
 
 Global flags:
   --config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
-  --verbose           Show status progress and stream subprocess output during apply
+  --verbose           Show status progress and stream subprocess output during apply or upgrade
   --quiet             Reduce output
   --color             Force colored output
   --no-color          Disable colored output

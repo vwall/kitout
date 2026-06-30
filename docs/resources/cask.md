@@ -66,6 +66,27 @@ Kitout applies Homebrew taps before casks.
 
 Outdated casks are reported as advisories and are not upgraded by `kitout apply`.
 
+## Upgrade
+
+Use:
+
+```sh
+kitout upgrade --dry-run
+kitout upgrade
+kitout upgrade --only cask
+```
+
+`kitout upgrade` checks the same managed `brew.casks` list, selects installed
+casks with Homebrew outdated advisories, and runs:
+
+```sh
+brew upgrade --cask <name>
+```
+
+Missing casks are skipped with guidance to run `kitout apply` first. Casks that
+are already current are reported unchanged. `kitout upgrade --dry-run` shows the
+casks that would be upgraded without running `brew upgrade`.
+
 ## Safety
 
 Cask installs may open macOS permission prompts or require app-specific post-install setup. Kitout should report success when Homebrew reports success, but it should not try to automate app login or private app configuration in the MVP.

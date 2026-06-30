@@ -31,12 +31,14 @@ unambiguous:
 - if only `~/.config/kitout/kitout.yaml` exists, use the home config
 - if both exist, stop and ask the user to pass `--config`
 
-When running from a private setup repo, `kitout status`, `kitout apply`, and
-`kitout doctor` can use `./kitout.yaml` automatically if no home config exists:
+When running from a private setup repo, `kitout status`, `kitout apply`,
+`kitout upgrade`, and `kitout doctor` can use `./kitout.yaml` automatically if
+no home config exists:
 
 ```sh
 kitout status
 kitout apply --dry-run
+kitout upgrade --dry-run
 ```
 
 If the home config also exists, select the setup repo explicitly:
@@ -44,6 +46,7 @@ If the home config also exists, select the setup repo explicitly:
 ```sh
 kitout status --config ./kitout.yaml
 kitout apply --config ./kitout.yaml --dry-run
+kitout upgrade --config ./kitout.yaml --dry-run
 ```
 
 This is intentionally boring: users should be able to tell which file is being
@@ -51,7 +54,8 @@ checked before Kitout reports or applies changes.
 
 The loader and validator for this schema are implemented in `internal/config`.
 `internal/resources.Build` converts validated config into ordered resources for
-`kitout status`, `kitout apply --dry-run`, and `kitout apply`.
+`kitout status`, `kitout apply --dry-run`, `kitout apply`, and Homebrew upgrade
+planning.
 
 ## Version
 
@@ -319,6 +323,8 @@ When a user works from a private dotfiles repo:
 - edit source paths, not symlink or copy targets in `$HOME`
 - run `kitout context`, `kitout status --json`, and
   `kitout apply --dry-run --json` before applying changes
+- run `kitout upgrade --dry-run --json` before upgrading managed Homebrew
+  packages or casks
 - run `kitout explain <resource-id>` when the question is about one resource
 - avoid secrets in config and managed dotfiles
 - keep `shell` resources explicit, idempotent, and rare because they run

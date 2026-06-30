@@ -106,19 +106,33 @@ addition or install, for example `Adding Homebrew tap vwall/kitout...` or
 `Installing formula go...`, because Homebrew can be slow or quiet while it is
 working.
 
+## Upgrade
+
+Use:
+
+```sh
+kitout upgrade --dry-run
+kitout upgrade
+kitout upgrade --only brew
+```
+
+`kitout upgrade` checks the same managed `brew.packages` list, selects installed
+formulae with Homebrew outdated advisories, and runs:
+
+```sh
+brew upgrade <name>
+```
+
+Missing formulae are skipped with guidance to run `kitout apply` first. Formulae
+that are already current are reported unchanged. `kitout upgrade --dry-run`
+shows the formulae that would be upgraded without running `brew upgrade`.
+
 ## Notes
 
 Do not run `brew update` automatically in the MVP. That can be slow and surprising.
 
-A future explicit command or flag may support:
-
-```sh
-kitout upgrade
-kitout apply --upgrade
-```
-
-For now, use `kitout doctor` to check Homebrew freshness and run `brew update`
-or `brew upgrade` manually when you decide to refresh packages, casks, or taps.
+Use `kitout doctor` to check Homebrew metadata freshness and run `brew update`
+manually when you decide to refresh Homebrew and taps.
 
 ## Implementation status
 

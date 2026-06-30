@@ -320,6 +320,96 @@ func TestBrewPackageApplyDoesNotUpgradeOutdatedFormula(t *testing.T) {
 	})
 }
 
+func TestBrewPackageUpgradeUpdatesOutdatedFormula(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
+		{result: commandResult("brew", []string{"upgrade", "git"}, 0)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err != nil {
+		t.Fatalf("Upgrade returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), brewType, "upgrade", true, "upgraded formula")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"upgrade", "git"}},
+	})
+}
+
+func TestBrewPackageUpgradeNoopsWhenFormulaIsCurrent(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet"}, 0)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err != nil {
+		t.Fatalf("Upgrade returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), brewType, "noop", false, "formula already current")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+	})
+}
+
+func TestBrewPackageUpgradeSkipsMissingFormula(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{err: commandError("brew", []string{"list", "--formula", "git"}, 1)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err != nil {
+		t.Fatalf("Upgrade returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), brewType, "skip", false, "formula is missing; run `kitout apply` first")
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"list", "--formula", "git"}}})
+}
+
+func TestBrewPackageUpgradeReportsOutdatedCheckFailure(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{err: commandError("brew", []string{"outdated", "--formula", "--quiet"}, 2)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err == nil {
+		t.Fatal("Upgrade returned nil error, want update check failure")
+	}
+
+	expectApply(t, result, resource.ID(), brewType, "fail", false, "could not inspect formula updates for git")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--formula", "git"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+	})
+}
+
+func TestBrewPackageUpgradeReportsUpgradeFailure(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
+		{err: commandError("brew", []string{"upgrade", "git"}, 2)},
+	}}
+	resource := NewBrewPackage("git", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err == nil {
+		t.Fatal("Upgrade returned nil error, want upgrade failure")
+	}
+
+	expectApply(t, result, resource.ID(), brewType, "upgrade", false, "could not upgrade formula")
+}
+
 func TestBrewPackageApplyIgnoresOutdatedFormulaUpgradeFailure(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
@@ -657,6 +747,61 @@ func TestCaskApplyReportsInstallFailure(t *testing.T) {
 	}
 
 	expectApply(t, result, resource.ID(), caskType, "install", false, "could not install cask")
+}
+
+func TestCaskUpgradeUpdatesOutdatedCask(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{result: resultWithStdout("brew", []string{"outdated", "--cask", "--quiet"}, "ghostty\n")},
+		{result: commandResult("brew", []string{"upgrade", "--cask", "ghostty"}, 0)},
+	}}
+	resource := NewCask("ghostty", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err != nil {
+		t.Fatalf("Upgrade returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), caskType, "upgrade", true, "upgraded cask")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--cask", "ghostty"}},
+		{name: "brew", args: []string{"outdated", "--cask", "--quiet"}},
+		{name: "brew", args: []string{"upgrade", "--cask", "ghostty"}},
+	})
+}
+
+func TestCaskUpgradeNoopsWhenCaskIsCurrent(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--cask", "--quiet"}, 0)},
+	}}
+	resource := NewCask("ghostty", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err != nil {
+		t.Fatalf("Upgrade returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), caskType, "noop", false, "cask already current")
+	expectCalls(t, runner.calls, []commandCall{
+		{name: "brew", args: []string{"list", "--cask", "ghostty"}},
+		{name: "brew", args: []string{"outdated", "--cask", "--quiet"}},
+	})
+}
+
+func TestCaskUpgradeSkipsMissingCask(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{err: commandError("brew", []string{"list", "--cask", "ghostty"}, 1)},
+	}}
+	resource := NewCask("ghostty", runner)
+
+	result, err := resource.Upgrade(context.Background())
+	if err != nil {
+		t.Fatalf("Upgrade returned error: %v", err)
+	}
+
+	expectApply(t, result, resource.ID(), caskType, "skip", false, "cask is missing; run `kitout apply` first")
+	expectCalls(t, runner.calls, []commandCall{{name: "brew", args: []string{"list", "--cask", "ghostty"}}})
 }
 
 func TestCaskDryRunPlanDoesNotInstall(t *testing.T) {

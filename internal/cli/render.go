@@ -706,6 +706,9 @@ func dryRunMessage(item engine.PlanItem) string {
 		}
 		return "Would install formula " + target
 	case "cask":
+		if item.State == engine.StateChanged {
+			return "Would upgrade cask " + target
+		}
 		return "Would install cask " + target
 	case "directory":
 		return "Would create directory " + target
@@ -776,6 +779,9 @@ func applyProgressMessage(item engine.PlanItem) string {
 		}
 		return "Installing formula " + target + "..."
 	case "cask":
+		if item.State == engine.StateChanged {
+			return "Upgrading cask " + target + "..."
+		}
 		return "Installing cask " + target + "..."
 	case "directory":
 		return "Creating directory " + target + "..."

@@ -10,7 +10,7 @@ kitout
 
 ```txt
 --config PATH       Path to config file (required when both ./kitout.yaml and home config exist)
---verbose           Show status progress and stream subprocess output during apply
+--verbose           Show status progress and stream subprocess output during apply or upgrade
 --quiet             Reduce output
 --color             Force colored output
 --no-color          Disable colored output
@@ -19,7 +19,7 @@ kitout
 ```
 
 These flags are currently parsed by the root command and by implemented
-subcommands. `doctor`, `status`, and `apply` use `--config` when it is passed.
+subcommands. `doctor`, `status`, `apply`, and `upgrade` use `--config` when it is passed.
 Without `--config`, they use `./kitout.yaml` only when no home config exists,
 use `~/.config/kitout/kitout.yaml` only when no local config exists, and fail
 with guidance when both files exist. `init` writes `./kitout.yaml` in the
@@ -29,7 +29,7 @@ output colors status, progress, and action markers when stdout is an interactive
 redirected output remains plain text by default, `--color` forces ANSI color,
 and `--no-color` disables ANSI color markers. Human output includes both
 symbols and text labels so status remains readable without color. `status`,
-`apply`, and `doctor` print a short startup line before slower checks begin so
+`apply`, `upgrade`, and `doctor` print a short startup line before slower checks begin so
 command startup does not look stuck. `status --verbose` prints a progress line
 before each resource status check. For batched Homebrew status checks, default
 `status` output prints one coarse tap-list line, one package-list line, and one
@@ -37,22 +37,23 @@ cask-list line instead of per-resource `Checking ...` lines. `apply` prints a
 progress line before each non-Homebrew resource status check and before each
 resource apply starts. For batched Homebrew status checks, default `apply`
 output prints one coarse inspection line for taps, one for formulae, and one for
-casks instead of per-resource `Checking ...` lines. During human `kitout apply`
-runs, `--verbose` renders each
-resource status check, renders each subprocess command before it starts, and
-streams that subprocess stdout and stderr as it runs. `--verbose` does not
-stream output for `--dry-run`, `--json`, or `--quiet` runs. `--json` and
-`--quiet` currently affect `context`, `status`, `apply`, `doctor`, and
-`explain`.
+casks instead of per-resource `Checking ...` lines. `upgrade` uses the same
+batched Homebrew formula and cask inspection style before selecting outdated
+managed items. During human `kitout apply` and `kitout upgrade` runs,
+`--verbose` renders each resource status check, renders each subprocess command
+before it starts, and streams that subprocess stdout and stderr as it runs.
+`--verbose` does not stream output for `--dry-run`, `--json`, or `--quiet`
+runs. `--json` and `--quiet` currently affect `context`, `status`, `apply`,
+`upgrade`, `doctor`, and `explain`.
 
 When running from a private setup repo that contains `kitout.yaml`, pass
 `--config ./kitout.yaml` if a home config also exists. Kitout prints the selected
 path before running checks.
 
-Config deprecation warnings are non-fatal. Human `status` and `apply` render
-them once on stderr after the selected config is loaded. JSON output includes
-them under `config.warnings`. `doctor` reports a deprecated but otherwise valid
-config as a `warn` Config item.
+Config deprecation warnings are non-fatal. Human `status`, `apply`, and
+`upgrade` render them once on stderr after the selected config is loaded. JSON
+output includes them under `config.warnings`. `doctor` reports a deprecated but
+otherwise valid config as a `warn` Config item.
 
 Implicit dependency checks and first-class resources resolve external tools such
 as `brew`, `git`, and `xcode-select` from trusted system locations instead of
@@ -139,9 +140,11 @@ Safe read-only commands:
 - kitout context --config /Users/example/code/setup/kitout.yaml
 - kitout status --config /Users/example/code/setup/kitout.yaml
 - kitout apply --config /Users/example/code/setup/kitout.yaml --dry-run
+- kitout upgrade --config /Users/example/code/setup/kitout.yaml --dry-run
 
 Requires explicit user approval:
 - kitout apply --config /Users/example/code/setup/kitout.yaml
+- kitout upgrade --config /Users/example/code/setup/kitout.yaml
 - configured shell resources
 
 Managed resources:
@@ -151,7 +154,7 @@ Managed resources:
 
 Agent guidance:
 - Edit files in the setup repo or declared source paths, not managed targets in $HOME.
-- Run status and apply --dry-run before recommending a real apply.
+- Run status and dry-run commands before recommending a real apply or upgrade.
 ```
 
 ### `kitout status`
@@ -281,6 +284,58 @@ dry-run Would replace symlink /Users/example/.zshrc
 No shell commands will run without explicit approval.
 ```
 
+### `kitout upgrade`
+
+Upgrades outdated managed Homebrew formulae and casks. This command is separate
+from `apply`: `apply` installs missing formulae and casks, while `upgrade`
+refreshes installed managed formulae and casks only when Homebrew reports an
+available update.
+
+```sh
+kitout upgrade
+kitout upgrade --dry-run
+kitout upgrade --only brew
+kitout upgrade --only cask
+kitout upgrade --json
+```
+
+Behavior:
+
+- load and validate config
+- inspect only managed `brew.packages` and `brew.casks`
+- show one Homebrew formula and cask inspection line for batched status checks
+- treat installed outdated formulae and casks as planned upgrade actions
+- skip missing formulae and casks with guidance to run `kitout apply` first
+- leave current formulae and casks unchanged
+- run `brew upgrade <name>` for outdated managed formulae
+- run `brew upgrade --cask <name>` for outdated managed casks
+- with `--only brew`, inspect and upgrade only managed formulae
+- with `--only cask`, inspect and upgrade only managed casks
+- with `--dry-run`, show planned upgrades without running `brew upgrade`
+- with `--verbose`, render each subprocess command and stream its stdout and
+  stderr while it runs
+- return `0` when upgrade completed successfully or no upgrades are needed
+- return `2` for validation, parse, unknown-field, or flag errors
+- return `3` for config read failures or dry-run planning failures
+- return `4` for failed upgrade execution
+
+Example dry-run output:
+
+```txt
+[dry-run] Kitout is checking managed Homebrew upgrades. No changes will be made.
+Config: /Users/example/.config/kitout/kitout.yaml
+
+> Inspecting Homebrew packages...
+> Inspecting Homebrew casks...
+
+[dry-run] Previewing managed upgrades:
+dry-run Would upgrade formula go
+dry-run Would upgrade cask ghostty
+- Skipping cask: rectangle: cask is missing; run `kitout apply` first
+
+[dry-run] No upgrades made because --dry-run was used.
+```
+
 ### `kitout doctor`
 
 Checks local prerequisites and common problems.
@@ -400,9 +455,11 @@ Default output should be concise and readable.
 
 JSON output should be stable enough for tests and automation.
 
-Status, dry-run apply, doctor, context, and explain all use the same envelope:
-`command`, `ok`, optional `config`, one command-specific payload, and optional
-`error`.
+Status, apply, upgrade, doctor, context, and explain all use the same
+envelope: `command`, `ok`, optional `config`, one command-specific payload, and
+optional `error`. `upgrade --dry-run` uses the `plan` payload. A real
+`upgrade --json` run uses the `upgrade` payload with the same summary and item
+shape as `apply`.
 
 Example status output:
 
