@@ -2,11 +2,31 @@
 
 ## Unreleased
 
+## 2.4.0 - Managed Homebrew upgrades
+
+Kitout 2.4.0 adds an explicit upgrade workflow for managed Homebrew formulae
+and casks, while keeping install/apply behavior conservative.
+
 ### Added
 
 - Added `kitout upgrade` for explicitly upgrading outdated managed Homebrew
   formulae and casks, with `--dry-run`, `--only brew`, `--only cask`, and JSON
   output support.
+
+### Documentation
+
+- Refreshed the documentation site layout, navigation, resource pages, and
+  command examples for the current CLI surface.
+
+### Distribution
+
+- Updated the Homebrew formula template for `v2.4.0` macOS arm64 and amd64
+  artifacts.
+
+### Notes
+
+- This is an additive `version: 1` schema release. Existing `2.3.0` configs do
+  not need to change.
 
 ## 2.3.0 - Local-first init
 
