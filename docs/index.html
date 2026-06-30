@@ -186,7 +186,13 @@
             <div class="code-panel">
               <div class="panel-bar">
                 <span>Setup repo</span>
-                <button type="button" data-copy-target="agent-setup">Copy</button>
+                <button
+                  type="button"
+                  aria-label="Copy setup repo commands"
+                  data-copy-target="agent-setup"
+                >
+                  Copy
+                </button>
               </div>
               <pre><code id="agent-setup">kitout init --agents
 kitout context
@@ -196,7 +202,13 @@ kitout apply --dry-run --json</code></pre>
             <div class="code-panel">
               <div class="panel-bar">
                 <span>One resource</span>
-                <button type="button" data-copy-target="agent-explain">Copy</button>
+                <button
+                  type="button"
+                  aria-label="Copy resource explain command"
+                  data-copy-target="agent-explain"
+                >
+                  Copy
+                </button>
               </div>
               <pre><code id="agent-explain">kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
             </div>
@@ -240,10 +252,16 @@ kitout apply --dry-run --json</code></pre>
           </p>
         </div>
         <div class="schema-grid">
-          <div class="code-panel">
+          <div class="code-panel starter-config-panel">
             <div class="panel-bar">
               <span>kitout.yaml</span>
-              <button type="button" data-copy-target="starter-config">Copy</button>
+              <button
+                type="button"
+                aria-label="Copy starter config"
+                data-copy-target="starter-config"
+              >
+                Copy
+              </button>
             </div>
             <pre><code id="starter-config" class="syntax-yaml"><span class="yaml-key">version</span><span class="yaml-punct">:</span> <span class="yaml-number">1</span>
 
@@ -546,7 +564,13 @@ Summary: 2 changed, 2 unchanged</code></pre>
           <div class="code-panel">
             <div class="panel-bar">
               <span>Homebrew</span>
-              <button type="button" data-copy-target="install-homebrew">Copy</button>
+              <button
+                type="button"
+                aria-label="Copy Homebrew install commands"
+                data-copy-target="install-homebrew"
+              >
+                Copy
+              </button>
             </div>
             <pre><code id="install-homebrew">brew tap vwall/kitout
 brew install kitout</code></pre>
@@ -554,14 +578,26 @@ brew install kitout</code></pre>
           <div class="code-panel">
             <div class="panel-bar">
               <span>Source</span>
-              <button type="button" data-copy-target="install-source">Copy</button>
+              <button
+                type="button"
+                aria-label="Copy source install command"
+                data-copy-target="install-source"
+              >
+                Copy
+              </button>
             </div>
             <pre><code id="install-source">go install ./cmd/kitout</code></pre>
           </div>
           <div class="code-panel">
             <div class="panel-bar">
               <span>First pass</span>
-              <button type="button" data-copy-target="install-first-pass">Copy</button>
+              <button
+                type="button"
+                aria-label="Copy first pass commands"
+                data-copy-target="install-first-pass"
+              >
+                Copy
+              </button>
             </div>
             <pre><code id="install-first-pass">kitout init --agents
 kitout doctor
@@ -637,6 +673,7 @@ kitout upgrade --dry-run</code></pre>
 
       copyButtons.forEach((button) => {
         const initialLabel = button.textContent.trim();
+        const initialAriaLabel = button.getAttribute("aria-label");
         button.setAttribute("aria-live", "polite");
 
         button.addEventListener("click", async () => {
@@ -648,14 +685,29 @@ kitout upgrade --dry-run</code></pre>
             await writeClipboard(text.trim());
             button.dataset.copyState = "copied";
             button.textContent = "Copied";
+            if (initialAriaLabel) {
+              button.setAttribute(
+                "aria-label",
+                initialAriaLabel.replace(/^Copy\b/, "Copied"),
+              );
+            }
 
             window.setTimeout(() => {
               delete button.dataset.copyState;
               button.textContent = initialLabel;
+              if (initialAriaLabel) {
+                button.setAttribute("aria-label", initialAriaLabel);
+              }
             }, 1600);
           } catch {
             button.dataset.copyState = "fallback";
             button.textContent = "Select command";
+            if (initialAriaLabel) {
+              button.setAttribute(
+                "aria-label",
+                initialAriaLabel.replace(/^Copy\b/, "Select"),
+              );
+            }
           }
         });
       });
