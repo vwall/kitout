@@ -16,6 +16,26 @@
   --green: #2d9b57;
   --amber: #9a650c;
   --red: #bd3f36;
+  --resource-blue-ink: oklch(38% 0.17 257);
+  --resource-blue-muted: oklch(36% 0.075 257);
+  --resource-blue-line: oklch(80% 0.065 257);
+  --resource-blue-top: oklch(98% 0.018 257);
+  --resource-blue-surface: oklch(95% 0.034 257);
+  --resource-green-ink: oklch(35% 0.13 150);
+  --resource-green-muted: oklch(34% 0.07 150);
+  --resource-green-line: oklch(79% 0.07 150);
+  --resource-green-top: oklch(98% 0.02 150);
+  --resource-green-surface: oklch(94% 0.042 150);
+  --resource-amber-ink: oklch(36% 0.105 76);
+  --resource-amber-muted: oklch(35% 0.07 76);
+  --resource-amber-line: oklch(80% 0.075 76);
+  --resource-amber-top: oklch(98% 0.02 76);
+  --resource-amber-surface: oklch(94% 0.046 76);
+  --resource-red-ink: oklch(36% 0.145 28);
+  --resource-red-muted: oklch(35% 0.08 28);
+  --resource-red-line: oklch(80% 0.062 28);
+  --resource-red-top: oklch(98% 0.018 28);
+  --resource-red-surface: oklch(95% 0.034 28);
   --terminal: #111716;
   --terminal-soft: #17211f;
   --radius: 8px;
@@ -1013,19 +1033,24 @@ pre {
 }
 
 .resource-links a {
+  --resource-ink: var(--blue-dark);
+  --resource-muted: var(--muted);
+  --resource-line: var(--glass-edge);
+  --resource-top: var(--glass-surface-strong);
+  --resource-surface: var(--glass-surface);
   display: inline-grid;
   min-width: 8.35rem;
   min-height: 44px;
   align-content: center;
   gap: 0.08rem;
   padding: 0.45rem 0.56rem;
-  border: 1px solid var(--glass-edge);
+  border: 1px solid var(--resource-line);
   border-radius: 6px;
   background:
     linear-gradient(
       180deg,
-      var(--glass-surface-strong),
-      var(--glass-surface)
+      var(--resource-top),
+      var(--resource-surface)
     );
   box-shadow: inset 0 1px 0 var(--glass-highlight);
   text-decoration: none;
@@ -1033,19 +1058,52 @@ pre {
   backdrop-filter: saturate(145%) blur(10px);
 }
 
+.resource-links a[data-resource-tone="blue"] {
+  --resource-ink: var(--resource-blue-ink);
+  --resource-muted: var(--resource-blue-muted);
+  --resource-line: var(--resource-blue-line);
+  --resource-top: var(--resource-blue-top);
+  --resource-surface: var(--resource-blue-surface);
+}
+
+.resource-links a[data-resource-tone="green"] {
+  --resource-ink: var(--resource-green-ink);
+  --resource-muted: var(--resource-green-muted);
+  --resource-line: var(--resource-green-line);
+  --resource-top: var(--resource-green-top);
+  --resource-surface: var(--resource-green-surface);
+}
+
+.resource-links a[data-resource-tone="amber"] {
+  --resource-ink: var(--resource-amber-ink);
+  --resource-muted: var(--resource-amber-muted);
+  --resource-line: var(--resource-amber-line);
+  --resource-top: var(--resource-amber-top);
+  --resource-surface: var(--resource-amber-surface);
+}
+
+.resource-links a[data-resource-tone="red"] {
+  --resource-ink: var(--resource-red-ink);
+  --resource-muted: var(--resource-red-muted);
+  --resource-line: var(--resource-red-line);
+  --resource-top: var(--resource-red-top);
+  --resource-surface: var(--resource-red-surface);
+}
+
 .resource-links a:hover {
-  border-color: var(--blue-dark);
+  border-color: var(--resource-ink);
+  background: linear-gradient(180deg, #ffffff, var(--resource-top));
 }
 
 .resource-links span {
-  color: var(--blue-dark);
+  color: var(--resource-ink);
   font-size: 0.78rem;
   font-weight: 800;
   overflow-wrap: anywhere;
 }
 
 .resource-links small {
-  color: var(--muted);
+  color: var(--resource-muted);
   font-family: var(--sans);
   font-size: 0.76rem;
   line-height: 1.35;
