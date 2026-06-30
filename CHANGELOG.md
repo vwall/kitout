@@ -2,10 +2,19 @@
 
 ## Unreleased
 
+## 2.5.0 - Targeted Homebrew upgrades
+
+Kitout 2.5.0 adds resource ID targets for managed Homebrew upgrades, while
+keeping the stable `version: 1` config schema from earlier 2.x releases.
+
 ### Added
 
 - Added resource ID targets for `kitout upgrade`, such as
   `kitout upgrade brew:git` or `kitout upgrade cask:ghostty`.
+
+### Documentation
+
+- Updated release, install, and CLI examples for the targeted upgrade command.
 
 ## 2.4.0 - Managed Homebrew upgrades
 
