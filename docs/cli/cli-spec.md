@@ -256,7 +256,7 @@ Behavior:
 - render summary
 - return `0` when apply completed successfully
 - return `2` for validation, parse, unknown-field, or flag errors
-- return `3` for config read failures
+- return `3` for config read failures or interrupted planning/execution
 - return `4` for failed/unknown resources or partial apply failures
 
 ### `kitout apply --dry-run`
@@ -322,8 +322,9 @@ Behavior:
   stderr while it runs
 - return `0` when upgrade completed successfully or no upgrades are needed
 - return `2` for validation, parse, unknown-field, or flag errors
-- return `3` for config read failures or dry-run planning failures
-- return `4` for failed upgrade execution
+- return `3` for config read failures, dry-run planning failures, or interrupted
+  planning/execution
+- return `4` for resource upgrade failures
 
 Example dry-run output:
 
@@ -369,6 +370,10 @@ Checks:
 - write permissions for configured filesystem targets
 - repo-local `AGENTS.md` presence when the selected config is inside a Git repo
   and `.kitout/agent-guidance.yaml` has not disabled the warning
+
+If the command is interrupted, doctor stops dispatching checks and reports the
+execution error separately instead of treating canceled commands as missing
+prerequisites.
 
 Current output:
 

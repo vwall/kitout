@@ -1,10 +1,8 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	"io"
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
@@ -23,7 +21,8 @@ type agentExplainReport struct {
 	ResourceWasFound bool
 }
 
-func runExplain(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+func (app application) runExplain(args []string, opts globalOptions) int {
+	stdout, stderr := app.stdout, app.stderr
 	fs := flag.NewFlagSet("explain", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	addGlobalFlags(fs, &opts)
@@ -55,7 +54,7 @@ func runExplain(args []string, opts globalOptions, stdout, stderr io.Writer) int
 		return renderConfigError("explain", err, opts, renderer, jsonRenderer, stderr)
 	}
 
-	resourceList := resources.Build(loaded.Config, newCLIExecRunner())
+	resourceList := resources.Build(loaded.Config, app.newRunner())
 	resource, ok := findResourceByID(resourceList, resourceID)
 	if !ok {
 		if opts.json {
@@ -73,7 +72,7 @@ func runExplain(args []string, opts globalOptions, stdout, stderr io.Writer) int
 	if !opts.json && opts.verbose {
 		observer = renderer
 	}
-	plan := engine.NewPlanner().BuildWithObserver(context.Background(), []engine.Resource{resource}, observer)
+	plan := engine.NewPlanner().BuildWithObserver(app.ctx, []engine.Resource{resource}, observer)
 	report := buildAgentExplainReport(loaded, resourceID, plan)
 	if opts.json {
 		if err := jsonRenderer.renderAgentExplain(report); err != nil {

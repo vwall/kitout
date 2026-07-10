@@ -50,6 +50,9 @@ func (r humanRenderer) renderStatusPlan(path string, plan engine.Plan) {
 		}
 		r.renderItemAdvisories(strings.Repeat(" ", statusLeftWidth), item)
 	}
+	if plan.ExecutionError != "" {
+		fmt.Fprintf(r.stdout, "%s Execution stopped: %s\n", r.failSymbol(), plan.ExecutionError)
+	}
 	fmt.Fprintf(r.stdout, "\nSummary: %s\n", statusSummary(plan.Summary))
 	if attention := statusAttentionCount(plan.Summary); attention > 0 {
 		fmt.Fprintf(r.stdout, "%s\n", statusAttentionMessage(attention))
@@ -89,6 +92,10 @@ func (r humanRenderer) renderDryRunPlan(path string, plan engine.Plan) {
 		case engine.ActionSkip:
 			fmt.Fprintf(r.stdout, "%s Skipping %s: %s\n", r.skipSymbol(), displayResourceLabel(item.Type, item.ResourceID, item.Details), item.Message)
 		}
+	}
+	if plan.ExecutionError != "" {
+		fmt.Fprintf(r.stdout, "%s Execution stopped: %s\n", r.failSymbol(), plan.ExecutionError)
+		return
 	}
 	if plan.Summary.ToApply == 0 {
 		fmt.Fprintln(r.stdout, "No changes.")
@@ -139,6 +146,9 @@ func (r humanRenderer) renderApplyReport(path string, report engine.ApplyReport)
 		if item.Error != "" {
 			renderIndentedDetail(r.stdout, "    ", "error", item.Error)
 		}
+	}
+	if report.ExecutionError != "" {
+		fmt.Fprintf(r.stdout, "%s Execution stopped: %s\n", r.failSymbol(), report.ExecutionError)
 	}
 	fmt.Fprintf(r.stdout, "\nSummary: %s\n", applySummary(report.Summary))
 }
@@ -226,6 +236,9 @@ func (r humanRenderer) renderDoctorReport(report doctorReport) {
 		if item.Fix != "" {
 			fmt.Fprintf(r.stdout, "    fix: %s\n", item.Fix)
 		}
+	}
+	if report.ExecutionError != "" {
+		fmt.Fprintf(r.stdout, "%s Execution stopped: %s\n", r.failSymbol(), report.ExecutionError)
 	}
 	fmt.Fprintf(r.stdout, "\n%d total, %d ok, %d warnings, %d failed\n",
 		report.Summary.Total,

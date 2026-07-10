@@ -18,7 +18,8 @@ type applyOptions struct {
 	dryRun bool
 }
 
-func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr io.Writer) int {
+func (app application) runApply(args []string, opts globalOptions) int {
+	stdin, stdout, stderr := app.stdin, app.stdout, app.stderr
 	var applyOpts applyOptions
 	fs := flag.NewFlagSet("apply", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -45,12 +46,12 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		renderer.renderConfigWarnings(loaded.Warnings)
 	}
 
-	resourceList := resources.Build(loaded.Config, newCLIExecRunner())
+	resourceList := resources.Build(loaded.Config, app.newRunner())
 	var planObserver engine.PlanObserver
 	if !opts.json {
 		planObserver = newApplyPlanObserver(renderer, opts.verbose)
 	}
-	plan := engine.NewPlanner().BuildWithObserver(context.Background(), resourceList, planObserver)
+	plan := engine.NewPlanner().BuildWithObserver(app.ctx, resourceList, planObserver)
 
 	if applyOpts.dryRun {
 		if opts.json {
@@ -73,8 +74,11 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 
 	riskyItems := riskyApplyItems(plan)
 	if len(riskyItems) > 0 && !opts.yes {
-		if err := confirmRiskyApply(stdin, stderr, riskyItems); err != nil {
+		if err := confirmRiskyApply(app.ctx, stdin, app.interruptStdin, stderr, riskyItems); err != nil {
 			fmt.Fprintf(stderr, "%v\n", err)
+			if app.ctx.Err() != nil {
+				return exitRuntimeError
+			}
 			return exitValidation
 		}
 	}
@@ -88,24 +92,28 @@ func runApply(args []string, opts globalOptions, stdin io.Reader, stdout, stderr
 		}
 		observer = renderer
 	}
-	applyRunner := newCLIExecRunner()
+	applyRunner := app.newRunner()
 	if verboseApplyOutputEnabled(opts, applyOpts) && plan.Summary.ToApply > 0 {
-		applyRunner = newCLIVerboseExecRunner(stdout, stderr)
+		applyRunner = app.newVerboseRunner()
 	}
 	applyResources := resources.BuildUncached(loaded.Config, applyRunner)
-	report := engine.NewExecutor().ApplyWithObserver(context.Background(), applyResources, plan, observer)
+	report := engine.NewExecutor().ApplyWithObserver(app.ctx, applyResources, plan, observer)
 	if opts.json {
 		if err := jsonRenderer.renderApplyReport(loaded.Path, loaded.Warnings, report); err != nil {
 			fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
 			return exitRuntimeError
 		}
-		if report.HasFailures() {
-			return exitApplyFailure
-		}
-		return exitOK
+		return executionReportExitCode(report)
 	}
 
 	renderer.renderApplyReport(reportPath, report)
+	return executionReportExitCode(report)
+}
+
+func executionReportExitCode(report engine.ApplyReport) int {
+	if report.ExecutionError != "" {
+		return exitRuntimeError
+	}
 	if report.HasFailures() {
 		return exitApplyFailure
 	}
@@ -193,7 +201,10 @@ func riskyApplyItems(plan engine.Plan) []engine.PlanItem {
 	return items
 }
 
-func confirmRiskyApply(stdin io.Reader, stderr io.Writer, items []engine.PlanItem) error {
+func confirmRiskyApply(ctx context.Context, stdin io.Reader, interrupt func(), stderr io.Writer, items []engine.PlanItem) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("confirmation canceled: %w", err)
+	}
 	if stdin == nil {
 		return errors.New("confirmation required for risky apply actions; rerun with --yes to continue")
 	}
@@ -211,18 +222,58 @@ func confirmRiskyApply(stdin io.Reader, stderr io.Writer, items []engine.PlanIte
 	}
 	fmt.Fprint(stderr, "Continue? Type yes to apply: ")
 
-	scanner := bufio.NewScanner(stdin)
-	if !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			return fmt.Errorf("could not read confirmation: %w", err)
-		}
-		return errors.New("confirmation required; no changes made")
+	scanned := readConfirmation(ctx, stdin, interrupt)
+	if scanned.err != nil {
+		return scanned.err
 	}
-	answer := strings.ToLower(strings.TrimSpace(scanner.Text()))
+
+	answer := strings.ToLower(strings.TrimSpace(scanned.answer))
 	if answer != "yes" && answer != "y" {
 		return errors.New("apply aborted; no changes made")
 	}
 	return nil
+}
+
+type confirmationScanResult struct {
+	answer string
+	err    error
+}
+
+func readConfirmation(ctx context.Context, stdin io.Reader, interrupt func()) confirmationScanResult {
+	if ctx.Done() == nil {
+		return scanConfirmation(stdin)
+	}
+
+	if interrupt == nil {
+		return confirmationScanResult{err: errors.New("confirmation input is not interruptible when using a cancellable context; rerun with --yes to continue")}
+	}
+
+	result := make(chan confirmationScanResult, 1)
+	go func() {
+		result <- scanConfirmation(stdin)
+	}()
+
+	select {
+	case scanned := <-result:
+		if err := ctx.Err(); err != nil {
+			return confirmationScanResult{err: fmt.Errorf("confirmation canceled: %w", err)}
+		}
+		return scanned
+	case <-ctx.Done():
+		interrupt()
+		return confirmationScanResult{err: fmt.Errorf("confirmation canceled: %w", ctx.Err())}
+	}
+}
+
+func scanConfirmation(stdin io.Reader) confirmationScanResult {
+	scanner := bufio.NewScanner(stdin)
+	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return confirmationScanResult{err: fmt.Errorf("could not read confirmation: %w", err)}
+		}
+		return confirmationScanResult{err: errors.New("confirmation required; no changes made")}
+	}
+	return confirmationScanResult{answer: scanner.Text()}
 }
 
 func renderConfigError(command string, err error, opts globalOptions, renderer humanRenderer, jsonRenderer jsonRenderer, stderr io.Writer) int {

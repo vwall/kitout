@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -75,7 +76,13 @@ directories:
 #   add_to_etc_shells: true
 `
 
-func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+func (app application) runInit(args []string, opts globalOptions) int {
+	stdout, stderr := app.stdout, app.stderr
+	if err := app.ctx.Err(); err != nil {
+		fmt.Fprintf(stderr, "kitout init canceled: %v\n", err)
+		return exitRuntimeError
+	}
+
 	force := false
 	agents := false
 	home := false
@@ -121,15 +128,15 @@ func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 		return exitValidation
 	}
 
-	if err := writeStarterConfig(resolvedPath, force); err != nil {
+	if err := writeStarterConfig(app.ctx, resolvedPath, force); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			if agents {
 				fmt.Fprintf(stdout, "Config already exists: %s\n", resolvedPath)
-				return writeAgentsForInit(resolvedPath, stdout, stderr)
+				return writeAgentsForInit(app.ctx, resolvedPath, stdout, stderr)
 			}
 			if noAgentsWarning {
 				fmt.Fprintf(stdout, "Config already exists: %s\n", resolvedPath)
-				return writeNoAgentsWarningPreferenceForInit(resolvedPath, stdout, stderr)
+				return writeNoAgentsWarningPreferenceForInit(app.ctx, resolvedPath, stdout, stderr)
 			}
 			fmt.Fprintf(stderr, "Config already exists: %s\nUse --force to overwrite it.\n", resolvedPath)
 			return exitValidation
@@ -141,16 +148,21 @@ func runInit(args []string, opts globalOptions, stdout, stderr io.Writer) int {
 
 	fmt.Fprintf(stdout, "Created config: %s\n", resolvedPath)
 	if agents {
-		return writeAgentsForInit(resolvedPath, stdout, stderr)
+		return writeAgentsForInit(app.ctx, resolvedPath, stdout, stderr)
 	}
 	if noAgentsWarning {
-		return writeNoAgentsWarningPreferenceForInit(resolvedPath, stdout, stderr)
+		return writeNoAgentsWarningPreferenceForInit(app.ctx, resolvedPath, stdout, stderr)
 	}
 	return exitOK
 }
 
-func writeAgentsForInit(configPath string, stdout, stderr io.Writer) int {
-	agentsPath, result, err := writeKitoutAgentsFile(configPath)
+func writeAgentsForInit(ctx context.Context, configPath string, stdout, stderr io.Writer) int {
+	if err := ctx.Err(); err != nil {
+		fmt.Fprintf(stderr, "kitout init canceled: %v\n", err)
+		return exitRuntimeError
+	}
+
+	agentsPath, result, err := writeKitoutAgentsFile(ctx, configPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "Failed to create AGENTS.md: %v\n", err)
 		return exitRuntimeError
@@ -168,13 +180,18 @@ func writeAgentsForInit(configPath string, stdout, stderr io.Writer) int {
 	return exitOK
 }
 
-func writeNoAgentsWarningPreferenceForInit(configPath string, stdout, stderr io.Writer) int {
+func writeNoAgentsWarningPreferenceForInit(ctx context.Context, configPath string, stdout, stderr io.Writer) int {
+	if err := ctx.Err(); err != nil {
+		fmt.Fprintf(stderr, "kitout init canceled: %v\n", err)
+		return exitRuntimeError
+	}
+
 	if _, ok := nearestGitRepo(filepath.Dir(configPath)); !ok {
 		fmt.Fprintln(stdout, "No missing AGENTS.md warning applies because the config is not inside a Git repo.")
 		return exitOK
 	}
 
-	preferencesPath, err := writeSuppressMissingAgentsWarningPreference(configPath)
+	preferencesPath, err := writeSuppressMissingAgentsWarningPreference(ctx, configPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "Failed to disable AGENTS.md warning: %v\n", err)
 		return exitRuntimeError
@@ -184,7 +201,11 @@ func writeNoAgentsWarningPreferenceForInit(configPath string, stdout, stderr io.
 	return exitOK
 }
 
-func writeStarterConfig(path string, force bool) error {
+func writeStarterConfig(ctx context.Context, path string, force bool) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	if !force {
 		if _, err := os.Stat(path); err == nil {
 			return os.ErrExist
@@ -193,9 +214,15 @@ func writeStarterConfig(path string, force bool) error {
 		}
 	}
 
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	return os.WriteFile(path, []byte(starterConfig), 0o644)
 }

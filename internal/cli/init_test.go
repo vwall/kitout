@@ -2,6 +2,8 @@ package cli
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -533,6 +535,51 @@ func TestInitForceOverwritesExistingConfig(t *testing.T) {
 	}
 	if strings.Contains(string(contents), "# casks:") {
 		t.Fatalf("starter config still includes top-level casks example: %q", string(contents))
+	}
+}
+
+func TestInitCanceledContextDoesNotOverwriteExistingConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "kitout.yaml")
+	existing := []byte("version: 1\ncustom: true\n")
+	if err := os.WriteFile(configPath, existing, 0o644); err != nil {
+		t.Fatalf("write existing config: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+
+	code := app.run([]string{"init", "--config", configPath, "--force"})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if got := mustReadFile(t, configPath); !bytes.Equal(got, existing) {
+		t.Fatalf("existing config was changed: %q", got)
+	}
+	if stdout.String() != "" {
+		t.Fatalf("stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "kitout init canceled: context canceled") {
+		t.Fatalf("stderr = %q, want cancellation message", stderr.String())
+	}
+}
+
+func TestWriteStarterConfigDoesNotMutateWhenContextIsCanceled(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "nested", "kitout.yaml")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := writeStarterConfig(ctx, configPath, true)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want context canceled", err)
+	}
+	if _, err := os.Stat(filepath.Dir(configPath)); !os.IsNotExist(err) {
+		t.Fatalf("config directory stat error = %v, want directory not created", err)
 	}
 }
 

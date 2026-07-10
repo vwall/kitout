@@ -36,6 +36,7 @@ type jsonPlan struct {
 	Summary engine.PlanSummary `json:"summary"`
 	Items   []jsonPlanItem     `json:"items"`
 	DryRun  bool               `json:"dry_run,omitempty"`
+	Error   string             `json:"error,omitempty"`
 }
 
 type jsonPlanItem struct {
@@ -52,6 +53,7 @@ type jsonPlanItem struct {
 type jsonApplyReport struct {
 	Summary engine.ApplySummary `json:"summary"`
 	Items   []jsonApplyItem     `json:"items"`
+	Error   string              `json:"error,omitempty"`
 }
 
 type jsonApplyItem struct {
@@ -67,6 +69,7 @@ type jsonApplyItem struct {
 type jsonDoctorReport struct {
 	Summary doctorSummary    `json:"summary"`
 	Items   []jsonDoctorItem `json:"items"`
+	Error   string           `json:"error,omitempty"`
 }
 
 type jsonAgentContext struct {
@@ -313,6 +316,7 @@ func jsonPlanFromEngine(plan engine.Plan, dryRun bool) *jsonPlan {
 		Summary: plan.Summary,
 		Items:   items,
 		DryRun:  dryRun,
+		Error:   plan.ExecutionError,
 	}
 }
 
@@ -351,6 +355,7 @@ func jsonApplyReportFromEngine(report engine.ApplyReport) *jsonApplyReport {
 	return &jsonApplyReport{
 		Summary: report.Summary,
 		Items:   items,
+		Error:   report.ExecutionError,
 	}
 }
 
@@ -369,6 +374,7 @@ func jsonDoctorReportFromCLI(report doctorReport) *jsonDoctorReport {
 	return &jsonDoctorReport{
 		Summary: report.Summary,
 		Items:   items,
+		Error:   report.ExecutionError,
 	}
 }
 

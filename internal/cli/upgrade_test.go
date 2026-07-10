@@ -2,11 +2,62 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/vwall/kitout/internal/platform"
 )
+
+func TestUpgradeCanceledEmptyPlanReturnsRuntimeError(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+
+	code := app.run([]string{"upgrade", "--config", configPath})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if !strings.Contains(stdout.String(), "Execution stopped: context canceled") {
+		t.Fatalf("stdout = %q, want cancellation result", stdout.String())
+	}
+}
+
+func TestUpgradeCanceledDryRunDoesNotReportNoUpgrades(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+
+	code := app.run([]string{"upgrade", "--config", configPath, "--dry-run"})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if !strings.Contains(stdout.String(), "Execution stopped: context canceled") {
+		t.Fatalf("stdout = %q, want cancellation result", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "No upgrades.") || strings.Contains(stdout.String(), "No upgrades made") {
+		t.Fatalf("stdout = %q, want no successful no-upgrade message", stdout.String())
+	}
+}
+
+func TestBuildUpgradePlanPreservesCancellationWithoutResources(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	plan := buildUpgradePlan(ctx, nil, nil)
+
+	if plan.ExecutionError != context.Canceled.Error() || !plan.HasFailures() {
+		t.Fatalf("plan = %+v, want cancellation failure", plan)
+	}
+}
 
 func TestUpgradeDryRunShowsManagedHomebrewUpgrades(t *testing.T) {
 	runner := &fakeApplyRunner{responses: []fakeApplyResponse{
@@ -15,7 +66,6 @@ func TestUpgradeDryRunShowsManagedHomebrewUpgrades(t *testing.T) {
 		{result: applyResultWithStdout("brew", []string{"list", "--cask", "--quiet"}, "ghostty\n")},
 		{result: applyResultWithStdout("brew", []string{"outdated", "--cask", "--quiet"}, "ghostty\n")},
 	}}
-	withCLIExecRunners(t, runner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 brew:
@@ -33,7 +83,14 @@ directories:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--config", configPath, "--dry-run"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"upgrade", "--config", configPath, "--dry-run"},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -77,7 +134,6 @@ func TestUpgradeAppliesManagedHomebrewUpgrades(t *testing.T) {
 		{result: applyResultWithStdout("brew", []string{"outdated", "--cask", "--quiet"}, "ghostty\n")},
 		{result: applyCommandResult("brew", []string{"upgrade", "--cask", "ghostty"}, 0)},
 	}}
-	withCLIExecRunners(t, planRunner, upgradeRunner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 brew:
@@ -90,7 +146,15 @@ brew:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--config", configPath}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"upgrade", "--config", configPath},
+		nil,
+		&stdout,
+		&stderr,
+		planRunner,
+		upgradeRunner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -130,7 +194,6 @@ func TestUpgradeOnlyBrewSkipsCaskChecks(t *testing.T) {
 		{result: applyResultWithStdout("brew", []string{"list", "--formula", "--quiet"}, "git\n")},
 		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
 	}}
-	withCLIExecRunners(t, runner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 brew:
@@ -143,7 +206,14 @@ brew:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--config", configPath, "--dry-run", "--only", "brew"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"upgrade", "--config", configPath, "--dry-run", "--only", "brew"},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -164,7 +234,6 @@ func TestUpgradeDryRunCanTargetManagedResourceID(t *testing.T) {
 		{result: applyResultWithStdout("brew", []string{"list", "--formula", "--quiet"}, "git\ngo\n")},
 		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "go\n")},
 	}}
-	withCLIExecRunners(t, runner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 brew:
@@ -178,7 +247,14 @@ brew:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--config", configPath, "--dry-run", "brew:go"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"upgrade", "--config", configPath, "--dry-run", "brew:go"},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -201,7 +277,6 @@ func TestUpgradeDryRunJSONReportsPlan(t *testing.T) {
 		{result: applyResultWithStdout("brew", []string{"list", "--formula", "--quiet"}, "git\n")},
 		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
 	}}
-	withCLIExecRunners(t, runner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 brew:
@@ -212,7 +287,14 @@ brew:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--config", configPath, "--dry-run", "--json"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"upgrade", "--config", configPath, "--dry-run", "--json"},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -244,7 +326,6 @@ func TestUpgradeJSONReportsUpgradeResults(t *testing.T) {
 		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
 		{result: applyCommandResult("brew", []string{"upgrade", "git"}, 0)},
 	}}
-	withCLIExecRunners(t, planRunner, upgradeRunner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 brew:
@@ -255,7 +336,15 @@ brew:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--config", configPath, "--json"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"upgrade", "--config", configPath, "--json"},
+		nil,
+		&stdout,
+		&stderr,
+		planRunner,
+		upgradeRunner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -292,7 +381,6 @@ func TestUpgradeRejectsUnknownOnlyFilter(t *testing.T) {
 
 func TestUpgradeRejectsUnknownTarget(t *testing.T) {
 	runner := &fakeApplyRunner{}
-	withCLIExecRunners(t, runner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 brew:
@@ -303,7 +391,14 @@ brew:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--config", configPath, "brew:go"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"upgrade", "--config", configPath, "brew:go"},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitValidation {
 		t.Fatalf("exit code = %d, want %d", code, exitValidation)
 	}

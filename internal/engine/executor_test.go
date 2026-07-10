@@ -65,6 +65,162 @@ func TestExecutorReportsApplyFailures(t *testing.T) {
 	}
 }
 
+func TestExecutorDoesNotDispatchResourcesAfterCancellation(t *testing.T) {
+	first := &fakeResource{id: "directory:/tmp/first", typ: "directory", state: StateMissing}
+	second := &fakeResource{id: "directory:/tmp/second", typ: "directory", state: StateMissing}
+	plan := Plan{Items: []PlanItem{
+		{ResourceID: first.ID(), Type: first.Type(), State: StateMissing, Action: ActionApply},
+		{ResourceID: second.ID(), Type: second.Type(), State: StateMissing, Action: ActionApply},
+	}}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	report := NewExecutor().Apply(ctx, []Resource{first, second}, plan)
+
+	if first.applyCalls != 0 || second.applyCalls != 0 {
+		t.Fatalf("apply calls = %d, %d; want no dispatch after cancellation", first.applyCalls, second.applyCalls)
+	}
+	if !report.HasFailures() || report.ExecutionError != context.Canceled.Error() {
+		t.Fatalf("report = %+v, want cancellation failure", report)
+	}
+	for _, item := range report.Items {
+		if item.Action != "skip" || item.Message != "not applied: context canceled" {
+			t.Fatalf("item = %+v, want canceled skip", item)
+		}
+	}
+}
+
+func TestExecutorPreservesCancellationWithoutPlanItems(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	report := NewExecutor().Apply(ctx, nil, Plan{})
+
+	if len(report.Items) != 0 {
+		t.Fatalf("len(report.Items) = %d, want 0", len(report.Items))
+	}
+	if report.ExecutionError != context.Canceled.Error() || !report.HasFailures() {
+		t.Fatalf("report = %+v, want cancellation failure", report)
+	}
+}
+
+func TestExecutorDoesNotApplyIncompletePlanWithFreshContext(t *testing.T) {
+	resource := &fakeResource{id: "directory:/tmp/code", typ: "directory", state: StateMissing}
+	plan := Plan{
+		Items: []PlanItem{{
+			ResourceID: resource.ID(),
+			Type:       resource.Type(),
+			State:      StateMissing,
+			Action:     ActionApply,
+		}},
+		ExecutionError: context.Canceled.Error(),
+	}
+
+	report := NewExecutor().Apply(context.Background(), []Resource{resource}, plan)
+
+	if resource.applyCalls != 0 {
+		t.Fatalf("apply calls = %d, want none for incomplete plan", resource.applyCalls)
+	}
+	if report.ExecutionError != context.Canceled.Error() || !report.HasFailures() {
+		t.Fatalf("report = %+v, want cancellation failure", report)
+	}
+	if len(report.Items) != 1 || report.Items[0].Action != "skip" {
+		t.Fatalf("items = %+v, want pending apply skipped", report.Items)
+	}
+}
+
+func TestExecutorRechecksCancellationBeforeCallingApply(t *testing.T) {
+	resource := &fakeResource{id: "directory:/tmp/code", typ: "directory", state: StateMissing}
+	plan := Plan{Items: []PlanItem{{
+		ResourceID: resource.ID(),
+		Type:       resource.Type(),
+		State:      StateMissing,
+		Action:     ActionApply,
+	}}}
+	ctx, cancel := context.WithCancel(context.Background())
+	observer := cancelingApplyObserver{cancel: cancel}
+
+	report := NewExecutor().ApplyWithObserver(ctx, []Resource{resource}, plan, observer)
+
+	if resource.applyCalls != 0 {
+		t.Fatalf("apply calls = %d, want none after observer cancellation", resource.applyCalls)
+	}
+	if !report.HasFailures() || report.ExecutionError != context.Canceled.Error() {
+		t.Fatalf("report = %+v, want cancellation failure", report)
+	}
+}
+
+func TestExecutorReportsCancellationAfterFinalApply(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	resource := &fakeResource{
+		id:        "directory:/tmp/code",
+		typ:       "directory",
+		state:     StateMissing,
+		applyHook: cancel,
+	}
+	plan := Plan{Items: []PlanItem{{
+		ResourceID: resource.ID(),
+		Type:       resource.Type(),
+		State:      StateMissing,
+		Action:     ActionApply,
+	}}}
+
+	report := NewExecutor().Apply(ctx, []Resource{resource}, plan)
+
+	if resource.applyCalls != 1 {
+		t.Fatalf("apply calls = %d, want 1", resource.applyCalls)
+	}
+	if !report.HasFailures() || report.ExecutionError != context.Canceled.Error() {
+		t.Fatalf("report = %+v, want final cancellation failure", report)
+	}
+}
+
+func TestExecutorStopsWhenApplyReturnsCancellation(t *testing.T) {
+	first := &fakeResource{id: "directory:/tmp/first", typ: "directory", state: StateMissing, applyErr: context.Canceled}
+	second := &fakeResource{id: "directory:/tmp/second", typ: "directory", state: StateMissing}
+	plan := Plan{Items: []PlanItem{
+		{ResourceID: first.ID(), Type: first.Type(), State: StateMissing, Action: ActionApply},
+		{ResourceID: second.ID(), Type: second.Type(), State: StateMissing, Action: ActionApply},
+	}}
+
+	report := NewExecutor().Apply(context.Background(), []Resource{first, second}, plan)
+
+	if first.applyCalls != 1 || second.applyCalls != 0 {
+		t.Fatalf("apply calls = %d, %d; want returned cancellation to stop after first", first.applyCalls, second.applyCalls)
+	}
+	if report.ExecutionError != context.Canceled.Error() || !report.HasFailures() {
+		t.Fatalf("report = %+v, want cancellation failure", report)
+	}
+	if len(report.Items) != 2 || report.Items[1].Action != "skip" {
+		t.Fatalf("items = %+v, want remaining apply skipped", report.Items)
+	}
+}
+
+func TestExecutorUsesResourceIdentityInsteadOfResultIdentity(t *testing.T) {
+	resource := &fakeResource{
+		id:        "directory:/tmp/code",
+		typ:       "directory",
+		state:     StateMissing,
+		applyID:   "brew:git",
+		applyType: "brew",
+	}
+	plan := Plan{Items: []PlanItem{{
+		ResourceID: resource.ID(),
+		Type:       resource.Type(),
+		State:      StateMissing,
+		Action:     ActionApply,
+	}}}
+
+	report := NewExecutor().Apply(context.Background(), []Resource{resource}, plan)
+
+	if got := report.Items[0].ResourceID; got != resource.ID() {
+		t.Fatalf("ResourceID = %q, want %q", got, resource.ID())
+	}
+	if got := report.Items[0].Type; got != resource.Type() {
+		t.Fatalf("Type = %q, want %q", got, resource.Type())
+	}
+}
+
 func TestExecutorSkipsRemainingApplyActionsAfterBlockingFailure(t *testing.T) {
 	blocker := &fakeResource{
 		id:          "security:filevault",
@@ -203,6 +359,14 @@ type recordingApplyObserver struct {
 	items         []PlanItem
 	applyCalls    []int
 	applyCallsFor func() int
+}
+
+type cancelingApplyObserver struct {
+	cancel context.CancelFunc
+}
+
+func (observer cancelingApplyObserver) BeforeApply(PlanItem) {
+	observer.cancel()
 }
 
 func (observer *recordingApplyObserver) BeforeApply(item PlanItem) {

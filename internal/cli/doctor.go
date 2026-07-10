@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -30,14 +29,16 @@ type doctorReport struct {
 	ConfigWarnings []config.ConfigWarning
 	Items          []doctorItem
 	Summary        doctorSummary
+	ExecutionError string
 }
 
 type doctorItem struct {
-	Name    string
-	State   doctorState
-	Message string
-	Fix     string
-	Details map[string]string
+	Name           string
+	State          doctorState
+	Message        string
+	Fix            string
+	Details        map[string]string
+	ExecutionError string
 }
 
 type doctorSummary struct {
@@ -61,7 +62,8 @@ type doctorChecker struct {
 
 const homebrewMetadataStaleAfter = 14 * 24 * time.Hour
 
-func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+func (app application) runDoctor(args []string, opts globalOptions) int {
+	stdout, stderr := app.stdout, app.stderr
 	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	addGlobalFlags(fs, &opts)
@@ -82,13 +84,13 @@ func runDoctor(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		renderer.renderDoctorStart(configPath)
 	}
 
-	checker := newDoctorChecker(newCLIExecRunner(), doctorSystemInfo{
+	checker := newDoctorChecker(app.newRunner(), doctorSystemInfo{
 		OS:    runtime.GOOS,
 		Arch:  runtime.GOARCH,
 		Shell: os.Getenv("SHELL"),
 		Path:  os.Getenv("PATH"),
 	})
-	report := checker.Check(context.Background(), configPath)
+	report := checker.Check(app.ctx, configPath)
 
 	if opts.json {
 		if err := newJSONRenderer(stdout).renderDoctorReport(report); err != nil {
@@ -112,39 +114,114 @@ func newDoctorChecker(runner platform.Runner, info doctorSystemInfo) doctorCheck
 }
 
 func (checker doctorChecker) Check(ctx context.Context, configPath string) doctorReport {
+	report := doctorReport{ConfigPath: configPath}
 	configItem, loaded, configOK := checker.checkConfig(configPath)
-	xcodeItem := checker.checkCommand(ctx, "Xcode Command Line Tools", "xcode-select", []string{"-p"}, "Install them with `xcode-select --install`.")
-	homebrewItem := checker.checkCommand(ctx, "Homebrew", "brew", []string{"--version"}, "Install Homebrew, then rerun `kitout doctor`.")
-	homebrewPathItem := checker.checkHomebrewPath(ctx, homebrewItem)
-	homebrewFreshnessItem := checker.checkHomebrewFreshness(ctx, homebrewItem)
-	gitItem := checker.checkCommand(ctx, "Git", "git", []string{"--version"}, "Install Git or the Xcode Command Line Tools, then rerun `kitout doctor`.")
-	shellItem := checker.checkShellEnvironment()
-	report := doctorReport{
-		ConfigPath:     configPath,
-		ConfigWarnings: loaded.Warnings,
-		Items: []doctorItem{
-			checker.checkOS(),
-			checker.checkArchitecture(),
-			xcodeItem,
-			homebrewItem,
-			homebrewPathItem,
-			homebrewFreshnessItem,
-			gitItem,
-			shellItem,
-			configItem,
-		},
+	report.ConfigWarnings = loaded.Warnings
+	finishCanceled := func(err error) doctorReport {
+		report.Items = append(report.Items, configItem)
+		return finishDoctorReport(report, err)
 	}
+	if err := ctx.Err(); err != nil {
+		return finishCanceled(err)
+	}
+
+	report.Items = append(report.Items, checker.checkOS(), checker.checkArchitecture())
+	xcodeItem := checker.checkCommand(ctx, "Xcode Command Line Tools", "xcode-select", []string{"-p"}, "Install them with `xcode-select --install`.")
+	if err := doctorItemExecutionError(xcodeItem); err != nil {
+		return finishCanceled(err)
+	}
+	if err := ctx.Err(); err != nil {
+		return finishCanceled(err)
+	}
+	report.Items = append(report.Items, xcodeItem)
+
+	homebrewItem := checker.checkCommand(ctx, "Homebrew", "brew", []string{"--version"}, "Install Homebrew, then rerun `kitout doctor`.")
+	if err := doctorItemExecutionError(homebrewItem); err != nil {
+		return finishCanceled(err)
+	}
+	if err := ctx.Err(); err != nil {
+		return finishCanceled(err)
+	}
+	report.Items = append(report.Items, homebrewItem)
+
+	homebrewPathItem := checker.checkHomebrewPath(ctx, homebrewItem)
+	if err := doctorItemExecutionError(homebrewPathItem); err != nil {
+		return finishCanceled(err)
+	}
+	if err := ctx.Err(); err != nil {
+		return finishCanceled(err)
+	}
+	report.Items = append(report.Items, homebrewPathItem)
+
+	homebrewFreshnessItem := checker.checkHomebrewFreshness(ctx, homebrewItem)
+	if err := doctorItemExecutionError(homebrewFreshnessItem); err != nil {
+		return finishCanceled(err)
+	}
+	if err := ctx.Err(); err != nil {
+		return finishCanceled(err)
+	}
+	report.Items = append(report.Items, homebrewFreshnessItem)
+
+	gitItem := checker.checkCommand(ctx, "Git", "git", []string{"--version"}, "Install Git or the Xcode Command Line Tools, then rerun `kitout doctor`.")
+	if err := doctorItemExecutionError(gitItem); err != nil {
+		return finishCanceled(err)
+	}
+	if err := ctx.Err(); err != nil {
+		return finishCanceled(err)
+	}
+	report.Items = append(report.Items, gitItem, checker.checkShellEnvironment(), configItem)
+
 	if configOK {
-		report.Items = append(report.Items, checker.checkPathPermissions(loaded.Config))
-		if agentsItem, ok := checker.checkAgentsGuidance(loaded.Path); ok {
+		if err := ctx.Err(); err != nil {
+			return finishDoctorReport(report, err)
+		}
+		pathPermissionsItem := checker.checkPathPermissions(loaded.Config)
+		if err := ctx.Err(); err != nil {
+			return finishDoctorReport(report, err)
+		}
+		report.Items = append(report.Items, pathPermissionsItem)
+
+		if err := ctx.Err(); err != nil {
+			return finishDoctorReport(report, err)
+		}
+		agentsItem, ok := checker.checkAgentsGuidance(loaded.Path)
+		if err := ctx.Err(); err != nil {
+			return finishDoctorReport(report, err)
+		}
+		if ok {
 			report.Items = append(report.Items, agentsItem)
 		}
 	}
 
+	return finishDoctorReport(report, nil)
+}
+
+func doctorItemExecutionError(item doctorItem) error {
+	if item.ExecutionError == "" {
+		return nil
+	}
+	return errors.New(item.ExecutionError)
+}
+
+func doctorExecutionError(err error) string {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return context.Canceled.Error()
+	case errors.Is(err, context.DeadlineExceeded):
+		return context.DeadlineExceeded.Error()
+	default:
+		return ""
+	}
+}
+
+func finishDoctorReport(report doctorReport, executionErr error) doctorReport {
+	if executionErr != nil {
+		report.ExecutionError = executionErr.Error()
+	}
+	report.Summary = doctorSummary{}
 	for _, item := range report.Items {
 		report.Summary.add(item)
 	}
-
 	return report
 }
 
@@ -206,6 +283,9 @@ func (checker doctorChecker) checkAgentsGuidance(configPath string) (doctorItem,
 }
 
 func (checker doctorChecker) checkHomebrewPath(ctx context.Context, homebrewItem doctorItem) doctorItem {
+	if ctx.Err() != nil {
+		return doctorItem{}
+	}
 	if homebrewItem.State != doctorOK {
 		return doctorItem{
 			Name:    "Homebrew path",
@@ -226,6 +306,7 @@ func (checker doctorChecker) checkHomebrewPath(ctx context.Context, homebrewItem
 				"command": "brew --prefix",
 				"error":   err.Error(),
 			},
+			ExecutionError: doctorExecutionError(err),
 		}
 	}
 
@@ -267,6 +348,9 @@ func (checker doctorChecker) checkHomebrewPath(ctx context.Context, homebrewItem
 }
 
 func (checker doctorChecker) checkHomebrewFreshness(ctx context.Context, homebrewItem doctorItem) doctorItem {
+	if ctx.Err() != nil {
+		return doctorItem{}
+	}
 	if homebrewItem.State != doctorOK {
 		return doctorItem{
 			Name:    "Homebrew freshness",
@@ -281,11 +365,12 @@ func (checker doctorChecker) checkHomebrewFreshness(ctx context.Context, homebre
 	if err != nil {
 		details["error"] = err.Error()
 		return doctorItem{
-			Name:    "Homebrew freshness",
-			State:   doctorWarn,
-			Message: "Homebrew repository could not be detected",
-			Fix:     "Run `brew doctor`, then rerun `kitout doctor`.",
-			Details: details,
+			Name:           "Homebrew freshness",
+			State:          doctorWarn,
+			Message:        "Homebrew repository could not be detected",
+			Fix:            "Run `brew doctor`, then rerun `kitout doctor`.",
+			Details:        details,
+			ExecutionError: doctorExecutionError(err),
 		}
 	}
 
@@ -300,6 +385,9 @@ func (checker doctorChecker) checkHomebrewFreshness(ctx context.Context, homebre
 		}
 	}
 	details["repository"] = repository
+	if ctx.Err() != nil {
+		return doctorItem{}
+	}
 
 	gitArgs := []string{"-C", repository, "log", "-1", "--format=%ct"}
 	details["command"] = commandString("git", gitArgs)
@@ -307,11 +395,12 @@ func (checker doctorChecker) checkHomebrewFreshness(ctx context.Context, homebre
 	if err != nil {
 		details["error"] = err.Error()
 		return doctorItem{
-			Name:    "Homebrew freshness",
-			State:   doctorWarn,
-			Message: "Homebrew metadata age could not be checked",
-			Fix:     "Run `brew update` when you want to refresh Homebrew and taps.",
-			Details: details,
+			Name:           "Homebrew freshness",
+			State:          doctorWarn,
+			Message:        "Homebrew metadata age could not be checked",
+			Fix:            "Run `brew update` when you want to refresh Homebrew and taps.",
+			Details:        details,
+			ExecutionError: doctorExecutionError(err),
 		}
 	}
 
@@ -531,6 +620,7 @@ func (checker doctorChecker) checkCommand(ctx context.Context, label, name strin
 				"command": commandString(name, args),
 				"error":   err.Error(),
 			},
+			ExecutionError: doctorExecutionError(err),
 		}
 	}
 
@@ -763,7 +853,7 @@ func (summary *doctorSummary) add(item doctorItem) {
 }
 
 func (report doctorReport) HasFailures() bool {
-	return report.Summary.Fail > 0
+	return report.Summary.Fail > 0 || report.ExecutionError != ""
 }
 
 func doctorExitCode(report doctorReport) int {

@@ -1,6 +1,9 @@
 package engine
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 // ApplySummary aggregates apply results.
 type ApplySummary struct {
@@ -26,8 +29,9 @@ type ApplyItem struct {
 
 // ApplyReport is the result of executing a plan.
 type ApplyReport struct {
-	Items   []ApplyItem
-	Summary ApplySummary
+	Items          []ApplyItem
+	Summary        ApplySummary
+	ExecutionError string
 }
 
 // ApplyObserver receives progress events while the executor applies resources.
@@ -35,9 +39,9 @@ type ApplyObserver interface {
 	BeforeApply(item PlanItem)
 }
 
-// HasFailures reports whether any apply action failed.
+// HasFailures reports whether an apply action failed or execution stopped.
 func (report ApplyReport) HasFailures() bool {
-	return report.Summary.Failed > 0
+	return report.Summary.Failed > 0 || report.ExecutionError != ""
 }
 
 // Executor applies resources selected by a plan.
@@ -55,10 +59,20 @@ func (executor Executor) Apply(ctx context.Context, resources []Resource, plan P
 
 // ApplyWithObserver runs Apply and reports progress before each mutating action.
 func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Resource, plan Plan, observer ApplyObserver) ApplyReport {
+	report := ApplyReport{
+		Items: make([]ApplyItem, 0, len(plan.Items)),
+	}
+	if err := ctx.Err(); err != nil {
+		appendCanceledApplyItems(&report, plan.Items, err)
+		return report
+	}
+	if plan.ExecutionError != "" {
+		appendCanceledApplyItems(&report, plan.Items, errors.New(plan.ExecutionError))
+		return report
+	}
+
 	if items := duplicateResourceIDApplyItems(resources); len(items) > 0 {
-		report := ApplyReport{
-			Items: make([]ApplyItem, 0, len(items)),
-		}
+		report.Items = make([]ApplyItem, 0, len(items))
 		for _, item := range items {
 			report.Items = append(report.Items, item)
 			report.Summary.add(item)
@@ -71,11 +85,12 @@ func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Reso
 		resourceByID[resource.ID()] = resource
 	}
 
-	report := ApplyReport{
-		Items: make([]ApplyItem, 0, len(plan.Items)),
-	}
-
 	for i, planItem := range plan.Items {
+		if err := ctx.Err(); err != nil {
+			appendCanceledApplyItems(&report, plan.Items[i:], err)
+			return report
+		}
+
 		resource := resourceByID[planItem.ResourceID]
 		if planItem.Action != ActionApply {
 			item := applyItemFromPlan(planItem)
@@ -105,11 +120,19 @@ func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Reso
 		if observer != nil {
 			observer.BeforeApply(planItem)
 		}
+		if err := ctx.Err(); err != nil {
+			appendCanceledApplyItems(&report, plan.Items[i:], err)
+			return report
+		}
 
 		result, err := resource.Apply(ctx)
 		item := applyItemFor(resource, result, err)
 		report.Items = append(report.Items, item)
 		report.Summary.add(item)
+		if executionErr := executionCancellationError(ctx, err); executionErr != nil {
+			appendCanceledApplyItems(&report, plan.Items[i+1:], executionErr)
+			return report
+		}
 		if err != nil && resourceBlocksApply(resource) {
 			appendBlockedApplyItems(&report, plan.Items[i+1:], resource.ID())
 			return report
@@ -117,6 +140,24 @@ func (executor Executor) ApplyWithObserver(ctx context.Context, resources []Reso
 	}
 
 	return report
+}
+
+func appendCanceledApplyItems(report *ApplyReport, planItems []PlanItem, err error) {
+	report.ExecutionError = err.Error()
+	for _, planItem := range planItems {
+		item := applyItemFromPlan(planItem)
+		if planItem.Action == ActionApply {
+			item = ApplyItem{
+				ResourceID: planItem.ResourceID,
+				Type:       planItem.Type,
+				Action:     "skip",
+				Message:    "not applied: " + err.Error(),
+				Details:    planItem.Details,
+			}
+		}
+		report.Items = append(report.Items, item)
+		report.Summary.add(item)
+	}
 }
 
 func appendBlockedApplyItems(report *ApplyReport, planItems []PlanItem, blockerID string) {
@@ -165,19 +206,13 @@ func applyItemFromPlan(planItem PlanItem) ApplyItem {
 }
 
 func applyItemFor(resource Resource, result ApplyResult, err error) ApplyItem {
-	if result.ResourceID == "" {
-		result.ResourceID = resource.ID()
-	}
-	if result.Type == "" {
-		result.Type = resource.Type()
-	}
 	if result.Action == "" {
 		result.Action = "unknown"
 	}
 
 	item := ApplyItem{
-		ResourceID: result.ResourceID,
-		Type:       result.Type,
+		ResourceID: resource.ID(),
+		Type:       resource.Type(),
 		Action:     result.Action,
 		Changed:    result.Changed,
 		Message:    result.Message,

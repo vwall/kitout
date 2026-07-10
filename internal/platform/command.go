@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 )
 
 // Runner executes external commands for resources and platform checks.
@@ -28,11 +30,66 @@ type CommandResult struct {
 
 // ExecRunner runs commands through os/exec.
 type ExecRunner struct {
-	stdout           io.Writer
-	stderr           io.Writer
-	renderCommands   bool
-	trustCommandPath bool
-	preserveUserPath bool
+	stdout                io.Writer
+	stderr                io.Writer
+	renderCommands        bool
+	trustCommandPath      bool
+	preserveUserPath      bool
+	waitDelay             time.Duration
+	processGroupIsolation *bool
+}
+
+const defaultCommandWaitDelay = time.Second
+
+type commandCancellationState struct {
+	mu             sync.Mutex
+	err            error
+	afterStart     func() error
+	finish         func() error
+	processGroupID int
+}
+
+func (state *commandCancellationState) capture(err error) error {
+	if err == nil || err == os.ErrProcessDone {
+		return err
+	}
+	state.mu.Lock()
+	if state.err == nil {
+		state.err = err
+	} else {
+		state.err = errors.Join(state.err, err)
+	}
+	state.mu.Unlock()
+	return err
+}
+
+func (state *commandCancellationState) load() error {
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	return state.err
+}
+
+func (state *commandCancellationState) finishCommand() {
+	if state.finish != nil {
+		state.capture(state.finish())
+	}
+}
+
+func (state *commandCancellationState) commandStarted() error {
+	if state.afterStart == nil {
+		return nil
+	}
+	return state.afterStart()
+}
+
+func (state *commandCancellationState) ownedProcessGroupID(process *os.Process) int {
+	if state.processGroupID != 0 {
+		return state.processGroupID
+	}
+	if process == nil {
+		return 0
+	}
+	return process.Pid
 }
 
 var trustedCommandDirectories = []string{
@@ -130,6 +187,26 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 	}
 
 	cmd := exec.CommandContext(ctx, executable, args...)
+	waitDelay := runner.waitDelay
+	if waitDelay <= 0 {
+		waitDelay = defaultCommandWaitDelay
+	}
+	isolateProcessGroup := !processHasControllingTerminal()
+	if runner.processGroupIsolation != nil {
+		isolateProcessGroup = *runner.processGroupIsolation
+	}
+	cancellationState := configureCommandCancellation(cmd, waitDelay, isolateProcessGroup)
+	originalCancel := cmd.Cancel
+	var cancelOnce sync.Once
+	var cancelErr error
+	cmd.Cancel = func() error {
+		cancelOnce.Do(func() {
+			if originalCancel != nil {
+				cancelErr = originalCancel()
+			}
+		})
+		return cancelErr
+	}
 	if runner.trustCommandPath && !runner.preserveUserPath {
 		cmd.Env = trustedCommandEnvironment()
 	}
@@ -144,7 +221,36 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 		cmd.Stderr = io.MultiWriter(&stderr, runner.stderr)
 	}
 
-	err := cmd.Run()
+	err := cmd.Start()
+	if err == nil {
+		if startErr := cancellationState.commandStarted(); startErr != nil {
+			_ = cmd.Cancel()
+			err = errors.Join(startErr, cmd.Wait())
+		} else {
+			waitDone := make(chan struct{})
+			watcherDone := make(chan struct{})
+			go func() {
+				defer close(watcherDone)
+				select {
+				case <-ctx.Done():
+					_ = cmd.Cancel()
+				case <-waitDone:
+				}
+			}()
+			err = cmd.Wait()
+			close(waitDone)
+			<-watcherDone
+		}
+	}
+	cancellationState.finishCommand()
+	if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+		err = errors.Join(err, ctxErr)
+	} else if ctxErr == nil && commandProcessWasInterrupted(cmd.ProcessState) {
+		err = errors.Join(err, context.Canceled)
+	}
+	if cancellationErr := cancellationState.load(); cancellationErr != nil && !errors.Is(err, cancellationErr) {
+		err = errors.Join(err, fmt.Errorf("command cancellation cleanup: %w", cancellationErr))
+	}
 	result.Stdout = stdout.String()
 	result.Stderr = stderr.String()
 

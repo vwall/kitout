@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/vwall/kitout/internal/engine"
 	"github.com/vwall/kitout/internal/platform"
@@ -473,6 +476,215 @@ shell:
 	}
 }
 
+func TestConfirmRiskyApplyReturnsWithoutWaitingForBlockedRead(t *testing.T) {
+	reader := newBlockingConfirmationReader()
+	t.Cleanup(reader.releaseRead)
+	ctx, cancel := context.WithCancel(context.Background())
+	result := make(chan error, 1)
+	go func() {
+		result <- confirmRiskyApply(ctx, reader, reader.interrupt, io.Discard, []engine.PlanItem{{
+			ResourceID: "shell:setup",
+			Type:       "shell",
+			Action:     engine.ActionApply,
+		}})
+	}()
+
+	select {
+	case <-reader.started:
+	case <-time.After(time.Second):
+		t.Fatal("confirmation did not start reading")
+	}
+	cancel()
+
+	select {
+	case err := <-result:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("error = %v, want context canceled", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("confirmation did not return after context cancellation")
+	}
+	select {
+	case <-reader.interrupted:
+	default:
+		t.Fatal("confirmation input was not interrupted on cancellation")
+	}
+
+	reader.releaseRead()
+	select {
+	case <-reader.finished:
+	case <-time.After(time.Second):
+		t.Fatal("confirmation read did not finish after test released it")
+	}
+}
+
+func TestRunContextCancelsFileBackedConfirmation(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+
+shell:
+  - name: Configure shell
+    command: printf configured
+    when: always
+`)
+	stdin, stdinWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create stdin pipe: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = stdin.Close()
+		_ = stdinWriter.Close()
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stderr := newConfirmationPromptWriter()
+	result := make(chan int, 1)
+	go func() {
+		result <- RunContext(ctx, []string{"apply", "--config", configPath}, stdin, io.Discard, stderr)
+	}()
+
+	select {
+	case <-stderr.prompted:
+	case <-time.After(time.Second):
+		t.Fatal("confirmation prompt was not rendered")
+	}
+	cancel()
+
+	select {
+	case code := <-result:
+		if code != exitRuntimeError {
+			t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("RunContext did not return after cancellation")
+	}
+}
+
+func TestApplyCanceledContextReturnsRuntimeError(t *testing.T) {
+	configPath := writeCLIConfigFile(t, `version: 1
+
+directories:
+  - /tmp/kitout-canceled-apply
+`)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+
+	code := app.run([]string{"apply", "--config", configPath, "--yes"})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if !strings.Contains(stdout.String(), "Execution stopped: context canceled") {
+		t.Fatalf("stdout = %q, want cancellation result", stdout.String())
+	}
+}
+
+func TestApplyCanceledDryRunDoesNotReportNoChanges(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+
+	code := app.run([]string{"apply", "--config", configPath, "--dry-run"})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if !strings.Contains(stdout.String(), "Execution stopped: context canceled") {
+		t.Fatalf("stdout = %q, want cancellation result", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "No changes.") || strings.Contains(stdout.String(), "No changes made") {
+		t.Fatalf("stdout = %q, want no successful no-change message", stdout.String())
+	}
+}
+
+func TestExecutionReportExitCode(t *testing.T) {
+	tests := []struct {
+		name   string
+		report engine.ApplyReport
+		want   int
+	}{
+		{name: "success", report: engine.ApplyReport{}, want: exitOK},
+		{name: "resource failure", report: engine.ApplyReport{Summary: engine.ApplySummary{Failed: 1}}, want: exitApplyFailure},
+		{name: "execution error", report: engine.ApplyReport{ExecutionError: context.Canceled.Error()}, want: exitRuntimeError},
+		{name: "execution error wins over resource failure", report: engine.ApplyReport{Summary: engine.ApplySummary{Failed: 1}, ExecutionError: context.Canceled.Error()}, want: exitRuntimeError},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := executionReportExitCode(test.report); got != test.want {
+				t.Fatalf("executionReportExitCode() = %d, want %d", got, test.want)
+			}
+		})
+	}
+}
+
+func TestReadConfirmationRejectsNonInterruptibleReaderWithCancelableContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	result := readConfirmation(ctx, strings.NewReader("yes\n"), nil)
+
+	if result.err == nil || !strings.Contains(result.err.Error(), "not interruptible") {
+		t.Fatalf("error = %v, want interruptible input requirement", result.err)
+	}
+}
+
+type blockingConfirmationReader struct {
+	started       chan struct{}
+	interrupted   chan struct{}
+	release       chan struct{}
+	finished      chan struct{}
+	startOnce     sync.Once
+	interruptOnce sync.Once
+	releaseOnce   sync.Once
+}
+
+type confirmationPromptWriter struct {
+	prompted chan struct{}
+	once     sync.Once
+}
+
+func newConfirmationPromptWriter() *confirmationPromptWriter {
+	return &confirmationPromptWriter{prompted: make(chan struct{})}
+}
+
+func (writer *confirmationPromptWriter) Write(contents []byte) (int, error) {
+	if bytes.Contains(contents, []byte("Continue? Type yes to apply:")) {
+		writer.once.Do(func() { close(writer.prompted) })
+	}
+	return len(contents), nil
+}
+
+func newBlockingConfirmationReader() *blockingConfirmationReader {
+	return &blockingConfirmationReader{
+		started:     make(chan struct{}),
+		interrupted: make(chan struct{}),
+		release:     make(chan struct{}),
+		finished:    make(chan struct{}),
+	}
+}
+
+func (reader *blockingConfirmationReader) Read([]byte) (int, error) {
+	reader.startOnce.Do(func() { close(reader.started) })
+	<-reader.release
+	close(reader.finished)
+	return 0, io.EOF
+}
+
+func (reader *blockingConfirmationReader) interrupt() {
+	reader.interruptOnce.Do(func() { close(reader.interrupted) })
+}
+
+func (reader *blockingConfirmationReader) releaseRead() {
+	reader.releaseOnce.Do(func() { close(reader.release) })
+}
+
 func TestRiskyApplyItemsIncludesLoginShell(t *testing.T) {
 	plan := engine.Plan{
 		Items: []engine.PlanItem{
@@ -520,7 +732,6 @@ func TestApplyRequiresConfirmationForSystemPrerequisite(t *testing.T) {
 	planRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
 		{err: applyCommandError("xcode-select", []string{"-p"}, 2)},
 	}}
-	withCLIExecRunners(t, planRunner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 system:
@@ -531,7 +742,14 @@ system:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"apply", "--config", configPath}, strings.NewReader("no\n"), &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"apply", "--config", configPath},
+		strings.NewReader("no\n"),
+		&stdout,
+		&stderr,
+		planRunner,
+	)
 	if code != exitValidation {
 		t.Fatalf("exit code = %d, want %d", code, exitValidation)
 	}
@@ -554,7 +772,6 @@ func TestApplyYesSkipsSystemPrerequisiteConfirmationAndRunsInstaller(t *testing.
 		{err: applyCommandError("xcode-select", []string{"-p"}, 2)},
 		{result: applyCommandResult("xcode-select", []string{"--install"}, 0)},
 	}}
-	withCLIExecRunners(t, planRunner, applyRunner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 system:
@@ -565,7 +782,15 @@ system:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"apply", "--config", configPath, "--yes"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"apply", "--config", configPath, "--yes"},
+		nil,
+		&stdout,
+		&stderr,
+		planRunner,
+		applyRunner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -588,7 +813,6 @@ func TestApplyDryRunShowsSystemPrerequisiteWithoutInstaller(t *testing.T) {
 	planRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
 		{err: applyCommandError("xcode-select", []string{"-p"}, 2)},
 	}}
-	withCLIExecRunners(t, planRunner)
 	configPath := writeCLIConfigFile(t, `version: 1
 
 system:
@@ -599,7 +823,14 @@ system:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"apply", "--config", configPath, "--dry-run"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"apply", "--config", configPath, "--dry-run"},
+		nil,
+		&stdout,
+		&stderr,
+		planRunner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -1261,27 +1492,6 @@ func (runner *fakeApplyRunner) Run(ctx context.Context, name string, args ...str
 		response.result = applyCommandResult(name, args, 0)
 	}
 	return response.result, response.err
-}
-
-func withCLIExecRunners(t *testing.T, runners ...platform.Runner) {
-	t.Helper()
-
-	original := cliExecRunnerFactory
-	next := 0
-	cliExecRunnerFactory = func() platform.Runner {
-		if next >= len(runners) {
-			t.Fatalf("newCLIExecRunner called %d times, want %d", next+1, len(runners))
-		}
-		runner := runners[next]
-		next++
-		return runner
-	}
-	t.Cleanup(func() {
-		cliExecRunnerFactory = original
-		if next != len(runners) {
-			t.Fatalf("newCLIExecRunner called %d times, want %d", next, len(runners))
-		}
-	})
 }
 
 func expectApplyRunnerCalls(t *testing.T, got, want []applyCommandCall) {

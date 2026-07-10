@@ -3,12 +3,12 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"io"
 
 	"github.com/vwall/kitout/internal/buildinfo"
 )
 
-func runVersion(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+func (app application) runVersion(args []string, opts globalOptions) int {
+	stdout, stderr := app.stdout, app.stderr
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	addGlobalFlags(fs, &opts)

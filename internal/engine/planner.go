@@ -1,6 +1,9 @@
 package engine
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 // PlanAction describes the action the engine should take for a status result.
 type PlanAction string
@@ -39,8 +42,9 @@ type PlanSummary struct {
 
 // Plan is the result of checking resources and mapping their states to actions.
 type Plan struct {
-	Items   []PlanItem
-	Summary PlanSummary
+	Items          []PlanItem
+	Summary        PlanSummary
+	ExecutionError string
 }
 
 // NewPlanFromItems returns a plan with summary counts derived from the items.
@@ -60,9 +64,10 @@ func (p Plan) HasChanges() bool {
 	return p.Summary.ToApply > 0
 }
 
-// HasFailures reports whether the plan contains resources that cannot be applied.
+// HasFailures reports whether the plan contains resources that cannot be
+// applied or planning stopped before completion.
 func (p Plan) HasFailures() bool {
-	return p.Summary.Failed > 0 || p.Summary.Unknown > 0
+	return p.Summary.Failed > 0 || p.Summary.Unknown > 0 || p.ExecutionError != ""
 }
 
 // PlanObserver receives progress events while the planner checks resources.
@@ -85,10 +90,16 @@ func (p Planner) Build(ctx context.Context, resources []Resource) Plan {
 
 // BuildWithObserver checks resource status and reports progress before each check.
 func (p Planner) BuildWithObserver(ctx context.Context, resources []Resource, observer PlanObserver) Plan {
+	plan := Plan{
+		Items: make([]PlanItem, 0, len(resources)),
+	}
+	if err := ctx.Err(); err != nil {
+		appendCanceledPlanItems(&plan, resources, err)
+		return plan
+	}
+
 	if items := duplicateResourceIDPlanItems(resources); len(items) > 0 {
-		plan := Plan{
-			Items: make([]PlanItem, 0, len(items)),
-		}
+		plan.Items = make([]PlanItem, 0, len(items))
 		for _, item := range items {
 			plan.Items = append(plan.Items, item)
 			plan.Summary.add(item)
@@ -96,15 +107,23 @@ func (p Planner) BuildWithObserver(ctx context.Context, resources []Resource, ob
 		return plan
 	}
 
-	plan := Plan{
-		Items: make([]PlanItem, 0, len(resources)),
-	}
-
-	for _, resource := range resources {
+	for i, resource := range resources {
+		if err := ctx.Err(); err != nil {
+			appendCanceledPlanItems(&plan, resources[i:], err)
+			return plan
+		}
 		if observer != nil {
 			observer.BeforeStatus(resource)
 		}
+		if err := ctx.Err(); err != nil {
+			appendCanceledPlanItems(&plan, resources[i:], err)
+			return plan
+		}
 		result, err := resource.Status(ctx)
+		if executionErr := executionCancellationError(ctx, err); executionErr != nil {
+			appendCanceledPlanItems(&plan, resources[i:], executionErr)
+			return plan
+		}
 		item := planItemFor(resource, result, err)
 		plan.Items = append(plan.Items, item)
 		plan.Summary.add(item)
@@ -113,20 +132,47 @@ func (p Planner) BuildWithObserver(ctx context.Context, resources []Resource, ob
 	return plan
 }
 
+func executionCancellationError(ctx context.Context, err error) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	if errors.Is(err, context.Canceled) {
+		return context.Canceled
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return context.DeadlineExceeded
+	}
+	return nil
+}
+
+func appendCanceledPlanItems(plan *Plan, resources []Resource, err error) {
+	plan.ExecutionError = err.Error()
+	for _, resource := range resources {
+		item := canceledPlanItem(resource, err)
+		plan.Items = append(plan.Items, item)
+		plan.Summary.add(item)
+	}
+}
+
+func canceledPlanItem(resource Resource, err error) PlanItem {
+	return PlanItem{
+		ResourceID: resource.ID(),
+		Type:       resource.Type(),
+		State:      StateFailed,
+		Action:     ActionFail,
+		Message:    "status check canceled",
+		Error:      err.Error(),
+	}
+}
+
 func planItemFor(resource Resource, result StatusResult, err error) PlanItem {
-	if result.ResourceID == "" {
-		result.ResourceID = resource.ID()
-	}
-	if result.Type == "" {
-		result.Type = resource.Type()
-	}
 	if result.State == "" {
 		result.State = StateUnknown
 	}
 
 	item := PlanItem{
-		ResourceID: result.ResourceID,
-		Type:       result.Type,
+		ResourceID: resource.ID(),
+		Type:       resource.Type(),
 		State:      result.State,
 		Action:     actionForState(result.State),
 		Message:    result.Message,

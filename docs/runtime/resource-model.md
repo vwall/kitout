@@ -19,6 +19,10 @@ Examples:
 
 Every resource can be checked. Some resources can be applied.
 
+`Resource.ID()` and `Resource.Type()` are the canonical runtime identity. The
+planner and executor stamp that identity onto plan and apply items rather than
+trusting duplicated identity fields returned by resource implementations.
+
 ## Interface
 
 ```go
@@ -116,6 +120,10 @@ skipped -> skip
 unknown -> fail unless explicitly allowed
 ```
 
+Planning and execution reports carry a report-level `ExecutionError`. This
+preserves cancellation even when a config produces no resource items; per-item
+failures remain reserved for resource-specific problems.
+
 ## Executor
 
 The executor runs actions in order.
@@ -186,3 +194,6 @@ Recommended exit codes:
 3 runtime error
 4 partial apply failure
 ```
+
+Cancellation is a runtime error (`3`). Resource apply failures remain `4`, even
+when some earlier resources were applied successfully.

@@ -56,7 +56,8 @@ func (resource unsupportedUpgradeResource) Apply(ctx context.Context) (engine.Ap
 	}, err
 }
 
-func runUpgrade(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+func (app application) runUpgrade(args []string, opts globalOptions) int {
+	stdout, stderr := app.stdout, app.stderr
 	var upgradeOpts upgradeOptions
 	fs := flag.NewFlagSet("upgrade", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -85,7 +86,7 @@ func runUpgrade(args []string, opts globalOptions, stdout, stderr io.Writer) int
 		return renderConfigError("upgrade", err, opts, renderer, jsonRenderer, stderr)
 	}
 
-	planResources, err := filterUpgradeResources(resources.Build(loaded.Config, newCLIExecRunner()), only, targets)
+	planResources, err := filterUpgradeResources(resources.Build(loaded.Config, app.newRunner()), only, targets)
 	if err != nil {
 		return renderUpgradeValidationError(err, opts, jsonRenderer, stderr)
 	}
@@ -99,7 +100,7 @@ func runUpgrade(args []string, opts globalOptions, stdout, stderr io.Writer) int
 	if !opts.json {
 		planObserver = newApplyPlanObserver(renderer, opts.verbose)
 	}
-	plan := buildUpgradePlan(context.Background(), planResources, planObserver)
+	plan := buildUpgradePlan(app.ctx, planResources, planObserver)
 
 	if upgradeOpts.dryRun {
 		if opts.json {
@@ -129,32 +130,26 @@ func runUpgrade(args []string, opts globalOptions, stdout, stderr io.Writer) int
 		}
 		observer = renderer
 	}
-	upgradeRunner := newCLIExecRunner()
+	upgradeRunner := app.newRunner()
 	if verboseUpgradeOutputEnabled(opts, upgradeOpts) && plan.Summary.ToApply > 0 {
-		upgradeRunner = newCLIVerboseExecRunner(stdout, stderr)
+		upgradeRunner = app.newVerboseRunner()
 	}
 	rawUpgradeResources, err := filterUpgradeResources(resources.BuildUncached(loaded.Config, upgradeRunner), only, targets)
 	if err != nil {
 		return renderUpgradeValidationError(err, opts, jsonRenderer, stderr)
 	}
 	upgradeResources := wrapUpgradeResources(rawUpgradeResources)
-	report := engine.NewExecutor().ApplyWithObserver(context.Background(), upgradeResources, plan, observer)
+	report := engine.NewExecutor().ApplyWithObserver(app.ctx, upgradeResources, plan, observer)
 	if opts.json {
 		if err := jsonRenderer.renderUpgradeReport(loaded.Path, loaded.Warnings, report); err != nil {
 			fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
 			return exitRuntimeError
 		}
-		if report.HasFailures() {
-			return exitApplyFailure
-		}
-		return exitOK
+		return executionReportExitCode(report)
 	}
 
 	renderer.renderUpgradeReport(reportPath, report)
-	if report.HasFailures() {
-		return exitApplyFailure
-	}
-	return exitOK
+	return executionReportExitCode(report)
 }
 
 func normalizeUpgradeOnly(value string) (string, error) {
@@ -309,7 +304,9 @@ func buildUpgradePlan(ctx context.Context, resourceList []engine.Resource, obser
 	for _, item := range statusPlan.Items {
 		items = append(items, upgradePlanItem(item))
 	}
-	return engine.NewPlanFromItems(items)
+	plan := engine.NewPlanFromItems(items)
+	plan.ExecutionError = statusPlan.ExecutionError
+	return plan
 }
 
 func upgradePlanItem(item engine.PlanItem) engine.PlanItem {
@@ -437,6 +434,10 @@ func (r humanRenderer) renderUpgradeDryRunPlan(path string, plan engine.Plan) {
 		case engine.ActionSkip:
 			fmt.Fprintf(r.stdout, "%s Skipping %s: %s\n", r.skipSymbol(), displayResourceLabel(item.Type, item.ResourceID, item.Details), item.Message)
 		}
+	}
+	if plan.ExecutionError != "" {
+		fmt.Fprintf(r.stdout, "%s Execution stopped: %s\n", r.failSymbol(), plan.ExecutionError)
+		return
 	}
 	if plan.Summary.ToApply == 0 {
 		fmt.Fprintln(r.stdout, "No upgrades.")

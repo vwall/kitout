@@ -30,6 +30,11 @@ Responsible for:
 
 The CLI layer should not know how Homebrew or symlinks work.
 
+The CLI composition root owns process-scoped dependencies: cancellation
+context, standard streams, and command-runner factories. Commands receive
+those dependencies through the application value instead of package globals,
+so command work is cancelable and tests can isolate runner implementations.
+
 ### Config layer
 
 Responsible for:
@@ -86,6 +91,21 @@ Responsible for OS-specific helpers:
 - macOS version detection
 - Homebrew path detection
 - shell detection
+
+Command execution bounds waits on inherited subprocess pipes. On Darwin and
+Linux, every command runs in a private process group so cancellation and final
+cleanup include descendants created before the command leader exits. For
+interactive commands, Kitout temporarily makes that private group the
+terminal's foreground group so Git, `chsh`, nested `sudo`, and configured shell
+commands can use `/dev/tty`. A small process-group supervisor forwards terminal
+interrupts to Kitout, ensuring context cancellation still begins when a command
+ignores `SIGINT`. It also coordinates terminal stop and continue signals so
+suspending Kitout and returning it to the foreground resumes the command group
+with terminal ownership intact. Kitout restores its own foreground group when
+the foreground command finishes, while background completion leaves the shell's
+terminal ownership unchanged. Canceling first gives the owned group a bounded
+chance to relay termination across a privilege boundary, then forcibly
+terminates that group.
 
 ## Package layout
 

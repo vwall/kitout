@@ -2,12 +2,50 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestStatusCanceledEmptyPlanReturnsRuntimeError(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+
+	code := app.run([]string{"status", "--config", configPath})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if !strings.Contains(stdout.String(), "Execution stopped: context canceled") {
+		t.Fatalf("stdout = %q, want cancellation result", stdout.String())
+	}
+}
+
+func TestStatusCanceledEmptyPlanJSONReportsExecutionError(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+
+	code := app.run([]string{"status", "--config", configPath, "--json"})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	response := decodeStatusJSON(t, stdout.String())
+	if response.OK || response.Plan == nil || response.Plan.Error != context.Canceled.Error() {
+		t.Fatalf("response = %+v, want plan cancellation error", response)
+	}
+}
 
 func TestStatusLoadsValidConfig(t *testing.T) {
 	dir := t.TempDir()
@@ -519,6 +557,7 @@ type statusJSONResponse struct {
 	Config  *statusJSONConfig `json:"config"`
 	Plan    *statusJSONPlan   `json:"plan"`
 	Upgrade *statusJSONApply  `json:"upgrade"`
+	Doctor  *statusJSONDoctor `json:"doctor"`
 	Error   *statusJSONError  `json:"error"`
 }
 
@@ -531,6 +570,12 @@ type statusJSONPlan struct {
 	Summary statusJSONPlanSummary `json:"summary"`
 	Items   []statusJSONPlanItem  `json:"items"`
 	DryRun  bool                  `json:"dry_run"`
+	Error   string                `json:"error"`
+}
+
+type statusJSONDoctor struct {
+	Items []json.RawMessage `json:"items"`
+	Error string            `json:"error"`
 }
 
 type statusJSONPlanSummary struct {

@@ -72,12 +72,18 @@ directories:
   - `+missingDir+`
 `)
 	runner := &fakeApplyRunner{}
-	withCLIExecRunners(t, runner)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"explain", "--config", configPath, "directory:" + missingDir}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"explain", "--config", configPath, "directory:" + missingDir},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -100,12 +106,18 @@ shell:
     when: always
 `)
 	runner := &fakeApplyRunner{}
-	withCLIExecRunners(t, runner)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"explain", "--config", configPath, "shell:Create marker"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"explain", "--config", configPath, "shell:Create marker"},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}
@@ -132,12 +144,18 @@ shell:
     when: always
 `)
 	runner := &fakeApplyRunner{}
-	withCLIExecRunners(t, runner)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"explain", "--config", configPath, "--json", "shell:Create marker"}, nil, &stdout, &stderr)
+	code := runWithCLIExecRunners(
+		t,
+		[]string{"explain", "--config", configPath, "--json", "shell:Create marker"},
+		nil,
+		&stdout,
+		&stderr,
+		runner,
+	)
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stderr: %s", code, exitOK, stderr.String())
 	}

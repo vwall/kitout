@@ -52,6 +52,33 @@ func TestDoctorCheckerReportsHealthySystem(t *testing.T) {
 	assertDoctorItem(t, report, "Path permissions", doctorOK, "no configured filesystem write targets")
 }
 
+func TestDoctorJSONReportsCancellationWithoutPrerequisiteFailures(t *testing.T) {
+	configPath := writeCLIConfigFile(t, "version: 1\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	runner := &contextProbeRunner{}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApplication(ctx, nil, &stdout, &stderr)
+	app.runners.newRunner = func() platform.Runner { return runner }
+
+	code := app.run([]string{"doctor", "--config", configPath, "--json"})
+
+	if code != exitRuntimeError {
+		t.Fatalf("exit code = %d, want %d", code, exitRuntimeError)
+	}
+	if runner.calls != 0 {
+		t.Fatalf("runner calls = %d, want none", runner.calls)
+	}
+	response := decodeStatusJSON(t, stdout.String())
+	if response.OK || response.Doctor == nil || response.Doctor.Error != context.Canceled.Error() {
+		t.Fatalf("response = %+v, want doctor cancellation error", response)
+	}
+	if len(response.Doctor.Items) != 1 {
+		t.Fatalf("doctor items = %+v, want only the completed config check", response.Doctor.Items)
+	}
+}
+
 func TestDoctorCheckerWarnsWhenKitoutRepoIsMissingAgentsFile(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {

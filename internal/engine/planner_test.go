@@ -137,6 +137,108 @@ func TestPlannerNotifiesObserverBeforeEachStatusCheck(t *testing.T) {
 	}
 }
 
+func TestPlannerDoesNotDispatchResourcesAfterCancellation(t *testing.T) {
+	first := &fakeResource{id: "directory:/tmp/first", typ: "directory", state: StateMissing}
+	second := &fakeResource{id: "directory:/tmp/second", typ: "directory", state: StateMissing}
+	observer := &fakePlanObserver{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	plan := NewPlanner().BuildWithObserver(ctx, []Resource{first, second}, observer)
+
+	if first.statusCalls != 0 || second.statusCalls != 0 {
+		t.Fatalf("status calls = %d, %d; want no dispatch after cancellation", first.statusCalls, second.statusCalls)
+	}
+	if len(observer.ids) != 0 {
+		t.Fatalf("observer ids = %#v, want no notifications after cancellation", observer.ids)
+	}
+	assertCanceledPlan(t, plan, first.ID(), second.ID())
+}
+
+func TestPlannerPreservesCancellationWithoutResources(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	plan := NewPlanner().Build(ctx, nil)
+
+	if len(plan.Items) != 0 {
+		t.Fatalf("len(plan.Items) = %d, want 0", len(plan.Items))
+	}
+	if plan.ExecutionError != context.Canceled.Error() || !plan.HasFailures() {
+		t.Fatalf("plan = %+v, want cancellation failure", plan)
+	}
+}
+
+func TestPlannerStopsWhenStatusCancelsContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	first := &fakeResource{
+		id:         "directory:/tmp/first",
+		typ:        "directory",
+		state:      StateSatisfied,
+		statusHook: cancel,
+	}
+	second := &fakeResource{id: "directory:/tmp/second", typ: "directory", state: StateMissing}
+
+	plan := NewPlanner().Build(ctx, []Resource{first, second})
+
+	if first.statusCalls != 1 || second.statusCalls != 0 {
+		t.Fatalf("status calls = %d, %d; want cancellation to stop after first", first.statusCalls, second.statusCalls)
+	}
+	assertCanceledPlan(t, plan, first.ID(), second.ID())
+}
+
+func TestPlannerStopsWhenStatusReturnsCancellation(t *testing.T) {
+	first := &fakeResource{id: "directory:/tmp/first", typ: "directory", err: context.Canceled}
+	second := &fakeResource{id: "directory:/tmp/second", typ: "directory", state: StateMissing}
+
+	plan := NewPlanner().Build(context.Background(), []Resource{first, second})
+
+	if first.statusCalls != 1 || second.statusCalls != 0 {
+		t.Fatalf("status calls = %d, %d; want returned cancellation to stop after first", first.statusCalls, second.statusCalls)
+	}
+	assertCanceledPlan(t, plan, first.ID(), second.ID())
+}
+
+func TestPlannerRechecksCancellationAfterObserver(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	first := &fakeResource{id: "directory:/tmp/first", typ: "directory", state: StateMissing}
+	second := &fakeResource{id: "directory:/tmp/second", typ: "directory", state: StateMissing}
+	observer := &fakePlanObserver{before: func(Resource) { cancel() }}
+
+	plan := NewPlanner().BuildWithObserver(ctx, []Resource{first, second}, observer)
+
+	if first.statusCalls != 0 || second.statusCalls != 0 {
+		t.Fatalf("status calls = %d, %d; want no dispatch after observer cancellation", first.statusCalls, second.statusCalls)
+	}
+	if got, want := observer.ids, []string{first.ID()}; !slices.Equal(got, want) {
+		t.Fatalf("observer ids = %#v, want %#v", got, want)
+	}
+	assertCanceledPlan(t, plan, first.ID(), second.ID())
+}
+
+func assertCanceledPlan(t *testing.T, plan Plan, resourceIDs ...string) {
+	t.Helper()
+
+	if len(plan.Items) != len(resourceIDs) {
+		t.Fatalf("len(plan.Items) = %d, want %d", len(plan.Items), len(resourceIDs))
+	}
+	for i, resourceID := range resourceIDs {
+		item := plan.Items[i]
+		if item.ResourceID != resourceID || item.State != StateFailed || item.Action != ActionFail {
+			t.Fatalf("item[%d] = %+v, want canceled failure for %s", i, item, resourceID)
+		}
+		if item.Message != "status check canceled" || item.Error != context.Canceled.Error() {
+			t.Fatalf("item[%d] = %+v, want context cancellation details", i, item)
+		}
+	}
+	if plan.Summary.Failed != len(resourceIDs) || !plan.HasFailures() {
+		t.Fatalf("summary = %+v, want %d canceled failures", plan.Summary, len(resourceIDs))
+	}
+	if plan.ExecutionError != context.Canceled.Error() {
+		t.Fatalf("ExecutionError = %q, want context canceled", plan.ExecutionError)
+	}
+}
+
 func TestPlannerDefaultsIncompleteStatusResults(t *testing.T) {
 	resource := &fakeResource{id: "mystery:thing", typ: "mystery"}
 
@@ -149,6 +251,20 @@ func TestPlannerDefaultsIncompleteStatusResults(t *testing.T) {
 	if plan.Summary.Unknown != 1 {
 		t.Fatalf("Unknown = %d, want 1", plan.Summary.Unknown)
 	}
+}
+
+func TestPlannerUsesResourceIdentityInsteadOfResultIdentity(t *testing.T) {
+	resource := &fakeResource{
+		id:         "directory:/tmp/code",
+		typ:        "directory",
+		state:      StateMissing,
+		statusID:   "brew:git",
+		statusType: "brew",
+	}
+
+	plan := NewPlanner().Build(context.Background(), []Resource{resource})
+
+	assertPlanItem(t, plan.Items[0], "directory:/tmp/code", "directory", StateMissing, ActionApply)
 }
 
 func TestPlannerRejectsDuplicateResourceIDsBeforeStatus(t *testing.T) {
@@ -195,10 +311,16 @@ func assertPlanItem(t *testing.T, item PlanItem, id, typ string, state ResourceS
 type fakeResource struct {
 	id          string
 	typ         string
+	statusID    string
+	statusType  string
+	applyID     string
+	applyType   string
 	state       ResourceState
 	message     string
 	err         error
 	applyErr    error
+	applyHook   func()
+	statusHook  func()
 	advisories  []Advisory
 	blocksApply bool
 	statusCalls int
@@ -206,11 +328,15 @@ type fakeResource struct {
 }
 
 type fakePlanObserver struct {
-	ids []string
+	ids    []string
+	before func(Resource)
 }
 
 func (observer *fakePlanObserver) BeforeStatus(resource Resource) {
 	observer.ids = append(observer.ids, resource.ID())
+	if observer.before != nil {
+		observer.before(resource)
+	}
 }
 
 func (resource *fakeResource) ID() string {
@@ -223,9 +349,19 @@ func (resource *fakeResource) Type() string {
 
 func (resource *fakeResource) Status(ctx context.Context) (StatusResult, error) {
 	resource.statusCalls++
+	if resource.statusHook != nil {
+		resource.statusHook()
+	}
+	id, typ := resource.id, resource.typ
+	if resource.statusID != "" {
+		id = resource.statusID
+	}
+	if resource.statusType != "" {
+		typ = resource.statusType
+	}
 	return StatusResult{
-		ResourceID: resource.id,
-		Type:       resource.typ,
+		ResourceID: id,
+		Type:       typ,
 		State:      resource.state,
 		Message:    resource.message,
 		Advisories: resource.advisories,
@@ -234,9 +370,19 @@ func (resource *fakeResource) Status(ctx context.Context) (StatusResult, error) 
 
 func (resource *fakeResource) Apply(ctx context.Context) (ApplyResult, error) {
 	resource.applyCalls++
+	if resource.applyHook != nil {
+		resource.applyHook()
+	}
+	id, typ := resource.id, resource.typ
+	if resource.applyID != "" {
+		id = resource.applyID
+	}
+	if resource.applyType != "" {
+		typ = resource.applyType
+	}
 	return ApplyResult{
-		ResourceID: resource.id,
-		Type:       resource.typ,
+		ResourceID: id,
+		Type:       typ,
 		Action:     string(ActionApply),
 		Changed:    true,
 	}, resource.applyErr

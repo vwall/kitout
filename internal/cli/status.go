@@ -1,17 +1,16 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	"io"
 
 	"github.com/vwall/kitout/internal/config"
 	"github.com/vwall/kitout/internal/engine"
 	"github.com/vwall/kitout/internal/resources"
 )
 
-func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int {
+func (app application) runStatus(args []string, opts globalOptions) int {
+	stdout, stderr := app.stdout, app.stderr
 	fs := flag.NewFlagSet("status", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	addGlobalFlags(fs, &opts)
@@ -36,12 +35,12 @@ func runStatus(args []string, opts globalOptions, stdout, stderr io.Writer) int 
 		renderer.renderConfigWarnings(loaded.Warnings)
 	}
 
-	resourceList := resources.Build(loaded.Config, newCLIExecRunner())
+	resourceList := resources.Build(loaded.Config, app.newRunner())
 	var observer engine.PlanObserver
 	if !opts.json {
 		observer = newStatusPlanObserver(renderer, opts.verbose)
 	}
-	plan := engine.NewPlanner().BuildWithObserver(context.Background(), resourceList, observer)
+	plan := engine.NewPlanner().BuildWithObserver(app.ctx, resourceList, observer)
 
 	if opts.json {
 		if err := jsonRenderer.renderPlan("status", loaded.Path, loaded.Warnings, plan, false); err != nil {

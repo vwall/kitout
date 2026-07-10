@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -33,14 +34,21 @@ const (
 	agentsUnchanged agentsWriteResult = "unchanged"
 )
 
-func writeKitoutAgentsFile(configPath string) (string, agentsWriteResult, error) {
+func writeKitoutAgentsFile(ctx context.Context, configPath string) (string, agentsWriteResult, error) {
 	agentsPath := agentsPathForConfig(configPath)
+	if err := ctx.Err(); err != nil {
+		return agentsPath, "", err
+	}
+
 	configReference, err := agentsConfigReference(configPath, agentsPath)
 	if err != nil {
 		return agentsPath, "", err
 	}
 	section := kitoutAgentsSection(configReference)
 
+	if err := ctx.Err(); err != nil {
+		return agentsPath, "", err
+	}
 	if err := os.MkdirAll(filepath.Dir(agentsPath), 0o755); err != nil {
 		return agentsPath, "", err
 	}
@@ -48,6 +56,9 @@ func writeKitoutAgentsFile(configPath string) (string, agentsWriteResult, error)
 	existing, err := os.ReadFile(agentsPath)
 	if errors.Is(err, os.ErrNotExist) {
 		contents := "# AGENTS.md\n\n" + section
+		if err := ctx.Err(); err != nil {
+			return agentsPath, "", err
+		}
 		if err := os.WriteFile(agentsPath, []byte(contents), 0o644); err != nil {
 			return agentsPath, "", err
 		}
@@ -64,25 +75,38 @@ func writeKitoutAgentsFile(configPath string) (string, agentsWriteResult, error)
 	if !changed {
 		return agentsPath, agentsUnchanged, nil
 	}
+	if err := ctx.Err(); err != nil {
+		return agentsPath, "", err
+	}
 	if err := os.WriteFile(agentsPath, []byte(merged), 0o644); err != nil {
 		return agentsPath, "", err
 	}
 	return agentsPath, agentsUpdated, nil
 }
 
-func writeSuppressMissingAgentsWarningPreference(configPath string) (string, error) {
+func writeSuppressMissingAgentsWarningPreference(ctx context.Context, configPath string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+
 	repoRoot, ok := nearestGitRepo(filepath.Dir(configPath))
 	if !ok {
 		return "", fmt.Errorf("agent guidance warning preferences require a config inside a Git repo")
 	}
 
 	preferencesPath := agentGuidancePreferencesPath(repoRoot)
+	if err := ctx.Err(); err != nil {
+		return preferencesPath, err
+	}
 	if err := os.MkdirAll(filepath.Dir(preferencesPath), 0o755); err != nil {
 		return preferencesPath, err
 	}
 
 	existing, err := os.ReadFile(preferencesPath)
 	if errors.Is(err, os.ErrNotExist) {
+		if err := ctx.Err(); err != nil {
+			return preferencesPath, err
+		}
 		if err := os.WriteFile(preferencesPath, []byte(suppressMissingAgentsWarningFileContents), 0o644); err != nil {
 			return preferencesPath, err
 		}
@@ -98,6 +122,9 @@ func writeSuppressMissingAgentsWarningPreference(configPath string) (string, err
 	}
 	if preferences.SuppressMissingAgentsWarning {
 		return preferencesPath, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return preferencesPath, err
 	}
 	if err := os.WriteFile(preferencesPath, []byte(mergeSuppressMissingAgentsWarningPreference(string(existing))), 0o644); err != nil {
 		return preferencesPath, err
