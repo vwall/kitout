@@ -14,7 +14,7 @@
   --glass-highlight: rgba(255, 255, 255, 0.88);
   --blue: #1f6feb;
   --blue-dark: #174ea6;
-  --green: #2d9b57;
+  --green: #247c46;
   --amber: #9a650c;
   --red: #bd3f36;
   --terminal: #111716;
@@ -34,6 +34,9 @@
   --space-md: clamp(1.25rem, 2vw, 1.75rem);
   --space-lg: clamp(2rem, 4vw, 3.5rem);
   --space-xl: clamp(3.5rem, 7vw, 6rem);
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-skip-link: 30;
 }
 
 * {
@@ -57,6 +60,10 @@ body {
 body::selection {
   color: #ffffff;
   background: var(--blue-dark);
+}
+
+main:focus {
+  outline: none;
 }
 
 main {
@@ -153,6 +160,39 @@ p code {
   outline-offset: 3px;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: var(--z-skip-link);
+  top: var(--space-sm);
+  left: var(--space-sm);
+  min-height: 44px;
+  padding: 0.75rem 0.9rem;
+  border-radius: 6px;
+  color: #ffffff;
+  background: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  transform: translateY(calc(-100% - var(--space-lg)));
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 .command-loop,
 .agent-section,
 .schema-section,
@@ -168,7 +208,7 @@ p code {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-sticky);
   display: flex;
   width: 100%;
   min-height: 64px;
@@ -193,6 +233,8 @@ p code {
   display: grid;
   gap: 0.1rem;
   min-width: 12rem;
+  min-height: 44px;
+  align-content: center;
   text-decoration: none;
 }
 
@@ -262,7 +304,7 @@ p code {
 
 .nav-menu {
   position: absolute;
-  z-index: 20;
+  z-index: var(--z-dropdown);
   top: calc(100% + 0.42rem);
   right: 0;
   display: grid;
@@ -383,7 +425,7 @@ p code {
   grid-column: auto;
   width: auto;
   min-width: 7rem;
-  min-height: 36px;
+  min-height: 44px;
   padding-inline: 0.72rem;
   border: 1px solid rgba(234, 244, 239, 0.28);
   color: #eaf4ef;
@@ -394,19 +436,13 @@ p code {
 .panel-bar button {
   position: relative;
   min-width: 4.65rem;
-  min-height: 34px;
+  min-height: 44px;
   padding: 0.42rem 0.64rem;
   border: 1px solid rgba(234, 244, 239, 0.22);
   color: #eaf4ef;
   background: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   line-height: 1;
-}
-
-.panel-bar button::before {
-  position: absolute;
-  inset: -5px 0;
-  content: "";
 }
 
 .hero-note {
@@ -433,12 +469,14 @@ p code {
   transform: translateY(1px);
 }
 
-:where(.hero-command button, .panel-bar button)[data-copy-state="copied"] {
+.hero-command button[data-copy-state="copied"],
+.panel-bar button[data-copy-state="copied"] {
   color: #ffffff;
   background: var(--green);
 }
 
-:where(.hero-command button, .panel-bar button)[data-copy-state="fallback"] {
+.hero-command button[data-copy-state="fallback"],
+.panel-bar button[data-copy-state="fallback"] {
   min-width: 8.5rem;
   color: var(--ink);
   background: #f1c84c;
@@ -694,10 +732,6 @@ p code {
   white-space: nowrap;
 }
 
-.runbook-apply {
-  box-shadow: inset 3px 0 0 var(--green);
-}
-
 .runbook-apply .step-number {
   border-color: rgba(45, 155, 87, 0.48);
   color: #176b38;
@@ -818,7 +852,7 @@ p code {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.55rem 0.65rem 0.55rem 1rem;
+  padding: 0.25rem 0.5rem 0.25rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #dce8e1;
   background:
@@ -852,8 +886,8 @@ p code {
 .starter-config-panel .panel-bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 3rem;
-  padding: 0.5rem 0.55rem 0.5rem 1rem;
+  min-height: 3.25rem;
+  padding: 0.25rem 0.4rem 0.25rem 1rem;
 }
 
 .starter-config-panel .panel-bar span {
@@ -1349,7 +1383,7 @@ pre {
 
 .docs-grid a {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 44px;
   align-items: center;
   color: var(--blue-dark);
   font-size: 0.78rem;
@@ -1643,6 +1677,10 @@ pre {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .skip-link {
+    transition: transform 180ms var(--ease-out);
+  }
+
   .kitout-artifact {
     animation: proof-settle 720ms var(--ease-out) both;
   }

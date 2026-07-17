@@ -12,9 +12,10 @@
       content="Kitout is a Go CLI for declaring a Mac setup in YAML, checking current state, previewing a plan, and applying only the resources that need work."
     />
     <link rel="icon" href="assets/retro-mac-computer.png" />
-    <link rel="stylesheet" href="assets/site.css?v=2.5.0-homepage" />
+    <link rel="stylesheet" href="assets/site.css?v=2.5.0-homepage-polish" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <header class="site-header" aria-label="Site header">
       <a class="brand" href="./" aria-label="Kitout home">
         <span class="brand-mark">Kitout</span>
@@ -41,7 +42,7 @@
       </nav>
     </header>
 
-    <main>
+    <main id="main-content" tabindex="-1">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-inner">
           <div class="hero-copy">
@@ -501,10 +502,28 @@ kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
       <a href="https://github.com/vwall/kitout">github.com/vwall/kitout</a>
     </footer>
 
+    <div
+      class="visually-hidden"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-copy-status
+    ></div>
+
     <script>
       const copyButtons = document.querySelectorAll(
         "[data-copy-text], [data-copy-target]",
       );
+      const copyStatus = document.querySelector("[data-copy-status]");
+
+      const announceCopyStatus = (message) => {
+        if (!copyStatus) return;
+
+        copyStatus.textContent = "";
+        window.requestAnimationFrame(() => {
+          copyStatus.textContent = message;
+        });
+      };
 
       const writeClipboard = async (text) => {
         if (navigator.clipboard && window.isSecureContext) {
@@ -543,7 +562,9 @@ kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
       copyButtons.forEach((button) => {
         const initialLabel = button.textContent.trim();
         const initialAriaLabel = button.getAttribute("aria-label");
-        button.setAttribute("aria-live", "polite");
+        const statusSubject = (initialAriaLabel || initialLabel)
+          .replace(/^Copy\s+/i, "")
+          .replace(/^./, (character) => character.toUpperCase());
 
         button.addEventListener("click", async () => {
           const targetId = button.dataset.copyTarget;
@@ -560,6 +581,7 @@ kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
                 initialAriaLabel.replace(/^Copy\b/, "Copied"),
               );
             }
+            announceCopyStatus(`${statusSubject} copied.`);
 
             window.setTimeout(() => {
               delete button.dataset.copyState;
@@ -577,6 +599,9 @@ kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
                 initialAriaLabel.replace(/^Copy\b/, "Copy unavailable for"),
               );
             }
+            announceCopyStatus(
+              `Could not copy ${statusSubject.toLowerCase()}. Select the text and copy it manually.`,
+            );
 
             window.setTimeout(() => {
               delete button.dataset.copyState;

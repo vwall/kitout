@@ -100,9 +100,10 @@ brew:
     - pnpm
     - gh
   casks:
-    - ghostty
     - visual-studio-code
     - rectangle
+  taps:
+    - vwall/kitout
 
 asdf:
   plugins:
