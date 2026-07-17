@@ -268,113 +268,84 @@ brew install kitout</code></pre>
   <span class="yaml-key">firewall</span><span class="yaml-punct">:</span>
     <span class="yaml-key">enabled</span><span class="yaml-punct">:</span> <span class="yaml-bool">true</span></code></pre>
           </div>
-          <div class="resource-coverage" aria-label="Config legend and supported resources">
-            <div class="resource-coverage-heading">
-              <h3>Supported resources</h3>
+          <aside class="config-consequences" aria-labelledby="consequences-title">
+            <div class="consequence-heading">
+              <h3 id="consequences-title">What Kitout does with it.</h3>
               <p>
-                Explore every resource Kitout can inspect and apply beyond this
-                representative starter config.
+                Each block becomes a state check before Kitout applies a
+                change.
               </p>
             </div>
-            <div class="resource-map">
-              <article class="resource-group">
-                <div class="resource-group-copy">
-                  <span>install</span>
-                  <p>Bring command-line tools and desktop apps onto the Mac.</p>
+            <ol class="consequence-list">
+              <li>
+                <div class="consequence-key">
+                  <code>brew</code>
+                  <span>3 resources</span>
                 </div>
-                <div class="resource-links">
-                  <a href="resources/brew.md" data-resource-tone="blue">
-                    <span>brew</span>
-                    <small>taps, packages</small>
-                  </a>
-                  <a href="resources/cask.md" data-resource-tone="amber">
-                    <span>cask</span>
-                    <small>desktop apps</small>
-                  </a>
-                  <a href="resources/asdf.md" data-resource-tone="green">
-                    <span>asdf</span>
-                    <small>developer runtimes</small>
-                  </a>
+                <p>
+                  Checks <code>git</code>, <code>gh</code>, and
+                  <code>ghostty</code>. Installs only what is missing and
+                  leaves satisfied packages alone.
+                </p>
+              </li>
+              <li>
+                <div class="consequence-key">
+                  <code>directories + repos</code>
+                  <span>3 resources</span>
                 </div>
-              </article>
-              <article class="resource-group">
-                <div class="resource-group-copy">
-                  <span>files</span>
-                  <p>Create folders, copy real files, and link dotfiles.</p>
+                <p>
+                  Creates <code>~/code</code> and <code>~/.config</code> only
+                  when absent, then clones <code>example</code> if its path is
+                  missing. Existing repos are never pulled or overwritten.
+                </p>
+              </li>
+              <li>
+                <div class="consequence-key">
+                  <code>symlink_groups</code>
+                  <span>2 resources</span>
                 </div>
-                <div class="resource-links">
-                  <a href="resources/directory.md" data-resource-tone="green">
-                    <span>directory</span>
-                    <small>folders</small>
-                  </a>
-                  <a href="resources/copy.md" data-resource-tone="green">
-                    <span>copy</span>
-                    <small>real files</small>
-                  </a>
-                  <a href="resources/symlink.md" data-resource-tone="green">
-                    <span>symlink</span>
-                    <small>dotfiles</small>
-                  </a>
+                <p>
+                  Expands <code>.zshrc</code> and <code>.gitconfig</code> into
+                  two links. Existing real files stay untouched because
+                  replacement is off by default.
+                </p>
+              </li>
+              <li>
+                <div class="consequence-key">
+                  <code>security</code>
+                  <span>2 resources</span>
                 </div>
-              </article>
-              <article class="resource-group">
-                <div class="resource-group-copy">
-                  <span>code</span>
-                  <p>Keep named Git checkouts present in predictable paths.</p>
-                </div>
-                <div class="resource-links">
-                  <a href="resources/repo.md" data-resource-tone="blue">
-                    <span>repo</span>
-                    <small>Git checkouts</small>
-                  </a>
-                </div>
-              </article>
-              <article class="resource-group">
-                <div class="resource-group-copy">
-                  <span>macOS</span>
-                  <p>Capture machine preferences, shells, and prerequisites.</p>
-                </div>
-                <div class="resource-links">
-                  <a href="resources/macos-defaults.md" data-resource-tone="amber">
-                    <span>defaults</span>
-                    <small>preferences</small>
-                  </a>
-                  <a href="resources/login-shell.md" data-resource-tone="amber">
-                    <span>login_shell</span>
-                    <small>user shell</small>
-                  </a>
-                  <a href="resources/system.md" data-resource-tone="amber">
-                    <span>system</span>
-                    <small>Xcode, Rosetta</small>
-                  </a>
-                </div>
-              </article>
-              <article class="resource-group">
-                <div class="resource-group-copy">
-                  <span>safety</span>
-                  <p>Name guarded resources before any real apply can run.</p>
-                </div>
-                <div class="resource-links">
-                  <a href="resources/security.md" data-resource-tone="red">
-                    <span>security</span>
-                    <small>FileVault, firewall</small>
-                  </a>
-                  <a href="resources/ssh.md" data-resource-tone="red">
-                    <span>ssh</span>
-                    <small>Ed25519 keys</small>
-                  </a>
-                  <a href="resources/shell.md" data-resource-tone="red">
-                    <span>shell</span>
-                    <small>approved commands</small>
-                  </a>
-                </div>
-              </article>
+                <p>
+                  Checks FileVault before later changes. Firewall changes ask
+                  for confirmation; FileVault setup remains a manual step.
+                </p>
+              </li>
+            </ol>
+            <div class="consequence-summary" aria-label="Preview summary">
+              <div class="consequence-summary-heading">
+                <span>Preview summary</span>
+                <strong>10 resources checked</strong>
+              </div>
+              <ul>
+                <li>
+                  <span class="consequence-state is-satisfied">satisfied</span>
+                  <span>no action</span>
+                </li>
+                <li>
+                  <span class="consequence-state is-missing">missing</span>
+                  <span>planned change</span>
+                </li>
+                <li>
+                  <span class="consequence-state is-approval">approval</span>
+                  <span>asks first</span>
+                </li>
+              </ul>
             </div>
-            <p class="schema-note">
-              Riskier sections stay visible in status and preview output before
-              a real apply asks for approval.
-            </p>
-          </div>
+            <a class="resource-explore" href="config/config-spec.md">
+              Explore all resources
+              <span aria-hidden="true">→</span>
+            </a>
+          </aside>
         </div>
       </section>
 
