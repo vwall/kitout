@@ -9,10 +9,10 @@
     <title>Kitout | Declarative Mac setup</title>
     <meta
       name="description"
-      content="Kitout is a Go CLI for declaring, checking, previewing, and applying a Mac setup from YAML, with safe context for setup repos and coding agents."
+      content="Kitout is a Go CLI for declaring a Mac setup in YAML, checking current state, previewing a plan, and applying only the resources that need work."
     />
     <link rel="icon" href="assets/retro-mac-computer.png" />
-    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/site.css?v=2.5.0-homepage" />
   </head>
   <body>
     <header class="site-header" aria-label="Site header">
@@ -21,14 +21,14 @@
         <span class="brand-line">Mac setup as declared state</span>
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
-        <a class="nav-runbook" href="#commands">Runbook</a>
-        <a class="nav-plan" href="#output">Plan</a>
+        <a class="nav-install" href="#install">Install</a>
+        <a class="nav-runbook" href="#commands">First run</a>
+        <a class="nav-resources" href="#schema">Resources</a>
         <details class="nav-more">
           <summary>More</summary>
           <div class="nav-menu">
+            <a href="#output">What happens</a>
             <a href="#agents">Agents</a>
-            <a href="#schema">Resources</a>
-            <a href="#install">Install</a>
             <a href="#docs">Docs</a>
             <a class="nav-menu-github" href="https://github.com/vwall/kitout"
               >GitHub</a
@@ -45,28 +45,31 @@
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-inner">
           <div class="hero-copy">
-            <h1 id="hero-title">Kitout</h1>
+            <h1 id="hero-title">
+              Declare your Mac setup. Apply only what changed.
+            </h1>
             <p class="hero-text">
-              Declare a Mac setup in YAML, check what already matches, and
-              read the dry-run plan before Kitout touches the machine.
+              Kitout checks YAML against the Mac in front of you, shows a
+              readable plan, and applies only the resources that need work.
             </p>
             <div class="hero-actions" aria-label="Primary links">
-              <a class="button primary" href="#commands">Start runbook</a>
-              <a class="button secondary" href="#output">Read the plan</a>
+              <a class="button primary" href="#install">Install Kitout</a>
+              <a class="button secondary" href="#commands">See the first run</a>
             </div>
-            <div class="hero-command" aria-label="Dry-run command">
+            <div class="hero-command" aria-label="Apply command">
               <span class="prompt">$</span>
-              <code>kitout apply --dry-run</code>
+              <code>kitout apply</code>
               <button
                 type="button"
-                aria-label="Copy dry-run command"
-                data-copy-text="kitout apply --dry-run"
+                aria-label="Copy apply command"
+                data-copy-text="kitout apply"
               >
                 Copy command
               </button>
             </div>
             <p class="hero-note">
-              Status and dry-run stay read-only. Real apply remains explicit.
+              Status remains read-only. Apply always rechecks current state
+              before changing anything.
             </p>
           </div>
           <figure
@@ -76,66 +79,107 @@
           >
             <div class="artifact-shell">
               <div class="artifact-titlebar">
-                <span id="artifact-title">kitout apply --dry-run</span>
-                <strong>no changes made</strong>
+                <span id="artifact-title">kitout apply</span>
+                <strong>2 changed · 2 unchanged</strong>
               </div>
               <div
                 class="artifact-terminal"
-                aria-label="Dry-run output excerpt"
+                aria-label="Apply output excerpt"
               >
-<pre><code><span class="terminal-line"><span class="term-prompt">$</span> kitout apply --dry-run</span>
+<pre><code><span class="terminal-line"><span class="term-prompt">$</span> kitout apply</span>
 <span class="terminal-gap"></span>
-<span class="terminal-line"><span class="term-ok">[dry-run]</span> Kitout is running in dry-run mode. No changes will be made.</span>
+<span class="terminal-line">Kitout is planning changes for your Mac setup...</span>
 <span class="terminal-line">Config: ./kitout.yaml</span>
 <span class="terminal-gap artifact-wide"></span>
-<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Inspecting Homebrew taps...</span>
-<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Checking symlink: /Users/example/.zshrc...</span>
+<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Inspecting Homebrew packages...</span>
+<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Checking directory: ~/.config...</span>
 <span class="terminal-gap"></span>
-<span class="terminal-line"><span class="term-ok">[dry-run]</span> Previewing planned changes:</span>
-<span class="terminal-line artifact-wide"><span class="term-warn">dry-run</span> Would add Homebrew tap vwall/kitout</span>
-<span class="terminal-line"><span class="term-warn">dry-run</span> Would install cask ghostty</span>
-<span class="terminal-line"><span class="term-warn">dry-run</span> Would replace symlink /Users/example/.zshrc</span>
+<span class="terminal-line">Applying changes:</span>
+<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Installing formula gh...</span>
+<span class="terminal-line artifact-wide"><span class="term-progress">&gt;</span> Cloning repository ~/code/example...</span>
 <span class="terminal-gap"></span>
-<span class="terminal-line"><span class="term-ok">[dry-run]</span> No changes made because --dry-run was used.</span>
-<span class="terminal-line">No shell commands will run without explicit approval.</span></code></pre>
+<span class="terminal-line"><span class="term-ok">✓ done</span> brew: gh <span class="artifact-wide">— installed formula</span></span>
+<span class="terminal-line"><span class="term-ok">✓ done</span> repo: ~/code/example <span class="artifact-wide">— cloned repository</span></span>
+<span class="terminal-line"><span class="term-ok">✓ ok</span> directory: ~/.config <span class="artifact-wide">— directory exists</span></span>
+<span class="terminal-line artifact-wide"><span class="term-ok">✓ ok</span> cask: ghostty — cask is installed</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line">Summary: <span class="term-ok">2 changed, 2 unchanged</span></span></code></pre>
               </div>
               <div class="artifact-footer">
-                <span>check state first</span>
-                <span>apply stays separate</span>
+                <span>current state checked</span>
+                <span>needed changes applied</span>
               </div>
             </div>
             <figcaption id="artifact-caption">
-              This excerpt follows Kitout's human dry-run output: inspect the
-              plan, then decide whether a real apply is appropriate.
+              Apply rechecks state, makes the needed changes, and leaves a
+              readable result for every declared resource.
             </figcaption>
           </figure>
         </div>
       </section>
 
+      <section id="install" class="install-section" aria-labelledby="install-title">
+        <div class="section-intro">
+          <h2 id="install-title">Install Kitout.</h2>
+          <p>
+            Homebrew is the shortest path. Build from source when you are
+            working on Kitout itself or want to inspect the code first.
+          </p>
+        </div>
+        <div class="install-grid">
+          <div class="code-panel light-panel">
+            <div class="panel-bar">
+              <span>Homebrew</span>
+              <button
+                type="button"
+                aria-label="Copy Homebrew install commands"
+                data-copy-target="install-homebrew"
+              >
+                Copy
+              </button>
+            </div>
+            <pre><code id="install-homebrew">brew tap vwall/kitout
+brew install kitout</code></pre>
+          </div>
+          <div class="code-panel light-panel">
+            <div class="panel-bar">
+              <span>Build from source</span>
+              <button
+                type="button"
+                aria-label="Copy source install command"
+                data-copy-target="install-source"
+              >
+                Copy
+              </button>
+            </div>
+            <pre><code id="install-source">go install ./cmd/kitout</code></pre>
+          </div>
+        </div>
+      </section>
+
       <section id="commands" class="command-loop" aria-labelledby="commands-title">
         <div class="section-intro">
-          <h2 id="commands-title">Local-first runbook.</h2>
+          <h2 id="commands-title">Your first Kitout run.</h2>
           <p>
-            Kitout now starts in the setup repo by default. Initialize the local
-            config, keep the selected file visible, and preview before apply.
+            Initialize a config, check prerequisites, inspect current state,
+            preview planned changes, then apply when you are ready.
           </p>
         </div>
         <ol class="runbook-list" aria-label="Recommended first-run sequence">
           <li>
             <span class="step-number">1</span>
             <div>
-              <h3>Initialize the repo</h3>
+              <h3>Create the config</h3>
               <p>
-                Create or reuse <code>./kitout.yaml</code>, with optional
-                repo-local agent guidance.
+                Create or reuse <code>./kitout.yaml</code> in the setup repo.
               </p>
             </div>
-            <code>kitout init --agents</code>
+            <code>kitout init</code>
           </li>
           <li>
             <span class="step-number">2</span>
             <div>
-              <h3>Run doctor</h3>
+              <h3>Check prerequisites</h3>
               <p>Check macOS, Homebrew, Git, shell, config validity, and paths.</p>
             </div>
             <code>kitout doctor</code>
@@ -143,7 +187,7 @@
           <li>
             <span class="step-number">3</span>
             <div>
-              <h3>Read status</h3>
+              <h3>Inspect current state</h3>
               <p>See satisfied, missing, changed, skipped, and failed resources.</p>
             </div>
             <code>kitout status</code>
@@ -156,14 +200,16 @@
             </div>
             <code>kitout apply --dry-run</code>
           </li>
+          <li class="runbook-apply">
+            <span class="step-number">5</span>
+            <div>
+              <h3>Apply reviewed changes</h3>
+              <p>Recheck current state and apply only the resources that need work.</p>
+            </div>
+            <code>kitout apply</code>
+          </li>
         </ol>
         <p class="source-note">
-          Preview command:
-          <code>kitout apply --dry-run</code>
-          ·
-          Managed upgrades:
-          <code>kitout upgrade --dry-run</code>
-          ·
           Other config:
           <code>--config /path/to/kitout.yaml</code>
           ·
@@ -172,83 +218,12 @@
         </p>
       </section>
 
-      <section id="agents" class="agent-section" aria-labelledby="agents-title">
-        <div class="section-intro">
-          <h2 id="agents-title">Agents get the same guardrails.</h2>
-          <p>
-            Kitout does not add AI behavior. It gives Codex and other coding
-            agents durable repo guidance, read-only context, JSON reports, and
-            one-resource explanations so they can answer without guessing.
-          </p>
-        </div>
-        <div class="agent-grid">
-          <div class="agent-panels">
-            <div class="code-panel">
-              <div class="panel-bar">
-                <span>Setup repo</span>
-                <button
-                  type="button"
-                  aria-label="Copy setup repo commands"
-                  data-copy-target="agent-setup"
-                >
-                  Copy
-                </button>
-              </div>
-              <pre><code id="agent-setup">kitout init --agents
-kitout context
-kitout status --json
-kitout apply --dry-run --json</code></pre>
-            </div>
-            <div class="code-panel">
-              <div class="panel-bar">
-                <span>One resource</span>
-                <button
-                  type="button"
-                  aria-label="Copy resource explain command"
-                  data-copy-target="agent-explain"
-                >
-                  Copy
-                </button>
-              </div>
-              <pre><code id="agent-explain">kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
-            </div>
-          </div>
-          <div class="agent-rules" aria-label="Agent workflow rules">
-            <article>
-              <span>context</span>
-              <p>Lists declared resources and safe commands without live checks.</p>
-            </article>
-            <article>
-              <span>json</span>
-              <p>Feeds stable status and dry-run output to tools and agents.</p>
-            </article>
-            <article>
-              <span>approval</span>
-              <p>Real apply, shell resources, and risky changes stay human-approved.</p>
-            </article>
-            <article>
-              <span>opt out</span>
-              <p>
-                Use <code>kitout init --no-agents-warning</code> when a repo
-                intentionally has no <code>AGENTS.md</code>.
-              </p>
-            </article>
-          </div>
-        </div>
-        <p class="source-note">
-          Agent workflow:
-          <a href="agents/agent-context.md">agent context guide</a>
-          · Release:
-          <a href="release/2.5.0.md">Kitout 2.5.0</a>
-        </p>
-      </section>
-
       <section id="schema" class="schema-section" aria-labelledby="schema-title">
         <div class="section-intro">
           <h2 id="schema-title">YAML that explains itself.</h2>
           <p>
-            The starter config stays complete, and the legend maps each block to
-            the Mac setup resource Kitout checks before apply.
+            A small config can describe the tools, files, repositories, and
+            safeguards that make a Mac feel like yours.
           </p>
         </div>
         <div class="schema-grid">
@@ -266,35 +241,19 @@ kitout apply --dry-run --json</code></pre>
             <pre><code id="starter-config" class="syntax-yaml"><span class="yaml-key">version</span><span class="yaml-punct">:</span> <span class="yaml-number">1</span>
 
 <span class="yaml-section">brew</span><span class="yaml-punct">:</span>
-  <span class="yaml-key">taps</span><span class="yaml-punct">:</span>
-    <span class="yaml-dash">-</span> <span class="yaml-value">vwall/kitout</span>
   <span class="yaml-key">packages</span><span class="yaml-punct">:</span>
     <span class="yaml-dash">-</span> <span class="yaml-value">git</span>
     <span class="yaml-dash">-</span> <span class="yaml-value">gh</span>
-    <span class="yaml-dash">-</span> <span class="yaml-value">asdf</span>
   <span class="yaml-key">casks</span><span class="yaml-punct">:</span>
     <span class="yaml-dash">-</span> <span class="yaml-value">ghostty</span>
-    <span class="yaml-dash">-</span> <span class="yaml-value">visual-studio-code</span>
 
 <span class="yaml-section">directories</span><span class="yaml-punct">:</span>
+  <span class="yaml-dash">-</span> <span class="yaml-value">~/code</span>
   <span class="yaml-dash">-</span> <span class="yaml-value">~/.config</span>
-  <span class="yaml-dash">-</span> <span class="yaml-value">~/.codex/skills</span>
-
-<span class="yaml-section">asdf</span><span class="yaml-punct">:</span>
-  <span class="yaml-key">plugins</span><span class="yaml-punct">:</span>
-    <span class="yaml-dash">-</span> <span class="yaml-key">name</span><span class="yaml-punct">:</span> <span class="yaml-value">ruby</span>
-      <span class="yaml-key">url</span><span class="yaml-punct">:</span> <span class="yaml-value">https://github.com/asdf-vm/asdf-ruby.git</span>
-      <span class="yaml-key">versions</span><span class="yaml-punct">:</span>
-        <span class="yaml-dash">-</span> <span class="yaml-number">3.3.6</span>
 
 <span class="yaml-section">repos</span><span class="yaml-punct">:</span>
   <span class="yaml-dash">-</span> <span class="yaml-key">path</span><span class="yaml-punct">:</span> <span class="yaml-value">~/code/example</span>
     <span class="yaml-key">url</span><span class="yaml-punct">:</span> <span class="yaml-value">git@github.com:example/example.git</span>
-    <span class="yaml-key">branch</span><span class="yaml-punct">:</span> <span class="yaml-value">main</span>
-
-<span class="yaml-section">copies</span><span class="yaml-punct">:</span>
-  <span class="yaml-dash">-</span> <span class="yaml-key">source</span><span class="yaml-punct">:</span> <span class="yaml-value">./codex/skills/nuxt-practices</span>
-    <span class="yaml-key">target</span><span class="yaml-punct">:</span> <span class="yaml-value">~/.codex/skills/nuxt-practices</span>
 
 <span class="yaml-section">symlink_groups</span><span class="yaml-punct">:</span>
   <span class="yaml-dash">-</span> <span class="yaml-key">source_root</span><span class="yaml-punct">:</span> <span class="yaml-value">./home</span>
@@ -307,22 +266,14 @@ kitout apply --dry-run --json</code></pre>
   <span class="yaml-key">filevault</span><span class="yaml-punct">:</span>
     <span class="yaml-key">required</span><span class="yaml-punct">:</span> <span class="yaml-bool">true</span>
   <span class="yaml-key">firewall</span><span class="yaml-punct">:</span>
-    <span class="yaml-key">enabled</span><span class="yaml-punct">:</span> <span class="yaml-bool">true</span>
-
-<span class="yaml-section">ssh</span><span class="yaml-punct">:</span>
-  <span class="yaml-key">keys</span><span class="yaml-punct">:</span>
-    <span class="yaml-dash">-</span> <span class="yaml-key">path</span><span class="yaml-punct">:</span> <span class="yaml-value">~/.ssh/id_ed25519</span>
-      <span class="yaml-key">type</span><span class="yaml-punct">:</span> <span class="yaml-value">ed25519</span>
-
-<span class="yaml-section">login_shell</span><span class="yaml-punct">:</span>
-  <span class="yaml-key">path</span><span class="yaml-punct">:</span> <span class="yaml-value">homebrew:fish</span></code></pre>
+    <span class="yaml-key">enabled</span><span class="yaml-punct">:</span> <span class="yaml-bool">true</span></code></pre>
           </div>
           <div class="resource-coverage" aria-label="Config legend and supported resources">
             <div class="resource-coverage-heading">
-              <h3>Config legend</h3>
+              <h3>Supported resources</h3>
               <p>
-                Read the file by job. Each group links to the resource behavior
-                behind that YAML block.
+                Explore every resource Kitout can inspect and apply beyond this
+                representative starter config.
               </p>
             </div>
             <div class="resource-map">
@@ -420,7 +371,7 @@ kitout apply --dry-run --json</code></pre>
               </article>
             </div>
             <p class="schema-note">
-              Riskier sections stay visible in status and dry-run output before
+              Riskier sections stay visible in status and preview output before
               a real apply asks for approval.
             </p>
           </div>
@@ -429,69 +380,49 @@ kitout apply --dry-run --json</code></pre>
 
       <section id="output" class="output-section" aria-labelledby="output-title">
         <div class="section-intro">
-          <h2 id="output-title">Apply follows the plan.</h2>
+          <h2 id="output-title">Every run stays inspectable.</h2>
           <p>
-            Dry-run shows what would change. Real apply rechecks current state,
-            makes the needed changes, and reports what changed, stayed
-            unchanged, or failed. Add <code>--json</code> when tools need
-            structured output. Managed Homebrew upgrades stay separate:
-            <code>kitout upgrade --dry-run</code> previews updates for
-            installed formulae and casks declared in the selected config.
+            Kitout uses the same plain language from the first check through
+            apply, so current state, planned work, completed changes, and
+            blockers remain easy to distinguish.
           </p>
         </div>
-        <div class="output-proof">
-          <div class="run-terminal">
-            <div class="terminal-bar" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-              <strong>kitout apply</strong>
-            </div>
-            <pre><code><span class="term-prompt">$</span> kitout apply
-
-Kitout is planning changes for your Mac setup...
-Config: ./kitout.yaml
-
-<span class="term-progress">&gt;</span> Inspecting Homebrew packages...
-<span class="term-progress">&gt;</span> Inspecting Homebrew casks...
-<span class="term-progress">&gt;</span> Checking directory: ~/.config...
-<span class="term-progress">&gt;</span> Checking repo: ~/code/example...
-
-Applying changes:
-<span class="term-progress">&gt;</span> Installing formula gh...
-<span class="term-progress">&gt;</span> Cloning repository ~/code/example...
-
-Results:
-<span class="term-ok">&#10003; done </span> brew: gh              installed formula
-<span class="term-ok">&#10003; done </span> repo: ~/code/example   cloned repository
-<span class="term-ok">&#10003; ok   </span> directory: ~/.config   directory exists
-<span class="term-ok">&#10003; ok   </span> cask: ghostty          cask is installed
-
-Summary: 2 changed, 2 unchanged</code></pre>
-          </div>
-          <div class="output-notes" aria-label="Output guide">
-            <article>
-              <h3>Status names the current state</h3>
-              <p>Every resource reports satisfied, missing, changed, skipped, or failed.</p>
-            </article>
-            <article>
-              <h3>Apply starts from the same plan</h3>
-              <p>Only resources that need work are applied, and risky changes ask first.</p>
-            </article>
-            <article>
-              <h3>Upgrade stays separate</h3>
-              <p>Apply installs missing managed Homebrew items; upgrade refreshes outdated installed ones.</p>
-            </article>
-            <article>
-              <h3>Doctor explains blockers</h3>
-              <p>Prerequisites fail early, before resource checks become noisy.</p>
-            </article>
-            <article>
-              <h3>JSON is for automation</h3>
-              <p>Agents and scripts can read stable reports without scraping text.</p>
-            </article>
-          </div>
+        <div class="output-notes" aria-label="Command output guide">
+          <article>
+            <h3>Status names current state</h3>
+            <p>Every resource reports satisfied, missing, changed, skipped, or failed.</p>
+          </article>
+          <article>
+            <h3>Preview names planned work</h3>
+            <p>See the intended changes without filesystem writes or shell execution.</p>
+          </article>
+          <article>
+            <h3>Apply reports the result</h3>
+            <p>Only resources that need work are applied, and risky changes ask first.</p>
+          </article>
+          <article>
+            <h3>Doctor explains blockers</h3>
+            <p>Prerequisites fail early with a concrete next step instead of noisy checks.</p>
+          </article>
         </div>
+        <ul class="safety-list" aria-label="Default safety rules">
+          <li>
+            <strong>shell</strong>
+            <span>Runs only commands explicitly listed in config.</span>
+          </li>
+          <li>
+            <strong>homebrew</strong>
+            <span>Is never auto-installed without an explicit choice.</span>
+          </li>
+          <li>
+            <strong>files</strong>
+            <span>Are never deleted or overwritten unless config allows it.</span>
+          </li>
+          <li>
+            <strong>config</strong>
+            <span>Ambiguous paths require an explicit choice.</span>
+          </li>
+        </ul>
         <div class="recovery-strip" aria-label="Doctor recovery examples">
           <div class="recovery-row">
             <span>fail: Homebrew</span>
@@ -512,108 +443,63 @@ Summary: 2 changed, 2 unchanged</code></pre>
         </div>
       </section>
 
-      <section class="safety-section" aria-labelledby="safety-title">
-        <div class="safety-copy">
-          <h2 id="safety-title">Safety rules by default.</h2>
-          <p>
-            Kitout keeps inspection and mutation separate, so each risky action
-            stays visible before it touches the machine.
-          </p>
-        </div>
-        <ul class="safety-list">
-          <li>
-            <strong>status</strong>
-            <span>Never makes changes.</span>
-          </li>
-          <li>
-            <strong>preview</strong>
-            <span>Never writes to the filesystem.</span>
-          </li>
-          <li>
-            <strong>shell</strong>
-            <span>Runs only commands explicitly listed in config.</span>
-          </li>
-          <li>
-            <strong>homebrew</strong>
-            <span>Is never auto-installed without an explicit choice.</span>
-          </li>
-          <li>
-            <strong>config</strong>
-            <span>Ambiguous paths require an explicit choice.</span>
-          </li>
-          <li>
-            <strong>files</strong>
-            <span>Are never deleted or overwritten unless config allows it.</span>
-          </li>
-          <li>
-            <strong>agents</strong>
-            <span>Can inspect context and dry-runs, but real apply still needs approval.</span>
-          </li>
-        </ul>
-      </section>
-
-      <section id="install" class="install-section" aria-labelledby="install-title">
+      <section id="agents" class="agent-section" aria-labelledby="agents-title">
         <div class="section-intro">
-          <h2 id="install-title">Install after the runbook is clear.</h2>
+          <h2 id="agents-title">Agent context, when you want it.</h2>
           <p>
-            The public install path is short. The first useful run still goes
-            through init, doctor, status, and dry-run before a real apply.
+            Agent guidance is optional. Add it to a setup repo when Codex or
+            another coding agent needs durable context without permission to
+            make hidden changes.
           </p>
         </div>
-        <div class="install-grid">
-          <div class="code-panel">
-            <div class="panel-bar">
-              <span>Homebrew</span>
-              <button
-                type="button"
-                aria-label="Copy Homebrew install commands"
-                data-copy-target="install-homebrew"
-              >
-                Copy
-              </button>
+        <div class="agent-grid">
+          <div class="agent-panels">
+            <div class="code-panel light-panel">
+              <div class="panel-bar">
+                <span>Optional agent setup</span>
+                <button
+                  type="button"
+                  aria-label="Copy agent setup commands"
+                  data-copy-target="agent-setup"
+                >
+                  Copy
+                </button>
+              </div>
+              <pre><code id="agent-setup">kitout init --agents
+kitout context
+kitout status --json
+kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
             </div>
-            <pre><code id="install-homebrew">brew tap vwall/kitout
-brew install kitout</code></pre>
           </div>
-          <div class="code-panel">
-            <div class="panel-bar">
-              <span>Source</span>
-              <button
-                type="button"
-                aria-label="Copy source install command"
-                data-copy-target="install-source"
-              >
-                Copy
-              </button>
-            </div>
-            <pre><code id="install-source">go install ./cmd/kitout</code></pre>
-          </div>
-          <div class="code-panel">
-            <div class="panel-bar">
-              <span>First pass</span>
-              <button
-                type="button"
-                aria-label="Copy first pass commands"
-                data-copy-target="install-first-pass"
-              >
-                Copy
-              </button>
-            </div>
-            <pre><code id="install-first-pass">kitout init --agents
-kitout doctor
-kitout status
-kitout apply --dry-run
-kitout upgrade --dry-run</code></pre>
+          <div class="agent-rules" aria-label="Agent workflow rules">
+            <article>
+              <span>context</span>
+              <p>Lists declared resources and safe commands without live checks.</p>
+            </article>
+            <article>
+              <span>json</span>
+              <p>Feeds stable status reports to agents and other tools.</p>
+            </article>
+            <article>
+              <span>approval</span>
+              <p>Real apply, shell resources, and risky changes stay human-approved.</p>
+            </article>
           </div>
         </div>
+        <p class="source-note">
+          Optional workflow:
+          <a href="agents/agent-context.md">agent context guide</a>
+          · Release:
+          <a href="release/2.5.0.md">Kitout 2.5.0</a>
+        </p>
       </section>
 
       <section id="docs" class="docs-section" aria-labelledby="docs-title">
         <div class="section-intro">
-          <h2 id="docs-title">Docs without a framework.</h2>
+          <h2 id="docs-title">Go deeper in the docs.</h2>
           <p>
-            GitHub remains the source of truth. This page now acts as the front
-            door, with the Markdown docs grouped by the job you are doing.
+            Follow the practical guides, read the complete command and config
+            references, or inspect the architecture behind each resource.
           </p>
         </div>
         <div class="docs-grid" aria-label="Documentation map">
@@ -652,7 +538,15 @@ kitout upgrade --dry-run</code></pre>
       const writeClipboard = async (text) => {
         if (navigator.clipboard && window.isSecureContext) {
           try {
-            await navigator.clipboard.writeText(text);
+            await Promise.race([
+              navigator.clipboard.writeText(text),
+              new Promise((_, reject) => {
+                window.setTimeout(
+                  () => reject(new Error("Clipboard request timed out")),
+                  800,
+                );
+              }),
+            ]);
             return;
           } catch {
             /* Use the selectable textarea fallback below. */
@@ -667,8 +561,12 @@ kitout upgrade --dry-run</code></pre>
         field.style.opacity = "0";
         document.body.append(field);
         field.select();
-        document.execCommand("copy");
+        const copied = document.execCommand("copy");
         field.remove();
+
+        if (!copied) {
+          throw new Error("Clipboard copy is unavailable");
+        }
       };
 
       copyButtons.forEach((button) => {
@@ -701,13 +599,21 @@ kitout upgrade --dry-run</code></pre>
             }, 1600);
           } catch {
             button.dataset.copyState = "fallback";
-            button.textContent = "Select command";
+            button.textContent = "Copy unavailable";
             if (initialAriaLabel) {
               button.setAttribute(
                 "aria-label",
-                initialAriaLabel.replace(/^Copy\b/, "Select"),
+                initialAriaLabel.replace(/^Copy\b/, "Copy unavailable for"),
               );
             }
+
+            window.setTimeout(() => {
+              delete button.dataset.copyState;
+              button.textContent = initialLabel;
+              if (initialAriaLabel) {
+                button.setAttribute("aria-label", initialAriaLabel);
+              }
+            }, 2400);
           }
         });
       });
