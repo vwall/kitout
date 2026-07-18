@@ -245,8 +245,20 @@ brew install kitout</code></pre>
   <span class="yaml-key">packages</span><span class="yaml-punct">:</span>
     <span class="yaml-dash">-</span> <span class="yaml-value">git</span>
     <span class="yaml-dash">-</span> <span class="yaml-value">gh</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">asdf</span>
   <span class="yaml-key">casks</span><span class="yaml-punct">:</span>
-    <span class="yaml-dash">-</span> <span class="yaml-value">ghostty</span>
+    <span class="yaml-dash">-</span> <span class="yaml-value">font-monaspace-nf</span>
+
+<span class="yaml-section">asdf</span><span class="yaml-punct">:</span>
+  <span class="yaml-key">plugins</span><span class="yaml-punct">:</span>
+    <span class="yaml-dash">-</span> <span class="yaml-key">name</span><span class="yaml-punct">:</span> <span class="yaml-value">nodejs</span>
+      <span class="yaml-key">url</span><span class="yaml-punct">:</span> <span class="yaml-value">https://github.com/asdf-vm/asdf-nodejs.git</span>
+      <span class="yaml-key">versions</span><span class="yaml-punct">:</span>
+        <span class="yaml-dash">-</span> <span class="yaml-value">24.18.0</span>
+  <span class="yaml-key">tool_versions</span><span class="yaml-punct">:</span>
+    <span class="yaml-dash">-</span> <span class="yaml-key">path</span><span class="yaml-punct">:</span> <span class="yaml-value">~/.tool-versions</span>
+      <span class="yaml-key">tools</span><span class="yaml-punct">:</span>
+        <span class="yaml-key">nodejs</span><span class="yaml-punct">:</span> <span class="yaml-value">24.18.0</span>
 
 <span class="yaml-section">directories</span><span class="yaml-punct">:</span>
   <span class="yaml-dash">-</span> <span class="yaml-value">~/code</span>
@@ -281,12 +293,24 @@ brew install kitout</code></pre>
               <li>
                 <div class="consequence-key">
                   <code>brew</code>
-                  <span>3 resources</span>
+                  <span>4 resources</span>
                 </div>
                 <p>
-                  Checks <code>git</code>, <code>gh</code>, and
-                  <code>ghostty</code>. Installs only what is missing and
-                  leaves satisfied packages alone.
+                  Checks <code>git</code>, <code>gh</code>, <code>asdf</code>,
+                  and <code>font-monaspace-nf</code>. Installs only what is
+                  missing and leaves satisfied resources alone.
+                </p>
+              </li>
+              <li>
+                <div class="consequence-key">
+                  <code>asdf</code>
+                  <span>2 resources</span>
+                </div>
+                <p>
+                  Adds the <code>nodejs</code> plugin, installs Node
+                  <code>24.18.0</code>, and selects it in
+                  <code>~/.tool-versions</code>. On a fresh Mac, rerun after
+                  Homebrew installs <code>asdf</code>.
                 </p>
               </li>
               <li>
@@ -325,7 +349,7 @@ brew install kitout</code></pre>
             <div class="consequence-summary" aria-label="Preview summary">
               <div class="consequence-summary-heading">
                 <span>Preview summary</span>
-                <strong>10 resources checked</strong>
+                <strong>13 resources checked</strong>
               </div>
               <ul>
                 <li>
