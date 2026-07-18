@@ -224,7 +224,10 @@ brew install kitout</code></pre>
           <h2 id="schema-title">YAML that explains itself.</h2>
           <p>
             A small config can describe the tools, files, repositories, and
-            safeguards that make a Mac feel like yours.
+            safeguards that make a Mac feel like yours. Keep it in any setup
+            repository—dotfiles or otherwise. Relative paths resolve from the
+            folder containing the selected config, not from your shell's
+            working directory.
           </p>
         </div>
         <div class="schema-grid">
@@ -330,9 +333,10 @@ brew install kitout</code></pre>
                   <span>2 resources</span>
                 </div>
                 <p>
-                  Expands <code>.zshrc</code> and <code>.gitconfig</code> into
-                  two links. Existing real files stay untouched because
-                  replacement is off by default.
+                  Resolves <code>./home</code> beside <code>kitout.yaml</code>,
+                  then expands <code>.zshrc</code> and
+                  <code>.gitconfig</code> into two links. Existing real files
+                  stay untouched because replacement is off by default.
                 </p>
               </li>
               <li>
