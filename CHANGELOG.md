@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+## 2.6.0 - Reliable interruption handling
+
+Kitout 2.6.0 makes CLI interruption predictable across planning, execution,
+interactive prompts, and external command process trees, while keeping the
+stable `version: 1` config schema from earlier 2.x releases.
+
+### Changed
+
+- Propagated one signal-aware context through every CLI command and engine
+  operation.
+- Stopped planner, executor, doctor, init, and upgrade work promptly after
+  cancellation.
+- Reported interrupted planning and execution as runtime exit code `3` in human
+  and JSON output.
+- Isolated Unix subprocesses in managed process groups with terminal ownership,
+  signal forwarding, descendant cleanup, and bounded waits for inherited pipes.
+- Made resource implementations the canonical source of plan and apply item
+  identity.
+
+### Documentation
+
+- Reworked the homepage around the install, inspect, preview, and apply workflow.
+- Clarified config consequences and config-relative path resolution.
+- Improved accessibility and added an asdf Node.js setup example.
+- Corrected the README starter config to contain one `brew.taps` key.
+
 ## 2.5.0 - Targeted Homebrew upgrades
 
 Kitout 2.5.0 adds resource ID targets for managed Homebrew upgrades, while

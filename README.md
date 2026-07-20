@@ -102,8 +102,6 @@ brew:
   casks:
     - visual-studio-code
     - rectangle
-  taps:
-    - vwall/kitout
 
 asdf:
   plugins:
