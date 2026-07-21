@@ -10,16 +10,25 @@ stable `version: 1` config schema from earlier 2.x releases.
 
 ### Changed
 
-- Propagated one signal-aware context through every CLI command and engine
-  operation.
-- Stopped planner, executor, doctor, init, and upgrade work promptly after
-  cancellation.
-- Reported interrupted planning and execution as runtime exit code `3` in human
-  and JSON output.
-- Isolated Unix subprocesses in managed process groups with terminal ownership,
-  signal forwarding, descendant cleanup, and bounded waits for inherited pipes.
+- Made Control-C, `SIGQUIT`, and `SIGTERM` cancel status checks, planning,
+  execution, interactive prompts, and external commands consistently.
+- Reported interrupted planning and execution as runtime exit code `3`, with an
+  explicit execution error in human-readable and JSON output.
+- Preserved terminal access for interactive Git, `chsh`, `sudo`, and configured
+  shell commands, including correct foreground ownership after suspend/resume.
+- Supervised Unix command process groups so cancellation cleans up descendants
+  and bounds waits on inherited stdout and stderr pipes.
 - Made resource implementations the canonical source of plan and apply item
   identity.
+
+### Fixed
+
+- Prevented `status`, `apply`, `upgrade`, `doctor`, and `init` from dispatching
+  additional work after cancellation.
+- Prevented interrupted doctor checks from being reported as missing
+  prerequisites.
+- Preserved execution-level cancellation errors when a plan or apply report has
+  no resource items.
 
 ### Documentation
 
@@ -27,6 +36,18 @@ stable `version: 1` config schema from earlier 2.x releases.
 - Clarified config consequences and config-relative path resolution.
 - Improved accessibility and added an asdf Node.js setup example.
 - Corrected the README starter config to contain one `brew.taps` key.
+
+### Compatibility
+
+- Kept the stable `version: 1` config schema; existing `2.5.0` configs require
+  no changes.
+- Kept resource-specific apply failures at exit code `4`; only interruption is
+  classified as runtime exit code `3`.
+
+### Distribution
+
+- Published macOS arm64 and amd64 archives with checksums.
+- Updated the Homebrew formula template and official tap for `v2.6.0`.
 
 ## 2.5.0 - Targeted Homebrew upgrades
 
