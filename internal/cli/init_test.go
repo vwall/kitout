@@ -131,6 +131,9 @@ func TestInitGeneratedConfigLoadsAndStatusParsesWithoutEdits(t *testing.T) {
 	if !strings.Contains(contents, "# copies:") {
 		t.Fatalf("generated config missing commented copies example")
 	}
+	if !strings.Contains(contents, "#     target_prefix: \".\"") {
+		t.Fatalf("generated config missing commented symlink group target_prefix example")
+	}
 	if !strings.Contains(contents, "# security:") {
 		t.Fatalf("generated config missing commented security example")
 	}

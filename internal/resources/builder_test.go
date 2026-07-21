@@ -34,9 +34,10 @@ func TestBuildCreatesResourcesInStableExecutionOrder(t *testing.T) {
 		},
 		SymlinkGroups: []config.SymlinkGroup{
 			{
-				SourceRoot: "/Users/example/dotfiles/home",
-				TargetRoot: "/Users/example",
-				Paths:      []string{".gitconfig", ".config/ghostty"},
+				SourceRoot:   "/Users/example/dotfiles/home",
+				TargetRoot:   "/Users/example",
+				TargetPrefix: ".",
+				Paths:        []string{"gitconfig", "config/ghostty"},
 			},
 		},
 		MacOSDefaults: []config.MacOSDefault{

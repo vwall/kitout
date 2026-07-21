@@ -137,6 +137,7 @@ Named resources require the fields needed to identify and apply the resource:
 - `symlinks[].target`
 - `symlink_groups[].source_root`
 - `symlink_groups[].target_root`
+- `symlink_groups[].target_prefix` is optional and defaults to an empty string
 - `symlink_groups[].paths`
 - `macos_defaults[].domain`
 - `macos_defaults[].key`
@@ -245,11 +246,12 @@ symlinks:
 symlink_groups:
   - source_root: ./home
     target_root: "~"
+    target_prefix: "."
     replace: false
     paths:
-      - .zshrc
-      - .gitconfig
-      - .config/ghostty
+      - zshrc
+      - gitconfig
+      - config/ghostty
 
 macos_defaults:
   - domain: NSGlobalDomain
@@ -318,7 +320,7 @@ the source of truth.
 When a user works from a private dotfiles repo:
 
 - pass `--config ./kitout.yaml` so the selected config is explicit
-- use relative source paths such as `./home/.zshrc` so managed source files stay
+- use relative source paths such as `./home/zshrc` so managed source files stay
   inside the repo
 - edit source paths, not symlink or copy targets in `$HOME`
 - run `kitout context`, `kitout status --json`, and
@@ -335,8 +337,8 @@ Example dotfiles layout:
 ```txt
 kitout.yaml
 home/
-  .zshrc
-  .gitconfig
+  zshrc
+  gitconfig
 codex/
   skills/
     nuxt-practices/
@@ -358,10 +360,11 @@ copies:
 symlink_groups:
   - source_root: ./home
     target_root: "~"
+    target_prefix: "."
     replace: false
     paths:
-      - .zshrc
-      - .gitconfig
+      - zshrc
+      - gitconfig
 ```
 
 The implemented path-bearing resource fields are:
@@ -386,14 +389,22 @@ both the configured path and the resolved shell path.
 group roots. They are cleaned internally, but they do not resolve relative to
 the config file directory on their own.
 
+`symlink_groups[].target_prefix` is concatenated once to the complete relative
+target path before that path is joined to `target_root`. It does not affect the
+source path. The default is an empty string, which preserves the same relative
+path below both roots. For example, `target_prefix: "."` maps `gitconfig` to
+`.gitconfig` and `config/ghostty` to `.config/ghostty`, not
+`.config/.ghostty`. Kitout rejects a prefix if the resulting target path is
+absolute or escapes `target_root`.
+
 Example setup repo layout:
 
 ```txt
 setup/
   kitout.yaml
   home/
-    .zshrc
-    .gitconfig
+    zshrc
+    gitconfig
 ```
 
 Config:
@@ -402,16 +413,17 @@ Config:
 symlink_groups:
   - source_root: ./home
     target_root: "~"
+    target_prefix: "."
     paths:
-      - .zshrc
-      - .gitconfig
+      - zshrc
+      - gitconfig
 ```
 
 Expanded targets:
 
 ```txt
-~/code/setup/home/.zshrc    -> ~/.zshrc
-~/code/setup/home/.gitconfig -> ~/.gitconfig
+~/code/setup/home/zshrc     -> ~/.zshrc
+~/code/setup/home/gitconfig -> ~/.gitconfig
 ```
 
 Behavior:

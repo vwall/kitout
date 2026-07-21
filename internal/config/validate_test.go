@@ -126,8 +126,8 @@ func TestValidateRejectsDuplicateResources(t *testing.T) {
 			{Source: "~/dotfiles/zshrc", Target: "~/.zshrc"},
 		},
 		SymlinkGroups: []SymlinkGroup{
-			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", Paths: []string{".zshrc"}},
-			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", Paths: []string{".gitconfig", ".gitconfig"}},
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", TargetPrefix: ".", Paths: []string{"zshrc"}},
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", TargetPrefix: ".", Paths: []string{"gitconfig", "gitconfig"}},
 		},
 		MacOSDefaults: []MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
@@ -253,6 +253,23 @@ func TestValidateRejectsSymlinkGroupPathsOutsideRoots(t *testing.T) {
 		"symlink_groups[0].paths[2]",
 	} {
 		assertValidationError(t, err, field, "must be a relative path below the group roots")
+	}
+}
+
+func TestValidateRejectsSymlinkGroupTargetPrefixThatEscapesTargetRoot(t *testing.T) {
+	for _, prefix := range []string{"../", "/tmp/"} {
+		t.Run(prefix, func(t *testing.T) {
+			cfg := Config{
+				Version: CurrentVersion,
+				SymlinkGroups: []SymlinkGroup{
+					{SourceRoot: "~/dotfiles/home", TargetRoot: "~", TargetPrefix: prefix, Paths: []string{"gitconfig"}},
+				},
+			}
+
+			err := Validate(cfg)
+
+			assertValidationError(t, err, "symlink_groups[0].target_prefix", "must produce relative paths below target_root")
+		})
 	}
 }
 

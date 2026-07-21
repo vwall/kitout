@@ -68,6 +68,7 @@ func TestResourceStructsUseDocumentedYAMLFields(t *testing.T) {
 		{"Symlink", reflect.TypeOf(Symlink{}), "Replace", "replace,omitempty"},
 		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "SourceRoot", "source_root"},
 		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "TargetRoot", "target_root"},
+		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "TargetPrefix", "target_prefix,omitempty"},
 		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "Replace", "replace,omitempty"},
 		{"SymlinkGroup", reflect.TypeOf(SymlinkGroup{}), "Paths", "paths"},
 		{"MacOSDefault", reflect.TypeOf(MacOSDefault{}), "Domain", "domain"},
@@ -131,7 +132,7 @@ func TestConfigCanRepresentExampleShape(t *testing.T) {
 			{Source: "~/dotfiles/home/zshrc", Target: "~/.zshrc", Replace: false},
 		},
 		SymlinkGroups: []SymlinkGroup{
-			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", Replace: false, Paths: []string{".gitconfig"}},
+			{SourceRoot: "~/dotfiles/home", TargetRoot: "~", TargetPrefix: ".", Replace: false, Paths: []string{"gitconfig"}},
 		},
 		MacOSDefaults: []MacOSDefault{
 			{Domain: "NSGlobalDomain", Key: "AppleShowAllExtensions", Type: "bool", Value: true},
@@ -205,6 +206,12 @@ func TestConfigExpandsSymlinkGroups(t *testing.T) {
 				Replace:    true,
 				Paths:      []string{".gitconfig", ".config/ghostty"},
 			},
+			{
+				SourceRoot:   "/dotfiles/home",
+				TargetRoot:   "/home",
+				TargetPrefix: ".",
+				Paths:        []string{"gitignore-global", "config/nvim"},
+			},
 		},
 	}
 
@@ -213,6 +220,8 @@ func TestConfigExpandsSymlinkGroups(t *testing.T) {
 		{Source: "/dotfiles/home/zshrc", Target: "/home/.zshrc", Replace: false},
 		{Source: "/dotfiles/home/.gitconfig", Target: "/home/.gitconfig", Replace: true},
 		{Source: "/dotfiles/home/.config/ghostty", Target: "/home/.config/ghostty", Replace: true},
+		{Source: "/dotfiles/home/gitignore-global", Target: "/home/.gitignore-global", Replace: false},
+		{Source: "/dotfiles/home/config/nvim", Target: "/home/.config/nvim", Replace: false},
 	}
 
 	if !reflect.DeepEqual(got, want) {

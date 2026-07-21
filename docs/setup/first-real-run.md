@@ -106,8 +106,8 @@ For a setup repo like:
 setup/
   kitout.yaml
   home/
-    .zshrc
-    .gitconfig
+    zshrc
+    gitconfig
 ```
 
 prefer:
@@ -116,10 +116,11 @@ prefer:
 symlink_groups:
   - source_root: ./home
     target_root: "~"
+    target_prefix: "."
     replace: false
     paths:
-      - .zshrc
-      - .gitconfig
+      - zshrc
+      - gitconfig
 ```
 
 Using `~/dotfiles/home` is also valid, but only if that directory really exists

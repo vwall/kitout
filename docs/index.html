@@ -274,9 +274,10 @@ brew install kitout</code></pre>
 <span class="yaml-section">symlink_groups</span><span class="yaml-punct">:</span>
   <span class="yaml-dash">-</span> <span class="yaml-key">source_root</span><span class="yaml-punct">:</span> <span class="yaml-value">./home</span>
     <span class="yaml-key">target_root</span><span class="yaml-punct">:</span> <span class="yaml-string">"~"</span>
+    <span class="yaml-key">target_prefix</span><span class="yaml-punct">:</span> <span class="yaml-string">"."</span>
     <span class="yaml-key">paths</span><span class="yaml-punct">:</span>
-      <span class="yaml-dash">-</span> <span class="yaml-value">.zshrc</span>
-      <span class="yaml-dash">-</span> <span class="yaml-value">.gitconfig</span>
+      <span class="yaml-dash">-</span> <span class="yaml-value">zshrc</span>
+      <span class="yaml-dash">-</span> <span class="yaml-value">gitconfig</span>
 
 <span class="yaml-section">security</span><span class="yaml-punct">:</span>
   <span class="yaml-key">filevault</span><span class="yaml-punct">:</span>
@@ -334,9 +335,9 @@ brew install kitout</code></pre>
                 </div>
                 <p>
                   Resolves <code>./home</code> beside <code>kitout.yaml</code>,
-                  then expands <code>.zshrc</code> and
-                  <code>.gitconfig</code> into two links. Existing real files
-                  stay untouched because replacement is off by default.
+                  then adds <code>.</code> once to the target paths for
+                  <code>zshrc</code> and <code>gitconfig</code>. Existing real
+                  files stay untouched because replacement is off by default.
                 </p>
               </li>
               <li>

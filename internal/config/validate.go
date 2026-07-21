@@ -150,8 +150,16 @@ func validate(cfg Config, opts validationOptions) error {
 		}
 		errs.requireStrings(fmt.Sprintf("symlink_groups[%d].paths", i), group.Paths)
 		for j, path := range group.Paths {
-			if strings.TrimSpace(path) != "" && !isRelativeSubpath(path) {
+			if strings.TrimSpace(path) == "" {
+				continue
+			}
+			if !isRelativeSubpath(path) {
 				errs.add(fmt.Sprintf("symlink_groups[%d].paths[%d]", i, j), "must be a relative path below the group roots")
+				continue
+			}
+			if !isRelativeSubpath(prefixedSymlinkGroupPath(group.TargetPrefix, path)) {
+				errs.add(fmt.Sprintf("symlink_groups[%d].target_prefix", i), "must produce relative paths below target_root")
+				break
 			}
 		}
 	}
@@ -353,7 +361,7 @@ func symlinkTargetKeys(cfg Config) []duplicateKey {
 			target := ""
 			display := ""
 			if strings.TrimSpace(group.TargetRoot) != "" && strings.TrimSpace(path) != "" {
-				target = joinSymlinkGroupPath(group.TargetRoot, path)
+				target = joinSymlinkGroupPath(group.TargetRoot, prefixedSymlinkGroupPath(group.TargetPrefix, path))
 				display = target
 			}
 			keys = append(keys, duplicateKey{

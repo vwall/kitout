@@ -139,9 +139,10 @@ symlinks:
 symlink_groups:
   - source_root: ./home
     target_root: "~"
+    target_prefix: "."
     paths:
-      - .gitconfig
-      - .config/ghostty
+      - gitconfig
+      - config/ghostty
 
 security:
   filevault:

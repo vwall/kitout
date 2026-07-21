@@ -25,22 +25,30 @@ Shape:
 symlink_groups:
   - source_root: ./home
     target_root: "~"
+    target_prefix: "."
     replace: false
     paths:
-      - .zshrc
-      - .gitconfig
-      - .config/ghostty
-      - .config/nvim
+      - zshrc
+      - gitconfig
+      - config/ghostty
+      - config/nvim
 ```
 
 Each path would expand as if it had been written explicitly:
 
 ```txt
-./home/.zshrc          -> ~/.zshrc
-./home/.gitconfig      -> ~/.gitconfig
-./home/.config/ghostty -> ~/.config/ghostty
-./home/.config/nvim    -> ~/.config/nvim
+./home/zshrc          -> ~/.zshrc
+./home/gitconfig      -> ~/.gitconfig
+./home/config/ghostty -> ~/.config/ghostty
+./home/config/nvim    -> ~/.config/nvim
 ```
+
+`target_prefix` is optional and defaults to an empty string, preserving the
+same relative path below both roots. When set, Kitout concatenates it once to
+the complete relative target path before joining that path to `target_root`.
+It does not change the source path. For example, `target_prefix: "."` maps
+`config/ghostty` to `.config/ghostty`, not `.config/.ghostty`. A prefix that
+makes the resulting path absolute or escape `target_root` is rejected.
 
 Grouped symlinks should use the same status, apply, dry-run, duplicate-target,
 and replacement safety rules as explicit `symlinks` entries.

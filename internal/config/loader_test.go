@@ -358,10 +358,11 @@ func TestLoadFileResolvesRelativeSymlinkGroupRootsFromConfigDirectory(t *testing
 symlink_groups:
   - source_root: dotfiles/home
     target_root: home
+    target_prefix: "."
     replace: true
     paths:
-      - ./.zshrc
-      - .config/ghostty
+      - ./zshrc
+      - config/ghostty
 `)
 
 	loaded, err := LoadFile(configPath)
@@ -378,9 +379,19 @@ symlink_groups:
 	if group.TargetRoot != wantTargetRoot {
 		t.Fatalf("target_root = %q, want %q", group.TargetRoot, wantTargetRoot)
 	}
-	wantPaths := []string{".zshrc", filepath.Join(".config", "ghostty")}
+	if group.TargetPrefix != "." {
+		t.Fatalf("target_prefix = %q, want %q", group.TargetPrefix, ".")
+	}
+	wantPaths := []string{"zshrc", filepath.Join("config", "ghostty")}
 	if !slices.Equal(group.Paths, wantPaths) {
 		t.Fatalf("paths = %#v, want %#v", group.Paths, wantPaths)
+	}
+	wantSymlinks := []Symlink{
+		{Source: filepath.Join(configDir, "dotfiles", "home", "zshrc"), Target: filepath.Join(configDir, "home", ".zshrc"), Replace: true},
+		{Source: filepath.Join(configDir, "dotfiles", "home", "config", "ghostty"), Target: filepath.Join(configDir, "home", ".config", "ghostty"), Replace: true},
+	}
+	if got := loaded.Config.ExpandedSymlinks(); !slices.Equal(got, wantSymlinks) {
+		t.Fatalf("ExpandedSymlinks() = %#v, want %#v", got, wantSymlinks)
 	}
 }
 

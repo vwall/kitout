@@ -62,10 +62,12 @@ symlink_groups:
   # Relative paths resolve from this config file, which keeps dotfiles portable.
   - source_root: ./home
     target_root: "~"
+    # Prefix the complete target path once: config/ghostty -> ~/.config/ghostty.
+    target_prefix: "."
     replace: false
     paths:
-      - .gitconfig
-      - .config/ghostty
+      - gitconfig
+      - config/ghostty
 
 macos_defaults:
   # Show all filename extensions in Finder and standard file panels.

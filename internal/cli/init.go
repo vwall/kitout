@@ -52,6 +52,14 @@ directories:
 #     target: ~/.zshrc
 #     replace: false
 #
+# symlink_groups:
+#   - source_root: ./home
+#     target_root: "~"
+#     target_prefix: "."
+#     paths:
+#       - gitconfig
+#       - config/ghostty
+#
 # security:
 #   filevault:
 #     required: true

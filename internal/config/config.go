@@ -78,10 +78,12 @@ type Symlink struct {
 
 // SymlinkGroup describes symlinks that share source and target roots.
 type SymlinkGroup struct {
-	SourceRoot string   `yaml:"source_root"`
-	TargetRoot string   `yaml:"target_root"`
-	Replace    bool     `yaml:"replace,omitempty"`
-	Paths      []string `yaml:"paths"`
+	SourceRoot string `yaml:"source_root"`
+	TargetRoot string `yaml:"target_root"`
+	// TargetPrefix is prepended once to each cleaned relative target path.
+	TargetPrefix string   `yaml:"target_prefix,omitempty"`
+	Replace      bool     `yaml:"replace,omitempty"`
+	Paths        []string `yaml:"paths"`
 }
 
 // ExpandedSymlinks returns explicit symlinks plus symlink_groups expanded into
@@ -98,7 +100,7 @@ func (cfg Config) ExpandedSymlinks() []Symlink {
 		for _, path := range group.Paths {
 			symlinks = append(symlinks, Symlink{
 				Source:  joinSymlinkGroupPath(group.SourceRoot, path),
-				Target:  joinSymlinkGroupPath(group.TargetRoot, path),
+				Target:  joinSymlinkGroupPath(group.TargetRoot, prefixedSymlinkGroupPath(group.TargetPrefix, path)),
 				Replace: group.Replace,
 			})
 		}
@@ -109,6 +111,10 @@ func (cfg Config) ExpandedSymlinks() []Symlink {
 
 func joinSymlinkGroupPath(root, path string) string {
 	return filepath.Clean(filepath.Join(root, path))
+}
+
+func prefixedSymlinkGroupPath(prefix, path string) string {
+	return prefix + filepath.Clean(path)
 }
 
 // MacOSDefault describes one macOS defaults write target.
