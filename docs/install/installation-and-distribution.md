@@ -44,11 +44,11 @@ bin/kitout version
 ## Release baseline
 
 Kitout is distributed through GitHub releases and an external Homebrew tap. The
-project is now at the `v2.6.0` minor release. Supported config files still use
+project is now at the `v2.7.0` minor release. Supported config files still use
 `version: 1`, cask apps must be listed under `brew.casks`, and the command
 surface includes local-first `init`, agent-friendly `context`, `explain`,
-managed and targeted Homebrew upgrades, reliable interruption handling, and
-repo-local `AGENTS.md` guidance.
+managed and targeted Homebrew upgrades, reliable interruption handling,
+grouped symlink target prefixes, and repo-local `AGENTS.md` guidance.
 
 The intended Homebrew install path is:
 
@@ -205,6 +205,7 @@ Example:
 2.4.0 managed Homebrew upgrades
 2.5.0 targeted Homebrew upgrades
 2.6.0 reliable interruption handling
+2.7.0 grouped symlink target prefixes
 ```
 
 ## Build metadata

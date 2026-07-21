@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+## 2.7.0 - Grouped symlink target prefixes
+
+Kitout 2.7.0 adds optional target prefixes for grouped symlinks, making it
+possible to keep source trees free of leading dots while still installing
+dotfiles and dot-directories under the target root.
+
+### Added
+
+- Added `symlink_groups[].target_prefix` to prepend one string to each grouped
+  symlink target path without changing its source path.
+- Validated prefixed targets so they remain relative paths below
+  `target_root`.
+
+### Documentation
+
+- Updated the starter config, examples, config reference, symlink guide, and
+  first-run documentation with `target_prefix: "."` examples.
+
+### Compatibility
+
+- Kept the stable `version: 1` config schema; existing `2.6.0` configs require
+  no changes.
+- Preserved the existing grouped-symlink behavior when `target_prefix` is
+  omitted.
+
+### Distribution
+
+- Updated the Homebrew formula template for `v2.7.0` macOS arm64 and amd64
+  artifacts.
+
 ## 2.6.0 - Reliable interruption handling
 
 Kitout 2.6.0 makes CLI interruption predictable across planning, execution,
