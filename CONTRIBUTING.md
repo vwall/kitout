@@ -4,6 +4,7 @@
 
 ```sh
 go mod download
+make fmt-check
 make test
 go run ./cmd/kitout version
 make build
@@ -14,9 +15,9 @@ make build
 Run:
 
 ```sh
-go test ./...
-go vet ./...
-gofmt -w .
+make fmt-check
+make test
+make vet
 ```
 
 Before cutting a release on macOS, run:
@@ -34,15 +35,18 @@ A good pull request should include:
 - docs update when behavior changes
 - example config update when schema changes
 
-## Design changes
+## Broad changes
 
-Use an RFC for changes to:
+Open a GitHub issue before implementing changes to:
 
 - config schema
 - command behavior
 - resource interface
 - safety defaults
 - output format
+
+Describe the user problem, proposed CLI or config shape, compatibility impact,
+and how status, dry-run, and apply remain safe and idempotent.
 
 ## Commit style
 

@@ -1,0 +1,79 @@
+name: Bug report
+description: Report incorrect or unsafe Kitout behavior
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Remove secrets and private paths from all examples and logs.
+
+  - type: input
+    id: version
+    attributes:
+      label: Kitout version
+      description: Paste the output of `kitout version`.
+      placeholder: kitout 2.7.0, commit abc1234
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS and architecture
+      placeholder: macOS 26.0, Apple Silicon
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation method
+      options:
+        - Homebrew
+        - GitHub release
+        - Built from source
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: Include the exact command and flags you ran.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant redacted configuration
+      description: Include only the relevant YAML and replace private values.
+      render: yaml
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and output
+      description: Include redacted output and whether `--dry-run` produced the same problem.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I removed secrets and private information from this report.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

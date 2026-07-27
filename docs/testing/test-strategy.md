@@ -100,8 +100,8 @@ Before release, run the macOS-local release gate:
 make release-check
 ```
 
-The target runs `go test ./...`, then `go vet ./...`, then
-`make smoke-distribution`. The smoke target builds `bin/kitout`, creates a
+The target checks formatting, runs `go test ./...` and `go vet ./...`, then
+runs `make smoke-distribution`. The smoke target builds `bin/kitout`, creates a
 temporary HOME, writes starter configs with `kitout init --config`, runs
 `kitout doctor`, expects `kitout status` to report the missing starter
 directories such as `~/code`, verifies `kitout apply --dry-run` exits without

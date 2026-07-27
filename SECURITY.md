@@ -36,12 +36,12 @@ Potential future backup behavior must be opt-in and well documented.
 
 ## Reporting vulnerabilities
 
-Report vulnerabilities by creating a GitHub issue.
+Do not report vulnerabilities in a public issue.
 
-GitHub channels:
-
-- GitHub issues for `github.com/vwall/kitout`
-- GitHub private vulnerability reporting for `github.com/vwall/kitout`, when enabled
+Use [GitHub private vulnerability reporting](https://github.com/vwall/kitout/security/advisories/new)
+to share sensitive details with the maintainer. If that channel is temporarily
+unavailable, open a public issue requesting a private contact channel without
+including vulnerability details.
 
 Please include:
 

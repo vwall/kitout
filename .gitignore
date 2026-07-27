@@ -1,6 +1,8 @@
 /bin/
+/dist/
 .gocache/
 .DS_Store
 .impeccable/
 private-docs/
+/tmp/
 /AGENTS.md
