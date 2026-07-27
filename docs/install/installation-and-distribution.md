@@ -32,7 +32,7 @@ kitout status --config ./kitout.yaml
 kitout apply --config ./kitout.yaml --dry-run
 ```
 
-See `docs/setup/first-real-run.md` for the full first-run checklist.
+See the [first-run guide](../setup/first-real-run.md) for the full checklist.
 
 To produce a local build artifact with embedded metadata:
 
@@ -43,12 +43,13 @@ bin/kitout version
 
 ## Release baseline
 
-Kitout is distributed through GitHub releases and an external Homebrew tap. The
-project is now at the `v2.7.0` minor release. Supported config files still use
-`version: 1`, cask apps must be listed under `brew.casks`, and the command
-surface includes local-first `init`, agent-friendly `context`, `explain`,
-managed and targeted Homebrew upgrades, reliable interruption handling,
-grouped symlink target prefixes, and repo-local `AGENTS.md` guidance.
+Kitout is distributed through
+[GitHub releases](https://github.com/vwall/kitout/releases/latest) and an
+external Homebrew tap. Supported config files use `version: 1`, cask apps must
+be listed under `brew.casks`, and the command surface includes local-first
+`init`, agent-friendly `context`, `explain`, managed and targeted Homebrew
+upgrades, reliable interruption handling, grouped symlink target prefixes, and
+repo-local `AGENTS.md` guidance.
 
 The intended Homebrew install path is:
 
@@ -65,11 +66,11 @@ Before tagging a release on macOS, run:
 make release-check VERSION=X.Y.Z
 ```
 
-The release gate runs `go test ./...`, then `go vet ./...`, then
-`make smoke-distribution`. The smoke target builds `bin/kitout` and covers
-temporary starter configs, `init`, `doctor`, `status`, `apply --dry-run`, a
-temp-only directory copy apply, and, when the host can report the current user's
-`UserShell`, a safe login-shell status/dry-run plan.
+The release gate checks formatting, runs `go test ./...` and `go vet ./...`,
+then runs `make smoke-distribution`. The smoke target builds `bin/kitout` and
+covers temporary starter configs, `init`, `doctor`, `status`,
+`apply --dry-run`, a temp-only directory copy apply, and, when the host can
+report the current user's `UserShell`, a safe login-shell status/dry-run plan.
 
 Before tagging, also verify these release-specific items:
 

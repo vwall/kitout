@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/vwall/kitout/security/advisories/new
+    about: Share vulnerability details privately with the maintainer.
+  - name: Read the documentation
+    url: https://vwall.github.io/kitout/
+    about: Review installation, configuration, resources, and first-run guidance.

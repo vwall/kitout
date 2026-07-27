@@ -6,10 +6,18 @@ BUILDINFO_PACKAGE := github.com/vwall/kitout/internal/buildinfo
 LDFLAGS := -s -w -X $(BUILDINFO_PACKAGE).Version=$(VERSION) -X $(BUILDINFO_PACKAGE).Commit=$(COMMIT) -X $(BUILDINFO_PACKAGE).BuildDate=$(BUILD_DATE)
 export VERSION COMMIT BUILD_DATE LDFLAGS
 
-.PHONY: build test vet smoke-distribution release-check
+.PHONY: build fmt-check test vet smoke-distribution release-check
 
 build:
 	go build -trimpath -ldflags "$$LDFLAGS" -o bin/kitout ./cmd/kitout
+
+fmt-check:
+	@files="$$(gofmt -l cmd internal scripts)"; \
+	if [ -n "$$files" ]; then \
+		echo "Go files need formatting:"; \
+		echo "$$files"; \
+		exit 1; \
+	fi
 
 test:
 	go test ./...
@@ -22,6 +30,7 @@ smoke-distribution: build
 
 release-check:
 	if [ "$${VERSION}" != "dev" ]; then scripts/validate-release-version.sh "v$${VERSION}" >/dev/null; fi
+	$(MAKE) fmt-check
 	$(MAKE) test
 	$(MAKE) vet
 	$(MAKE) smoke-distribution

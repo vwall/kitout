@@ -11,8 +11,9 @@
       name="description"
       content="Kitout is a Go CLI for declaring a Mac setup in YAML, checking current state, previewing a plan, and applying only the resources that need work."
     />
+    <link rel="canonical" href="https://vwall.github.io/kitout/" />
     <link rel="icon" href="assets/retro-mac-computer.png" />
-    <link rel="stylesheet" href="assets/site.css?v=2.7.0" />
+    <link rel="stylesheet" href="assets/site.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -153,7 +154,9 @@ brew install kitout</code></pre>
                 Copy
               </button>
             </div>
-            <pre><code id="install-source">go install ./cmd/kitout</code></pre>
+            <pre><code id="install-source">git clone https://github.com/vwall/kitout.git
+cd kitout
+go install ./cmd/kitout</code></pre>
           </div>
         </div>
       </section>
@@ -215,7 +218,10 @@ brew install kitout</code></pre>
           <code>--config /path/to/kitout.yaml</code>
           ·
           Detailed guide:
-          <a href="setup/first-real-run.md">first real run</a>
+          <a
+            href="https://github.com/vwall/kitout/blob/main/docs/setup/first-real-run.md"
+            >first real run</a
+          >
         </p>
       </section>
 
@@ -371,7 +377,10 @@ brew install kitout</code></pre>
                 </li>
               </ul>
             </div>
-            <a class="resource-explore" href="config/config-spec.md">
+            <a
+              class="resource-explore"
+              href="https://github.com/vwall/kitout/blob/main/docs/config/config-spec.md"
+            >
               Explore all resources
               <span aria-hidden="true">→</span>
             </a>
@@ -489,9 +498,12 @@ kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
         </div>
         <p class="source-note">
           Optional workflow:
-          <a href="agents/agent-context.md">agent context guide</a>
+          <a
+            href="https://github.com/vwall/kitout/blob/main/docs/agents/agent-context.md"
+            >agent context guide</a
+          >
           · Release:
-          <a href="release/2.7.0.md">Kitout 2.7.0</a>
+          <a href="https://github.com/vwall/kitout/releases/latest">latest release</a>
         </p>
       </section>
 
@@ -506,21 +518,47 @@ kitout explain 'symlink:/Users/example/.zshrc'</code></pre>
         <div class="docs-grid" aria-label="Documentation map">
           <article>
             <h3>Start</h3>
-            <a href="setup/first-real-run.md">First real run</a>
-            <a href="install/installation-and-distribution.md">Install and distribution</a>
-            <a href="release/2.7.0.md">Latest release notes</a>
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/setup/first-real-run.md"
+              >First real run</a
+            >
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/install/installation-and-distribution.md"
+              >Install and distribution</a
+            >
+            <a href="https://github.com/vwall/kitout/releases/latest"
+              >Latest release notes</a
+            >
           </article>
           <article>
             <h3>Use</h3>
-            <a href="cli/cli-spec.md">CLI reference</a>
-            <a href="config/config-spec.md">Config schema</a>
-            <a href="agents/agent-context.md">Agent workflow</a>
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/cli/cli-spec.md"
+              >CLI reference</a
+            >
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/config/config-spec.md"
+              >Config schema</a
+            >
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/agents/agent-context.md"
+              >Agent workflow</a
+            >
           </article>
           <article>
             <h3>Extend carefully</h3>
-            <a href="runtime/resource-model.md">Resource model</a>
-            <a href="architecture/architecture-overview.md">Architecture</a>
-            <a href="testing/test-strategy.md">Test strategy</a>
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/runtime/resource-model.md"
+              >Resource model</a
+            >
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/architecture/architecture-overview.md"
+              >Architecture</a
+            >
+            <a
+              href="https://github.com/vwall/kitout/blob/main/docs/testing/test-strategy.md"
+              >Test strategy</a
+            >
           </article>
         </div>
       </section>

@@ -4,6 +4,8 @@ Kitout is a Go-based command line tool for setting up a fresh Mac with the packa
 
 Kitout is inspired by Bork's assertion-based approach, but it is not a strict port. The goal is to keep the useful idea of declaring desired machine state while using a typed Go codebase, a structured config file, better test coverage, and a clearer command surface.
 
+[Read the documentation](https://vwall.github.io/kitout/).
+
 ## Install
 
 The public release install path is GitHub releases plus the Homebrew tap:
@@ -16,6 +18,8 @@ brew install kitout
 To build from source instead:
 
 ```sh
+git clone https://github.com/vwall/kitout.git
+cd kitout
 go install ./cmd/kitout
 ```
 
@@ -58,8 +62,8 @@ kitout upgrade --config ./kitout.yaml --dry-run
 kitout upgrade --config ./kitout.yaml brew:git
 ```
 
-See `docs/setup/first-real-run.md` for the practical first-run loop and common
-fresh-machine friction.
+See the [first-run guide](docs/setup/first-real-run.md) for the practical loop
+and common fresh-machine friction.
 
 ## Ask questions safely with agents
 
@@ -84,7 +88,8 @@ one managed file, package, repo, or command. Agents should edit repo source
 files, not managed targets in `$HOME`, and should ask before running
 `kitout apply` or `kitout upgrade`.
 
-See `docs/agents/agent-context.md` for the agent-safe dotfiles workflow.
+See the [agent context guide](docs/agents/agent-context.md) for the agent-safe
+dotfiles workflow.
 
 ## Example config
 
@@ -168,30 +173,27 @@ ssh:
 
 Kitout is macOS-focused and covers Apple Silicon, Homebrew, managed Homebrew upgrades, asdf-managed developer runtimes, Git repositories, directories, file copies, symlinks, macOS defaults, security prerequisites, system prerequisites, SSH keys, login shell management, shell commands, local-first init, agent-friendly context and explain commands, repo-local `AGENTS.md` guidance, and a safe dry-run mode.
 
-Do not start with Linux support, secrets, templates, plugins, or a package manager abstraction. Those can come later.
+Linux support, secrets, templates, plugins, and a package-manager abstraction
+are not currently in scope.
 
 ## Documentation map
 
-- `docs/agents/agent-context.md`
-- `docs/architecture/architecture-overview.md`
-- `docs/runtime/resource-model.md`
-- `docs/cli/cli-spec.md`
-- `docs/config/config-spec.md`
-- `docs/setup/first-real-run.md`
-- `docs/resources/*.md`
-- `docs/install/installation-and-distribution.md`
-- `docs/testing/test-strategy.md`
-- `docs/governance/rfcs.md`
-- `rfcs/*.md`
-- `AGENTS.md`
+- [First-run guide](docs/setup/first-real-run.md)
+- [Installation and distribution](docs/install/installation-and-distribution.md)
+- [CLI reference](docs/cli/cli-spec.md)
+- [Config specification](docs/config/config-spec.md)
+- [Resource guides](docs/resources/)
+- [Agent context workflow](docs/agents/agent-context.md)
+- [Architecture overview](docs/architecture/architecture-overview.md)
+- [Runtime resource model](docs/runtime/resource-model.md)
+- [Test strategy](docs/testing/test-strategy.md)
 
 ## Issues
 
-Create a GitHub issue for bugs, feature requests, support questions, and
-security reports: `https://github.com/vwall/kitout/issues/new`.
-
-Use GitHub private vulnerability reporting when it is enabled and the report
-contains sensitive security details.
+Use [GitHub Issues](https://github.com/vwall/kitout/issues/new/choose) for bugs,
+feature requests, and support questions. Report vulnerabilities according to
+the [security policy](SECURITY.md); never disclose sensitive security details
+in a public issue.
 
 ## Development
 
