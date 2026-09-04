@@ -93,7 +93,7 @@ func (resource LoginShellResource) Apply(ctx context.Context) (engine.ApplyResul
 	}
 
 	if state.currentShell != state.resolvedPath {
-		if _, err := resource.runner.Run(ctx, "chsh", "-s", state.resolvedPath); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "chsh", "-s", state.resolvedPath); err != nil {
 			return resource.applyResult("chsh", changed, "could not set login shell", state), err
 		}
 		changed = true
@@ -213,7 +213,7 @@ func (resource LoginShellResource) appendEtcShells(ctx context.Context, path str
 	if err := validateResolvedLoginShellPath(path); err != nil {
 		return err
 	}
-	_, err := resource.runner.Run(ctx, "sudo", "sh", "-c", "printf '%s\\n' \"$1\" >> \"$2\"", "kitout", path, resource.etcShellsPath)
+	_, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "sudo", "sh", "-c", "printf '%s\\n' \"$1\" >> \"$2\"", "kitout", path, resource.etcShellsPath)
 	return err
 }
 

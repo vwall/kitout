@@ -1,7 +1,6 @@
 package platform
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -21,11 +20,13 @@ type Runner interface {
 
 // CommandResult captures the observable output from an external command.
 type CommandResult struct {
-	Name     string
-	Args     []string
-	Stdout   string
-	Stderr   string
-	ExitCode int
+	Name            string
+	Args            []string
+	Stdout          string
+	Stderr          string
+	ExitCode        int
+	StdoutTruncated bool
+	StderrTruncated bool
 }
 
 // ExecRunner runs commands through os/exec.
@@ -33,6 +34,7 @@ type ExecRunner struct {
 	stdout                io.Writer
 	stderr                io.Writer
 	renderCommands        bool
+	boundedOutput         bool
 	trustCommandPath      bool
 	preserveUserPath      bool
 	waitDelay             time.Duration
@@ -210,8 +212,8 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 	if runner.trustCommandPath && !runner.preserveUserPath {
 		cmd.Env = trustedCommandEnvironment()
 	}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
+	stdout := commandOutputCapture{bounded: runner.boundedOutput}
+	stderr := commandOutputCapture{bounded: runner.boundedOutput}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if runner.stdout != nil {
@@ -253,6 +255,8 @@ func (runner ExecRunner) Run(ctx context.Context, name string, args ...string) (
 	}
 	result.Stdout = stdout.String()
 	result.Stderr = stderr.String()
+	result.StdoutTruncated = stdout.truncated
+	result.StderrTruncated = stderr.truncated
 
 	if cmd.ProcessState != nil {
 		result.ExitCode = cmd.ProcessState.ExitCode()
@@ -402,51 +406,57 @@ const (
 
 func commandOutputSummary(result CommandResult) string {
 	sections := make([]string, 0, 2)
-	if section := commandOutputSection("stderr", result.Stderr); section != "" {
+	if section := commandOutputSection("stderr", result.Stderr, result.StderrTruncated); section != "" {
 		sections = append(sections, section)
 	}
-	if section := commandOutputSection("stdout", result.Stdout); section != "" {
+	if section := commandOutputSection("stdout", result.Stdout, result.StdoutTruncated); section != "" {
 		sections = append(sections, section)
 	}
 	return strings.Join(sections, "\n")
 }
 
-func commandOutputSection(label, output string) string {
-	lines := commandOutputLines(output)
-	if len(lines) == 0 {
+func commandOutputSection(label, output string, truncated bool) string {
+	lines := make([]string, 0, commandOutputMaxLines)
+	remaining := output
+	for len(remaining) > 0 && len(lines) < commandOutputMaxLines {
+		boundary := strings.LastIndexByte(remaining, '\n')
+		line := strings.TrimRight(remaining[boundary+1:], "\r")
+		if boundary < 0 {
+			remaining = ""
+		} else {
+			remaining = remaining[:boundary]
+		}
+		if strings.TrimSpace(line) != "" {
+			lines = append(lines, truncateCommandOutputLine(line))
+		}
+	}
+	if len(lines) == 0 && !truncated {
 		return ""
 	}
-
-	omitted := len(lines) - commandOutputMaxLines
-	if omitted > 0 {
-		lines = append([]string{fmt.Sprintf("... %d earlier lines omitted", omitted)}, lines[omitted:]...)
+	var section strings.Builder
+	section.WriteString(label + ":\n")
+	if truncated {
+		section.WriteString("... output truncated; showing captured tail\n")
 	}
-
-	return label + ":\n" + strings.Join(lines, "\n")
-}
-
-func commandOutputLines(output string) []string {
-	output = strings.TrimRight(output, "\r\n")
-	if strings.TrimSpace(output) == "" {
-		return nil
+	if len(remaining) > 0 {
+		section.WriteString("... earlier lines omitted\n")
 	}
-
-	rawLines := strings.Split(output, "\n")
-	lines := make([]string, 0, len(rawLines))
-	for _, line := range rawLines {
-		line = strings.TrimRight(line, "\r")
-		if strings.TrimSpace(line) == "" {
-			continue
+	for i := len(lines) - 1; i >= 0; i-- {
+		section.WriteString(lines[i])
+		if i > 0 {
+			section.WriteByte('\n')
 		}
-		lines = append(lines, truncateCommandOutputLine(line))
 	}
-	return lines
+	return strings.TrimSuffix(section.String(), "\n")
 }
 
 func truncateCommandOutputLine(line string) string {
-	runes := []rune(line)
-	if len(runes) <= commandOutputMaxLineLength {
-		return line
+	count := 0
+	for offset := range line {
+		if count == commandOutputMaxLineLength {
+			return line[:offset] + "..."
+		}
+		count++
 	}
-	return string(runes[:commandOutputMaxLineLength]) + "..."
+	return line
 }

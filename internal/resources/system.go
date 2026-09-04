@@ -73,7 +73,7 @@ func (resource XcodeCommandLineToolsResource) Apply(ctx context.Context) (engine
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "Command Line Tools already installed", status.Details["path"]), nil
 	case engine.StateMissing:
-		if _, err := resource.runner.Run(ctx, "xcode-select", "--install"); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "xcode-select", "--install"); err != nil {
 			return resource.applyResult("install", false, "could not start Command Line Tools installer", ""), err
 		}
 		return resource.applyResult("install", true, "started Command Line Tools installer", ""), nil
@@ -166,7 +166,7 @@ func (resource RosettaResource) Apply(ctx context.Context) (engine.ApplyResult, 
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "Rosetta already installed or not required", status.Details["architecture"]), nil
 	case engine.StateMissing:
-		if _, err := resource.runner.Run(ctx, "softwareupdate", "--install-rosetta", "--agree-to-license"); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "softwareupdate", "--install-rosetta", "--agree-to-license"); err != nil {
 			return resource.applyResult("install", false, "could not install Rosetta", status.Details["architecture"]), err
 		}
 		return resource.applyResult("install", true, "installed Rosetta", status.Details["architecture"]), nil

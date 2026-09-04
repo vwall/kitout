@@ -64,7 +64,7 @@ func (resource BrewTapResource) Apply(ctx context.Context) (engine.ApplyResult, 
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "tap already installed"), nil
 	case engine.StateMissing:
-		if _, err := resource.runner.Run(ctx, "brew", "tap", resource.name); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "brew", "tap", resource.name); err != nil {
 			return resource.applyResult("tap", false, "could not add tap"), err
 		}
 		return resource.applyResult("tap", true, "added tap"), nil
