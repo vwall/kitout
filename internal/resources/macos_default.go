@@ -87,7 +87,7 @@ func (resource MacOSDefaultResource) Apply(ctx context.Context) (engine.ApplyRes
 		return resource.applyResult("noop", false, "default already set"), nil
 	case engine.StateMissing, engine.StateChanged:
 		args := []string{"write", resource.domain, resource.key, desired.writeFlag(), desired.writeValue}
-		if _, err := resource.runner.Run(ctx, "defaults", args...); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "defaults", args...); err != nil {
 			return resource.applyResult("write", false, "could not write default"), err
 		}
 		return resource.applyResult("write", true, "wrote default"), nil

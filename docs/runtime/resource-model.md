@@ -183,6 +183,18 @@ Dry-run should not:
 - run shell commands
 - write files
 
+## Command output capture
+
+Commands whose output is only diagnostic use `platform.WithBoundedOutput` at
+the individual mutation call. The executable runner retains at most 64 KiB from
+the end of each stdout/stderr stream and marks truncated captures in errors.
+Verbose streaming still forwards complete output to the configured writers.
+
+The default runner preserves complete output for parsers. Keep inventory/status
+reads, `ssh-keygen -y` (public-key data), and asdf installs (full-log failure
+guidance) on this path. Do not apply bounded capture to an entire resource
+runner, because its status and apply methods may share that runner.
+
 ## Exit codes
 
 Recommended exit codes:

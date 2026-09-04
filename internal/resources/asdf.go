@@ -119,7 +119,7 @@ func (resource ASDFPluginResource) Apply(ctx context.Context) (engine.ApplyResul
 	changed := false
 	pluginWasPresent := ok
 	if !ok {
-		if _, err := resource.runner.Run(ctx, "asdf", "plugin", "add", resource.name, resource.url); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "asdf", "plugin", "add", resource.name, resource.url); err != nil {
 			return resource.applyResult("add", false, "could not add asdf plugin"), err
 		}
 		changed = true
@@ -131,13 +131,14 @@ func (resource ASDFPluginResource) Apply(ctx context.Context) (engine.ApplyResul
 	}
 	updated := false
 	if len(missing) > 0 && resource.updateBeforeInstall && pluginWasPresent {
-		if _, err := resource.runner.Run(ctx, "asdf", "plugin", "update", resource.name); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "asdf", "plugin", "update", resource.name); err != nil {
 			return resource.applyResult("update", changed, "could not update asdf plugin"), err
 		}
 		changed = true
 		updated = true
 	}
 	for _, version := range missing {
+		// Keep complete install output: failure guidance searches the entire log.
 		result, err := resource.runner.Run(ctx, "asdf", "install", resource.name, version)
 		if err != nil {
 			message := asdfInstallFailureMessage(resource.name, version, result, err)

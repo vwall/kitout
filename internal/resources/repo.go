@@ -90,7 +90,7 @@ func (resource RepoResource) Apply(ctx context.Context) (engine.ApplyResult, err
 			args = append(args, "--branch", resource.branch)
 		}
 		args = append(args, resource.url, resource.path)
-		if _, err := resource.runner.Run(ctx, "git", args...); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "git", args...); err != nil {
 			return resource.applyResult("clone", false, "could not clone repository"), err
 		}
 		return resource.applyResult("clone", true, "cloned repository"), nil

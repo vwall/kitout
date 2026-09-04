@@ -76,7 +76,7 @@ func (resource BrewPackageResource) Apply(ctx context.Context) (engine.ApplyResu
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "formula already installed"), nil
 	case engine.StateMissing:
-		if _, err := resource.runner.Run(ctx, "brew", "install", resource.name); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "brew", "install", resource.name); err != nil {
 			return resource.applyResult("install", false, "could not install formula"), err
 		}
 		return resource.applyResult("install", true, "installed formula"), nil
@@ -106,7 +106,7 @@ func (resource BrewPackageResource) Upgrade(ctx context.Context) (engine.ApplyRe
 		if _, ok := advisoryWithCode(status.Advisories, HomebrewFormulaOutdatedAdvisory); !ok {
 			return resource.applyResult("noop", false, "formula already current"), nil
 		}
-		if _, err := resource.runner.Run(ctx, "brew", "upgrade", resource.name); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "brew", "upgrade", resource.name); err != nil {
 			return resource.applyResult("upgrade", false, "could not upgrade formula"), err
 		}
 		return resource.applyResult("upgrade", true, "upgraded formula"), nil

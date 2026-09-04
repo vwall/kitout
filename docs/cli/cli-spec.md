@@ -46,6 +46,11 @@ before it starts, and streams that subprocess stdout and stderr as it runs.
 runs. `--json` and `--quiet` currently affect `context`, `status`, `apply`,
 `upgrade`, `doctor`, and `explain`.
 
+For mutation commands whose output is only diagnostic, failure reports retain
+the final 64 KiB of each output stream and explicitly mark truncated output.
+Use `--verbose` to stream complete logs. Commands whose output Kitout parses,
+including asdf installs and public-key extraction, retain complete capture.
+
 When running from a private setup repo that contains `kitout.yaml`, pass
 `--config ./kitout.yaml` if a home config also exists. Kitout prints the selected
 path before running checks.
