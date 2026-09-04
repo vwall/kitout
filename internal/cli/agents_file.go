@@ -231,7 +231,8 @@ func mergeKitoutAgentsSection(existing, section string) (string, bool, error) {
 	}
 
 	end += len(kitoutAgentsEndMarker)
-	merged := existing[:start] + section + existing[end:]
+	// The replaced span ends at the marker; preserve the existing trailing newline.
+	merged := existing[:start] + strings.TrimSuffix(section, "\n") + existing[end:]
 	if merged == existing {
 		return existing, false, nil
 	}

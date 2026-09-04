@@ -343,3 +343,107 @@ func readFile(t *testing.T, path string) string {
 	}
 	return string(contents)
 }
+
+func TestCopyApplyRejectsOverlappingPathsWithoutChangingSource(t *testing.T) {
+	for _, scenario := range []string{"source-inside-target", "target-inside-source", "same-path", "source-parent-alias"} {
+		t.Run(scenario, func(t *testing.T) {
+			dir := t.TempDir()
+			container := filepath.Join(dir, "container")
+			source := filepath.Join(container, "source")
+			writeFile(t, source, "original")
+			target := container
+			switch scenario {
+			case "target-inside-source":
+				source = container
+				target = filepath.Join(container, "missing", "copy")
+			case "same-path":
+				target = source
+			case "source-parent-alias":
+				alias := filepath.Join(dir, "alias")
+				if err := os.Symlink(container, alias); err != nil {
+					t.Fatal(err)
+				}
+				source = filepath.Join(alias, "source")
+			}
+			result, err := NewCopy(source, target, true).Apply(context.Background())
+			if !containsError(err, "must not overlap") || result.Changed {
+				t.Fatalf("Apply = %+v, %v; want overlap rejection without changes", result, err)
+			}
+			if got := readFile(t, filepath.Join(container, "source")); got != "original" {
+				t.Fatalf("source contents = %q", got)
+			}
+			entries, err := os.ReadDir(container)
+			if err != nil || len(entries) != 1 {
+				t.Fatalf("container entries = %v, %v; want only original source", entries, err)
+			}
+		})
+	}
+}
+
+func TestCopyApplyReplacesIncompatibleNestedTarget(t *testing.T) {
+	for _, kind := range []string{"file", "symlink"} {
+		t.Run(kind, func(t *testing.T) {
+			dir := t.TempDir()
+			source, target := filepath.Join(dir, "source"), filepath.Join(dir, "target")
+			writeFile(t, filepath.Join(source, "nested", "a"), "desired")
+			writeFile(t, filepath.Join(target, "nested"), "old")
+			if kind == "symlink" {
+				if err := os.Remove(filepath.Join(target, "nested")); err != nil {
+					t.Fatal(err)
+				}
+				outside := filepath.Join(dir, "outside")
+				writeFile(t, outside, "untouched")
+				if err := os.Symlink(outside, filepath.Join(target, "nested")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			resource := NewCopy(source, target, true)
+			result, err := resource.Apply(context.Background())
+			if err != nil || !result.Changed {
+				t.Fatalf("Apply = %+v, %v", result, err)
+			}
+			if got := readFile(t, filepath.Join(target, "nested", "a")); got != "desired" {
+				t.Fatalf("copied contents = %q", got)
+			}
+			if kind == "symlink" && readFile(t, filepath.Join(dir, "outside")) != "untouched" {
+				t.Fatal("modified symlink referent")
+			}
+			status, err := resource.Status(context.Background())
+			if err != nil || status.State != engine.StateSatisfied {
+				t.Fatalf("Status after apply = %+v, %v", status, err)
+			}
+		})
+	}
+}
+
+func TestCopyApplyRejectsCaseInsensitiveOverlap(t *testing.T) {
+	for _, direction := range []string{"source-inside-target", "target-inside-source"} {
+		t.Run(direction, func(t *testing.T) {
+			dir := t.TempDir()
+			container := filepath.Join(dir, "Container")
+			original := filepath.Join(container, "source")
+			writeFile(t, original, "original")
+			alias := filepath.Join(dir, "container")
+			if _, err := os.Stat(alias); os.IsNotExist(err) {
+				t.Skip("filesystem is case-sensitive")
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			source, target := original, alias
+			if direction == "target-inside-source" {
+				source, target = container, filepath.Join(alias, "missing", "copy")
+			}
+			result, err := NewCopy(source, target, true).Apply(context.Background())
+			if !containsError(err, "must not overlap") || result.Changed {
+				t.Fatalf("Apply = %+v, %v; want overlap rejection without changes", result, err)
+			}
+			if readFile(t, original) != "original" {
+				t.Fatal("source was modified")
+			}
+			entries, err := os.ReadDir(container)
+			if err != nil || len(entries) != 1 {
+				t.Fatalf("container entries = %v, %v; want only original source", entries, err)
+			}
+		})
+	}
+}

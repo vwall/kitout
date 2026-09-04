@@ -53,6 +53,13 @@ func (resource MacOSDefaultResource) Status(ctx context.Context) (engine.StatusR
 	result, err := resource.runner.Run(ctx, "defaults", "read", resource.domain, resource.key)
 	if err == nil {
 		if desired.matches(result.Stdout) {
+			typeResult, typeErr := resource.runner.Run(ctx, "defaults", "read-type", resource.domain, resource.key)
+			if typeErr != nil {
+				return resource.status(engine.StateFailed, "could not inspect default type"), typeErr
+			}
+			if !desired.matchesType(typeResult.Stdout) {
+				return resource.status(engine.StateChanged, "default type differs"), nil
+			}
 			return resource.status(engine.StateSatisfied, "default is set"), nil
 		}
 		return resource.status(engine.StateChanged, "default value differs"), nil
@@ -171,6 +178,10 @@ func (value macOSDefaultValue) writeFlag() string {
 }
 
 func (value macOSDefaultValue) matches(stdout string) bool {
+	if value.typ == "string" {
+		// defaults read adds one newline; whitespace in the value is significant.
+		return strings.TrimSuffix(stdout, "\n") == value.writeValue
+	}
 	actual := strings.TrimSpace(stdout)
 	switch value.typ {
 	case "bool":
@@ -190,11 +201,20 @@ func (value macOSDefaultValue) matches(stdout string) bool {
 		}
 		expectedFloat, err := strconv.ParseFloat(value.writeValue, 64)
 		return err == nil && actualFloat == expectedFloat
-	case "string":
-		return actual == value.writeValue
 	default:
 		return false
 	}
+}
+
+func (value macOSDefaultValue) matchesType(stdout string) bool {
+	typ := value.typ
+	switch typ {
+	case "bool":
+		typ = "boolean"
+	case "int":
+		typ = "integer"
+	}
+	return strings.TrimSpace(stdout) == "Type is "+typ
 }
 
 func parseDefaultBool(value string) (bool, bool) {
