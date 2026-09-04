@@ -10,6 +10,7 @@ import (
 )
 
 // Build converts a validated config into executable resources in stable order.
+// Call it for each new plan: shared inventory snapshots belong to this build.
 func Build(cfg config.Config, runner platform.Runner) []engine.Resource {
 	return build(cfg, runner, true)
 }
@@ -20,14 +21,15 @@ func BuildUncached(cfg config.Config, runner platform.Runner) []engine.Resource 
 	return build(cfg, runner, false)
 }
 
-func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engine.Resource {
+func build(cfg config.Config, runner platform.Runner, batchPlanning bool) []engine.Resource {
 	resources := make([]engine.Resource, 0, resourceCount(cfg))
 	brewOutdated := newBrewOutdatedCache(runner)
 	caskOutdated := newCaskOutdatedCache(runner)
+	asdfInventory := newASDFPlanningInventory(runner)
 	var brewTapInstalled brewTapInstalledChecker = newDirectBrewTapInstalledChecker(runner)
 	var brewInstalled brewInstalledChecker = newDirectBrewInstalledChecker(runner)
 	var caskInstalled caskInstalledChecker = newDirectCaskInstalledChecker(runner)
-	if batchHomebrew {
+	if batchPlanning {
 		brewTapInstalled = newBrewTapInstalledCache(runner)
 		brewInstalled = newBrewInstalledCache(runner)
 		caskInstalled = newCaskInstalledCache(runner)
@@ -48,8 +50,8 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 	for _, name := range cfg.Brew.Packages {
 		installed := brewInstalled
 		var outdated brewOutdatedChecker = brewOutdated
-		if !batchHomebrew {
-			outdated = newBrewOutdatedCache(runner)
+		if !batchPlanning {
+			outdated = newDirectBrewOutdatedChecker(runner)
 		}
 		if isFullyQualifiedBrewFormula(name) {
 			installed = newDirectBrewInstalledChecker(runner)
@@ -58,21 +60,25 @@ func build(cfg config.Config, runner platform.Runner, batchHomebrew bool) []engi
 		resources = append(resources, newBrewPackage(name, runner, installed, outdated))
 	}
 	for _, plugin := range cfg.ASDF.Plugins {
-		resources = append(resources, NewASDFPluginWithOptions(
+		resource := NewASDFPluginWithOptions(
 			plugin.Name,
 			plugin.URL,
 			plugin.Versions,
 			ASDFPluginOptions{UpdateBeforeInstall: plugin.UpdateBeforeInstall},
 			runner,
-		))
+		)
+		if batchPlanning {
+			resource.planningRunner = asdfInventory
+		}
+		resources = append(resources, resource)
 	}
 	for _, item := range cfg.ASDF.ToolVersions {
 		resources = append(resources, NewASDFToolVersions(item.Path, item.Tools))
 	}
 	for _, name := range cfg.Brew.Casks {
-		outdated := caskOutdated
-		if !batchHomebrew {
-			outdated = newCaskOutdatedCache(runner)
+		var outdated caskOutdatedChecker = caskOutdated
+		if !batchPlanning {
+			outdated = newDirectCaskOutdatedChecker(runner)
 		}
 		resources = append(resources, newCask(name, runner, caskInstalled, outdated))
 	}

@@ -18,7 +18,7 @@ repos:
 Satisfied when:
 
 - path exists
-- path is a Git repository
+- path is the root of a Git work tree, including a symlink to that root
 - remote origin matches the configured URL when URL is provided
 
 Missing when the path does not exist.
@@ -55,7 +55,7 @@ Do not switch branches automatically if the repo already exists.
 ## Implementation status
 
 Implemented as `resources.RepoResource`. Status checks the local path, verifies
-that Git sees a work tree, and compares `origin` to the configured URL through
+that the path is the work tree root, and compares `origin` to the configured URL through
 the shared command runner interface.
 
 ## Future options

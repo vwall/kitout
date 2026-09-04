@@ -71,7 +71,7 @@ func (resource FileVaultResource) Apply(ctx context.Context) (engine.ApplyResult
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "FileVault already enabled"), nil
 	case engine.StateMissing:
-		if _, openErr := resource.runner.Run(ctx, "open", "x-apple.systempreferences:com.apple.preference.security"); openErr != nil {
+		if _, openErr := platform.WithBoundedOutput(resource.runner).Run(ctx, "open", "x-apple.systempreferences:com.apple.preference.security"); openErr != nil {
 			return resource.applyResult("manual", false, "could not open System Settings for FileVault"), openErr
 		}
 		err := errors.New("enable FileVault manually in System Settings, then rerun Kitout")
@@ -163,7 +163,7 @@ func (resource FirewallResource) Apply(ctx context.Context) (engine.ApplyResult,
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, firewallStateMessage("firewall already", resource.enabled)), nil
 	case engine.StateChanged:
-		if _, err := resource.runner.Run(ctx, "sudo", socketfilterfwPath, "--setglobalstate", onOff(resource.enabled)); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "sudo", socketfilterfwPath, "--setglobalstate", onOff(resource.enabled)); err != nil {
 			return resource.applyResult("set", false, "could not update firewall"), err
 		}
 		return resource.applyResult("set", true, firewallStateMessage("updated firewall to", resource.enabled)), nil
@@ -254,7 +254,7 @@ func (resource FirewallStealthModeResource) Apply(ctx context.Context) (engine.A
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, firewallStateMessage("firewall stealth mode already", resource.enabled)), nil
 	case engine.StateChanged:
-		if _, err := resource.runner.Run(ctx, "sudo", socketfilterfwPath, "--setstealthmode", onOff(resource.enabled)); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "sudo", socketfilterfwPath, "--setstealthmode", onOff(resource.enabled)); err != nil {
 			return resource.applyResult("set", false, "could not update firewall stealth mode"), err
 		}
 		return resource.applyResult("set", true, firewallStateMessage("updated firewall stealth mode to", resource.enabled)), nil

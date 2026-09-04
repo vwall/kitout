@@ -5,10 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/vwall/kitout/internal/engine"
 )
@@ -56,6 +58,9 @@ func (resource CopyResource) Status(ctx context.Context) (engine.StatusResult, e
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 	if err := validateCopyTargetAncestors(resource.target); err != nil {
+		return resource.status(engine.StateFailed, err.Error()), err
+	}
+	if err := validateCopyOverlap(resource.source, resource.target); err != nil {
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 
@@ -134,6 +139,65 @@ func validateCopySource(path string, info fs.FileInfo) error {
 		return fmt.Errorf("copy source %s must be a file or directory", path)
 	}
 	return nil
+}
+
+func validateCopyOverlap(source, target string) error {
+	resolvedSource, err := filepath.EvalSymlinks(source)
+	if err != nil {
+		return err
+	}
+	resolvedSource, err = filepath.Abs(resolvedSource)
+	if err != nil {
+		return err
+	}
+	// Resolve existing parents, but not the final target: replacing a symlink
+	// removes the link itself rather than its referent.
+	parent, err := filepath.Abs(filepath.Dir(target))
+	if err != nil {
+		return err
+	}
+	suffix := filepath.Base(target)
+	for {
+		resolved, resolveErr := filepath.EvalSymlinks(parent)
+		if resolveErr == nil {
+			resolvedTarget := filepath.Join(resolved, suffix)
+			for _, pair := range [][2]string{{resolvedSource, resolvedTarget}, {resolvedTarget, resolvedSource}} {
+				rel, err := filepath.Rel(pair[0], pair[1])
+				if err != nil {
+					return err
+				}
+				if rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+					return errors.New("copy source and target must not overlap")
+				}
+				// Path spelling alone misses aliases on case-insensitive filesystems.
+				info, err := os.Lstat(pair[0])
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				if err != nil {
+					return err
+				}
+				for path := pair[1]; ; path = filepath.Dir(path) {
+					ancestor, err := os.Lstat(path)
+					if err == nil && os.SameFile(info, ancestor) {
+						return errors.New("copy source and target must not overlap")
+					}
+					if err != nil && !errors.Is(err, os.ErrNotExist) {
+						return err
+					}
+					if filepath.Dir(path) == path {
+						break
+					}
+				}
+			}
+			return nil
+		}
+		if !errors.Is(resolveErr, os.ErrNotExist) || filepath.Dir(parent) == parent {
+			return resolveErr
+		}
+		suffix = filepath.Join(filepath.Base(parent), suffix)
+		parent = filepath.Dir(parent)
+	}
 }
 
 func validateCopySourceTree(path string, info fs.FileInfo) error {
@@ -248,16 +312,53 @@ func copyTargetsMatch(source, target string, sourceInfo, targetInfo fs.FileInfo)
 	}
 }
 
+const copyBufferSize = 32 * 1024
+
 func filesMatch(source, target string) (bool, error) {
-	sourceContents, err := os.ReadFile(source)
+	sourceFile, err := os.Open(source)
 	if err != nil {
 		return false, fmt.Errorf("could not read copy source %s: %w", source, err)
 	}
-	targetContents, err := os.ReadFile(target)
+	defer sourceFile.Close()
+	targetFile, err := os.Open(target)
 	if err != nil {
 		return false, fmt.Errorf("could not read copy target %s: %w", target, err)
 	}
-	return bytes.Equal(sourceContents, targetContents), nil
+	defer targetFile.Close()
+	sourceInfo, err := sourceFile.Stat()
+	if err != nil {
+		return false, fmt.Errorf("could not inspect copy source %s: %w", source, err)
+	}
+	targetInfo, err := targetFile.Stat()
+	if err != nil {
+		return false, fmt.Errorf("could not inspect copy target %s: %w", target, err)
+	}
+	if sourceInfo.Size() != targetInfo.Size() {
+		return false, nil
+	}
+	bufferSize := copyBufferSize
+	if sourceInfo.Size() < int64(bufferSize) {
+		// Keep a nonempty buffer for empty files and observe EOF in the same read
+		// for small files, without allocating large buffers for tiny dotfiles.
+		bufferSize = int(sourceInfo.Size()) + 1
+	}
+	sourceBuffer, targetBuffer := make([]byte, bufferSize), make([]byte, bufferSize)
+	for {
+		sourceN, sourceErr := io.ReadFull(sourceFile, sourceBuffer)
+		if sourceErr != nil && sourceErr != io.EOF && sourceErr != io.ErrUnexpectedEOF {
+			return false, fmt.Errorf("could not read copy source %s: %w", source, sourceErr)
+		}
+		targetN, targetErr := io.ReadFull(targetFile, targetBuffer)
+		if targetErr != nil && targetErr != io.EOF && targetErr != io.ErrUnexpectedEOF {
+			return false, fmt.Errorf("could not read copy target %s: %w", target, targetErr)
+		}
+		if sourceN != targetN || !bytes.Equal(sourceBuffer[:sourceN], targetBuffer[:targetN]) {
+			return false, nil
+		}
+		if sourceErr != nil || targetErr != nil {
+			return sourceErr == targetErr, nil
+		}
+	}
 }
 
 func directoriesMatch(source, target string) (bool, error) {
@@ -297,12 +398,22 @@ func directoriesMatch(source, target string) (bool, error) {
 		if err != nil {
 			return err
 		}
-		entryMatches, err := copyTargetsMatch(path, targetPath, sourceInfo, targetInfo)
+		// WalkDir visits descendants itself; recurse only at the top-level dispatch.
+		entryMatches := targetInfo.IsDir() && targetInfo.Mode()&os.ModeSymlink == 0
+		if !sourceInfo.IsDir() {
+			entryMatches = targetInfo.Mode().IsRegular()
+			if entryMatches {
+				entryMatches, err = filesMatch(path, targetPath)
+			}
+		}
 		if err != nil {
 			return err
 		}
 		if !entryMatches {
 			matches = false
+			if sourceInfo.IsDir() {
+				return filepath.SkipDir
+			}
 		}
 		return nil
 	})
@@ -380,14 +491,21 @@ func copyDirectory(source, target string) error {
 }
 
 func copyFile(source, target string, mode fs.FileMode) error {
-	contents, err := os.ReadFile(source)
+	sourceFile, err := os.Open(source)
 	if err != nil {
 		return err
 	}
+	defer sourceFile.Close()
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(target, contents, mode)
+	targetFile, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	_, copyErr := io.Copy(targetFile, sourceFile)
+	closeErr := targetFile.Close()
+	return errors.Join(copyErr, closeErr)
 }
 
 func (resource CopyResource) status(state engine.ResourceState, message string) engine.StatusResult {

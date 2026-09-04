@@ -68,7 +68,7 @@ func (resource ShellCommandResource) Apply(ctx context.Context) (engine.ApplyRes
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "command does not need to run"), nil
 	case engine.StateMissing:
-		if _, err := resource.applyRunner.Run(ctx, "sh", "-c", resource.command); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.applyRunner).Run(ctx, "sh", "-c", resource.command); err != nil {
 			return resource.applyResult("run", false, "command failed"), err
 		}
 		return resource.applyResult("run", true, "command completed"), nil

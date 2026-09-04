@@ -126,7 +126,7 @@ func TestCommandErrorSummarizesOutputTail(t *testing.T) {
 	got := err.Error()
 	for _, fragment := range []string{
 		"asdf install ruby 3.3.6 failed after exit status 1: exit status 1",
-		"stderr:\n... 1 earlier lines omitted\ntwo",
+		"stderr:\n... earlier lines omitted\ntwo",
 		"eleven",
 		"stdout:\ndownloaded ruby source",
 	} {

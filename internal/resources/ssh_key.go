@@ -124,11 +124,12 @@ func (resource SSHKeyResource) Apply(ctx context.Context) (engine.ApplyResult, e
 		if err := resource.ensureKeyParent(); err != nil {
 			return resource.applyResult("create", false, "could not create SSH key directory"), err
 		}
-		if _, err := resource.runner.Run(ctx, "ssh-keygen", resource.generateArgs()...); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "ssh-keygen", resource.generateArgs()...); err != nil {
 			return resource.applyResult("create", false, "could not generate SSH keypair"), err
 		}
 		return resource.applyResult("create", true, "generated SSH keypair"), nil
 	case engine.StateChanged:
+		// This output becomes the public key file and must never be truncated.
 		result, err := resource.runner.Run(ctx, "ssh-keygen", "-y", "-f", resource.path)
 		if err != nil {
 			return resource.applyResult("public_key", false, "could not recreate SSH public key"), err

@@ -128,10 +128,10 @@ func TestUpgradeAppliesManagedHomebrewUpgrades(t *testing.T) {
 	}}
 	upgradeRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
 		{result: applyCommandResult("brew", []string{"list", "--formula", "git"}, 0)},
-		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
+		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "git"}, "git\n")},
 		{result: applyCommandResult("brew", []string{"upgrade", "git"}, 0)},
 		{result: applyCommandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
-		{result: applyResultWithStdout("brew", []string{"outdated", "--cask", "--quiet"}, "ghostty\n")},
+		{result: applyResultWithStdout("brew", []string{"outdated", "--cask", "--quiet", "ghostty"}, "ghostty\n")},
 		{result: applyCommandResult("brew", []string{"upgrade", "--cask", "ghostty"}, 0)},
 	}}
 	configPath := writeCLIConfigFile(t, `version: 1
@@ -181,12 +181,59 @@ brew:
 	})
 	expectApplyRunnerCalls(t, upgradeRunner.calls, []applyCommandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
-		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
 		{name: "brew", args: []string{"upgrade", "git"}},
 		{name: "brew", args: []string{"list", "--cask", "ghostty"}},
-		{name: "brew", args: []string{"outdated", "--cask", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--cask", "--quiet", "ghostty"}},
 		{name: "brew", args: []string{"upgrade", "--cask", "ghostty"}},
 	})
+}
+
+func TestUpgradeRechecksEachPlannedTargetBeforeMutation(t *testing.T) {
+	for _, typ := range []string{"formula", "cask"} {
+		for _, fail := range []bool{false, true} {
+			name := typ + "/current"
+			if fail {
+				name = typ + "/inspection-failure"
+			}
+			t.Run(name, func(t *testing.T) {
+				section := "packages"
+				if typ == "cask" {
+					section = "casks"
+				}
+				configPath := writeCLIConfigFile(t, "version: 1\nbrew:\n  "+section+": [example]\n")
+				planRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
+					{result: applyResultWithStdout("brew", nil, "example\n")},
+					{result: applyResultWithStdout("brew", nil, "example\n")},
+				}}
+				fresh := fakeApplyResponse{result: applyResultWithStdout("brew", nil, "")}
+				if fail {
+					fresh.err = applyCommandError("brew", []string{"outdated", "--" + typ, "--quiet", "example"}, 1)
+				}
+				upgradeRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
+					{result: applyCommandResult("brew", nil, 0)},
+					fresh,
+				}}
+				var stdout, stderr bytes.Buffer
+				code := runWithCLIExecRunners(t, []string{"upgrade", "--config", configPath, "--json"}, nil, &stdout, &stderr, planRunner, upgradeRunner)
+				wantCode, wantAction := exitOK, "noop"
+				if fail {
+					wantCode, wantAction = exitApplyFailure, "fail"
+				}
+				if code != wantCode {
+					t.Fatalf("exit = %d, want %d; stdout: %s; stderr: %s", code, wantCode, stdout.String(), stderr.String())
+				}
+				report := decodeStatusJSON(t, stdout.String()).Upgrade
+				if report == nil || len(report.Items) != 1 || report.Items[0].Action != wantAction || report.Summary.Changed != 0 {
+					t.Fatalf("report = %+v, want %s without mutation", report, wantAction)
+				}
+				expectApplyRunnerCalls(t, upgradeRunner.calls, []applyCommandCall{
+					{name: "brew", args: []string{"list", "--" + typ, "example"}},
+					{name: "brew", args: []string{"outdated", "--" + typ, "--quiet", "example"}},
+				})
+			})
+		}
+	}
 }
 
 func TestUpgradeOnlyBrewSkipsCaskChecks(t *testing.T) {
@@ -323,7 +370,7 @@ func TestUpgradeJSONReportsUpgradeResults(t *testing.T) {
 	}}
 	upgradeRunner := &fakeApplyRunner{responses: []fakeApplyResponse{
 		{result: applyCommandResult("brew", []string{"list", "--formula", "git"}, 0)},
-		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "git\n")},
+		{result: applyResultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "git"}, "git\n")},
 		{result: applyCommandResult("brew", []string{"upgrade", "git"}, 0)},
 	}}
 	configPath := writeCLIConfigFile(t, `version: 1

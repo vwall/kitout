@@ -29,6 +29,18 @@ func (app application) runApply(args []string, opts globalOptions) int {
 	if err := fs.Parse(args); err != nil {
 		return exitValidation
 	}
+	if fs.NArg() > 0 {
+		message := fmt.Sprintf("apply does not accept positional arguments: %s", quoteList(fs.Args()))
+		if opts.json {
+			if err := newJSONRenderer(stdout).renderValidationMessage("apply", message); err != nil {
+				fmt.Fprintf(stderr, "Failed to render JSON: %v\n", err)
+				return exitRuntimeError
+			}
+		} else {
+			fmt.Fprintf(stderr, "kitout apply: %s\n", message)
+		}
+		return exitValidation
+	}
 
 	renderer := newHumanRenderer(stdout, stderr, opts)
 	jsonRenderer := newJSONRenderer(stdout)

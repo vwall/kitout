@@ -34,9 +34,9 @@ runner to call:
 defaults read <domain> <key>
 ```
 
-The resource compares the actual value to the expected typed value. Missing
-keys are reported as `missing`; existing keys with different values are reported
-as `changed`.
+When the value matches, `defaults read-type <domain> <key>` verifies its stored
+type. String whitespace is significant. Missing keys are reported as `missing`;
+existing keys with different values or types are reported as `changed`.
 
 ## Apply
 

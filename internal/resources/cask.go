@@ -73,7 +73,7 @@ func (resource CaskResource) Apply(ctx context.Context) (engine.ApplyResult, err
 	case engine.StateSatisfied:
 		return resource.applyResult("noop", false, "cask already installed"), nil
 	case engine.StateMissing:
-		if _, err := resource.runner.Run(ctx, "brew", "install", "--cask", resource.name); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "brew", "install", "--cask", resource.name); err != nil {
 			return resource.applyResult("install", false, "could not install cask"), err
 		}
 		return resource.applyResult("install", true, "installed cask"), nil
@@ -103,7 +103,7 @@ func (resource CaskResource) Upgrade(ctx context.Context) (engine.ApplyResult, e
 		if _, ok := advisoryWithCode(status.Advisories, HomebrewCaskOutdatedAdvisory); !ok {
 			return resource.applyResult("noop", false, "cask already current"), nil
 		}
-		if _, err := resource.runner.Run(ctx, "brew", "upgrade", "--cask", resource.name); err != nil {
+		if _, err := platform.WithBoundedOutput(resource.runner).Run(ctx, "brew", "upgrade", "--cask", resource.name); err != nil {
 			return resource.applyResult("upgrade", false, "could not upgrade cask"), err
 		}
 		return resource.applyResult("upgrade", true, "upgraded cask"), nil
@@ -265,4 +265,22 @@ func (cache *caskOutdatedCache) load(ctx context.Context) {
 	if err != nil && !isExitCode(err, 1) {
 		cache.loadErr = err
 	}
+}
+
+type directCaskOutdatedChecker struct {
+	runner platform.Runner
+}
+
+func newDirectCaskOutdatedChecker(runner platform.Runner) directCaskOutdatedChecker {
+	return directCaskOutdatedChecker{runner: runner}
+}
+
+func (checker directCaskOutdatedChecker) Contains(ctx context.Context, name string) (bool, error) {
+	result, err := checker.runner.Run(ctx, "brew", "outdated", "--cask", "--quiet", name)
+	outdated := strings.TrimSpace(result.Stdout) != ""
+	// A targeted query exits 1 for outdated packages, but failures also exit 1.
+	if err != nil && !(isExitCode(err, 1) && outdated) {
+		return false, err
+	}
+	return outdated, nil
 }

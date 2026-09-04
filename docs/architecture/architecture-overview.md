@@ -208,6 +208,14 @@ Plan actions:
 - run
 - warn
 
+## Planning inspections
+
+Planning resources share Homebrew inventories and asdf version/plugin inventory
+checks within one resource build. Each new plan builds a fresh resource list;
+there is no persistent cache. Per-plugin asdf version checks remain live.
+Apply and upgrade use uncached resources, and Homebrew update rechecks target
+the selected package rather than scanning the entire installed inventory.
+
 ## Error philosophy
 
 Errors should include:
