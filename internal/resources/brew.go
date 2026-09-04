@@ -294,11 +294,10 @@ func newDirectBrewOutdatedChecker(runner platform.Runner) directBrewOutdatedChec
 
 func (checker directBrewOutdatedChecker) Contains(ctx context.Context, name string) (bool, error) {
 	result, err := checker.runner.Run(ctx, "brew", "outdated", "--formula", "--quiet", name)
-	if strings.TrimSpace(result.Stdout) != "" {
-		return true, nil
+	outdated := strings.TrimSpace(result.Stdout) != ""
+	// A targeted query exits 1 for outdated packages, but failures also exit 1.
+	if err != nil && !(isExitCode(err, 1) && outdated) {
+		return false, err
 	}
-	if err == nil || isExitCode(err, 1) {
-		return false, nil
-	}
-	return false, err
+	return outdated, nil
 }

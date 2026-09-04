@@ -32,6 +32,7 @@ type ASDFPluginResource struct {
 	updateBeforeInstall bool
 	versions            []string
 	runner              platform.Runner
+	planningRunner      platform.Runner
 }
 
 var _ engine.Resource = ASDFPluginResource{}
@@ -68,6 +69,9 @@ func (resource ASDFPluginResource) Type() string {
 func (resource ASDFPluginResource) Status(ctx context.Context) (engine.StatusResult, error) {
 	if err := resource.validate(); err != nil {
 		return resource.status(engine.StateFailed, err.Error()), err
+	}
+	if resource.planningRunner != nil {
+		resource.runner = resource.planningRunner
 	}
 	if err := resource.checkASDF(ctx); err != nil {
 		return resource.status(engine.StateFailed, "asdf is required before checking plugins"), err
