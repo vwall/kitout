@@ -1,7 +1,9 @@
 package resources
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -443,6 +445,56 @@ func TestCopyApplyRejectsCaseInsensitiveOverlap(t *testing.T) {
 			entries, err := os.ReadDir(container)
 			if err != nil || len(entries) != 1 {
 				t.Fatalf("container entries = %v, %v; want only original source", entries, err)
+			}
+		})
+	}
+}
+
+func TestCopyStreamingFiles(t *testing.T) {
+	for _, size := range []int{0, copyBufferSize - 1, copyBufferSize, copyBufferSize + 1, 3*copyBufferSize + 17} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			dir := t.TempDir()
+			source, target := filepath.Join(dir, "source"), filepath.Join(dir, "target")
+			contents := bytes.Repeat([]byte("x"), size)
+			if err := os.WriteFile(source, contents, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			resource := NewCopy(source, target, true)
+			result, err := resource.Apply(context.Background())
+			if err != nil || !result.Changed {
+				t.Fatalf("Apply = %+v, %v", result, err)
+			}
+			got, err := os.ReadFile(target)
+			if err != nil || !bytes.Equal(got, contents) {
+				t.Fatalf("copied contents differ: %v", err)
+			}
+			info, err := os.Stat(target)
+			if err != nil || info.Mode().Perm() != 0o700 {
+				t.Fatalf("copied mode = %v, %v", info, err)
+			}
+			status, err := resource.Status(context.Background())
+			if err != nil || status.State != engine.StateSatisfied {
+				t.Fatalf("Status = %+v, %v", status, err)
+			}
+			if size > 0 {
+				for _, offset := range []int{0, size / 2, size - 1} {
+					changed := bytes.Clone(contents)
+					changed[offset] = 'y'
+					if err := os.WriteFile(target, changed, 0o700); err != nil {
+						t.Fatal(err)
+					}
+					status, err = resource.Status(context.Background())
+					if err != nil || status.State != engine.StateChanged {
+						t.Fatalf("mismatch at %d: Status = %+v, %v", offset, status, err)
+					}
+				}
+			}
+			if err := os.WriteFile(target, append(contents, 'z'), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			status, err = resource.Status(context.Background())
+			if err != nil || status.State != engine.StateChanged {
+				t.Fatalf("size mismatch: Status = %+v, %v", status, err)
 			}
 		})
 	}

@@ -71,9 +71,10 @@ different location than the configured target path.
 
 ## Implementation status
 
-Implemented as `resources.CopyResource`. Status compares regular file contents
-and directory trees recursively. Apply copies regular files and directories, and
-dry-run plans never write files.
+Implemented as `resources.CopyResource`. Status compares each directory tree
+once and checks file sizes before comparing contents in bounded chunks. Apply
+streams file contents rather than loading whole files into memory. Dry-run
+plans never write files.
 
 ## Shared expectations
 

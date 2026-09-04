@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -311,16 +312,53 @@ func copyTargetsMatch(source, target string, sourceInfo, targetInfo fs.FileInfo)
 	}
 }
 
+const copyBufferSize = 32 * 1024
+
 func filesMatch(source, target string) (bool, error) {
-	sourceContents, err := os.ReadFile(source)
+	sourceFile, err := os.Open(source)
 	if err != nil {
 		return false, fmt.Errorf("could not read copy source %s: %w", source, err)
 	}
-	targetContents, err := os.ReadFile(target)
+	defer sourceFile.Close()
+	targetFile, err := os.Open(target)
 	if err != nil {
 		return false, fmt.Errorf("could not read copy target %s: %w", target, err)
 	}
-	return bytes.Equal(sourceContents, targetContents), nil
+	defer targetFile.Close()
+	sourceInfo, err := sourceFile.Stat()
+	if err != nil {
+		return false, fmt.Errorf("could not inspect copy source %s: %w", source, err)
+	}
+	targetInfo, err := targetFile.Stat()
+	if err != nil {
+		return false, fmt.Errorf("could not inspect copy target %s: %w", target, err)
+	}
+	if sourceInfo.Size() != targetInfo.Size() {
+		return false, nil
+	}
+	bufferSize := copyBufferSize
+	if sourceInfo.Size() < int64(bufferSize) {
+		// Keep a nonempty buffer for empty files and observe EOF in the same read
+		// for small files, without allocating large buffers for tiny dotfiles.
+		bufferSize = int(sourceInfo.Size()) + 1
+	}
+	sourceBuffer, targetBuffer := make([]byte, bufferSize), make([]byte, bufferSize)
+	for {
+		sourceN, sourceErr := io.ReadFull(sourceFile, sourceBuffer)
+		if sourceErr != nil && sourceErr != io.EOF && sourceErr != io.ErrUnexpectedEOF {
+			return false, fmt.Errorf("could not read copy source %s: %w", source, sourceErr)
+		}
+		targetN, targetErr := io.ReadFull(targetFile, targetBuffer)
+		if targetErr != nil && targetErr != io.EOF && targetErr != io.ErrUnexpectedEOF {
+			return false, fmt.Errorf("could not read copy target %s: %w", target, targetErr)
+		}
+		if sourceN != targetN || !bytes.Equal(sourceBuffer[:sourceN], targetBuffer[:targetN]) {
+			return false, nil
+		}
+		if sourceErr != nil || targetErr != nil {
+			return sourceErr == targetErr, nil
+		}
+	}
 }
 
 func directoriesMatch(source, target string) (bool, error) {
@@ -360,7 +398,14 @@ func directoriesMatch(source, target string) (bool, error) {
 		if err != nil {
 			return err
 		}
-		entryMatches, err := copyTargetsMatch(path, targetPath, sourceInfo, targetInfo)
+		// WalkDir visits descendants itself; recurse only at the top-level dispatch.
+		entryMatches := targetInfo.IsDir() && targetInfo.Mode()&os.ModeSymlink == 0
+		if !sourceInfo.IsDir() {
+			entryMatches = targetInfo.Mode().IsRegular()
+			if entryMatches {
+				entryMatches, err = filesMatch(path, targetPath)
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -446,14 +491,21 @@ func copyDirectory(source, target string) error {
 }
 
 func copyFile(source, target string, mode fs.FileMode) error {
-	contents, err := os.ReadFile(source)
+	sourceFile, err := os.Open(source)
 	if err != nil {
 		return err
 	}
+	defer sourceFile.Close()
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(target, contents, mode)
+	targetFile, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	_, copyErr := io.Copy(targetFile, sourceFile)
+	closeErr := targetFile.Close()
+	return errors.Join(copyErr, closeErr)
 }
 
 func (resource CopyResource) status(state engine.ResourceState, message string) engine.StatusResult {

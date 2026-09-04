@@ -586,6 +586,79 @@ brew:
 	}
 }
 
+func TestLoadFileRequiresSingleYAMLDocument(t *testing.T) {
+	for _, suffix := range []string{"---\nversion: 1\n", "---\n", "---\nbroken: [\n"} {
+		t.Run(suffix, func(t *testing.T) {
+			_, err := LoadFile(writeConfigFile(t, "version: 1\n"+suffix))
+			var parseError ParseError
+			if !errors.As(err, &parseError) {
+				t.Fatalf("LoadFile error = %v, want ParseError", err)
+			}
+		})
+	}
+	if _, err := LoadFile(writeConfigFile(t, "version: 1\n...\n# trailing comment\n")); err != nil {
+		t.Fatalf("valid document terminator and comment rejected: %v", err)
+	}
+}
+
+func TestLoadFileRejectsConflictingNormalizedTargetOwners(t *testing.T) {
+	writers := []struct{ field, yaml string }{
+		{"repos[0].path", "repos:\n  - path: ./target\n    url: https://example.com/repo.git\n"},
+		{"copies[0].target", "copies:\n  - source: ./source\n    target: ./nested/../target\n"},
+		{"symlinks[0].target", "symlinks:\n  - source: ./source\n    target: ./target\n"},
+		{"ssh.keys[0].path", "ssh:\n  keys:\n    - path: ./target\n      type: ed25519\n"},
+		{"asdf.tool_versions[0].path", "asdf:\n  tool_versions:\n    - path: ./target\n      tools:\n        nodejs: '22.0.0'\n"},
+	}
+	for i, first := range writers {
+		for _, second := range writers[i+1:] {
+			t.Run(first.field+"/"+second.field, func(t *testing.T) {
+				_, err := LoadFile(writeConfigFile(t, "version: 1\n"+first.yaml+second.yaml))
+				if err == nil || !strings.Contains(err.Error(), "conflicts with") || !strings.Contains(err.Error(), first.field) || !strings.Contains(err.Error(), second.field) {
+					t.Fatalf("LoadFile error = %v, want both conflicting fields", err)
+				}
+			})
+		}
+	}
+	_, err := LoadFile(writeConfigFile(t, "version: 1\n"+writers[1].yaml+"symlink_groups:\n  - source_root: ./source\n    target_root: .\n    paths: [target]\n"))
+	if err == nil || !strings.Contains(err.Error(), "symlink_groups[0].paths[0] conflicts with copies[0].target") {
+		t.Fatalf("LoadFile error = %v, want expanded group target conflict", err)
+	}
+}
+
+func TestLoadFileRejectsSSHGeneratedPublicKeyTargetConflicts(t *testing.T) {
+	for _, other := range []string{
+		"copies:\n  - source: ./source\n    target: ./id.pub\n",
+		"asdf:\n  tool_versions:\n    - path: ./id.pub\n      tools:\n        nodejs: '22.0.0'\n",
+	} {
+		_, err := LoadFile(writeConfigFile(t, "version: 1\nssh:\n  keys:\n    - path: ./id\n      type: ed25519\n"+other))
+		if err == nil || !strings.Contains(err.Error(), "conflicts with") || !strings.Contains(err.Error(), "ssh.keys[0].path (public key)") {
+			t.Fatalf("LoadFile error = %v, want generated public-key conflict", err)
+		}
+	}
+	_, err := LoadFile(writeConfigFile(t, "version: 1\nssh:\n  keys:\n    - path: ./id\n      type: ed25519\n    - path: ./id.pub\n      type: ed25519\n"))
+	if err == nil || !strings.Contains(err.Error(), "ssh.keys[0].path (public key) conflicts with ssh.keys[1].path") {
+		t.Fatalf("LoadFile error = %v, want private/public key collision", err)
+	}
+}
+
+func TestLoadFileAllowsDirectoriesAndNestedManagedTargets(t *testing.T) {
+	_, err := LoadFile(writeConfigFile(t, `version: 1
+directories: [./workspace, ./workspace/repo, ./copied]
+repos:
+  - path: ./workspace/repo
+    url: https://example.com/repo.git
+copies:
+  - source: ./source
+    target: ./copied
+symlinks:
+  - source: ./source
+    target: ./workspace/repo/config
+`))
+	if err != nil {
+		t.Fatalf("compatible directory declarations and nested targets rejected: %v", err)
+	}
+}
+
 func writeConfigFile(t *testing.T, contents string) string {
 	t.Helper()
 

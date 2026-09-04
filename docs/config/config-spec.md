@@ -4,6 +4,9 @@
 
 Kitout uses YAML for the MVP.
 
+A config must contain exactly one YAML document. Additional documents, including
+empty documents, are rejected instead of silently ignored.
+
 Default path:
 
 ```txt
@@ -468,6 +471,13 @@ Examples:
 - more than one login shell is not supported because `login_shell` is a single
   object
 - same shell command name twice
+
+Exclusive writers also cannot claim the same normalized target across resource
+types: repositories, copies, symlinks (including expanded groups), SSH private
+and generated public keys, and
+asdf tool-version files. Errors identify both conflicting config fields.
+Directory prerequisites and parent/child targets remain allowed; this check
+detects exact target collisions, not overlapping directory contents.
 
 ## Unknown fields
 
