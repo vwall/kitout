@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -142,6 +143,13 @@ func LoadFile(path string) (LoadedConfig, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(contents))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&cfg); err != nil {
+		return LoadedConfig{}, ParseError{Path: resolvedPath, Err: err}
+	}
+	var extra yaml.Node
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		if err == nil {
+			err = errors.New("config must contain exactly one YAML document")
+		}
 		return LoadedConfig{}, ParseError{Path: resolvedPath, Err: err}
 	}
 	cfg.topLevelCasksSet = topLevelCasksSet

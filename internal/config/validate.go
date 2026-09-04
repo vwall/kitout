@@ -165,6 +165,7 @@ func validate(cfg Config, opts validationOptions) error {
 	}
 	if opts.checkPathDuplicates {
 		errs.detectDuplicates(symlinkTargetKeys(cfg))
+		errs.detectConflictingTargetOwners(cfg)
 	}
 
 	for i, item := range cfg.MacOSDefaults {
@@ -304,6 +305,35 @@ func (key duplicateKey) display() string {
 	return key.Value
 }
 
+// Compare exclusive writers across resource types. Directory declarations can
+// coexist with managed directories, and parent/child paths are not collisions.
+func (errs *ValidationErrors) detectConflictingTargetOwners(cfg Config) {
+	owners := make(map[string]duplicateKey)
+	for _, keys := range [][]duplicateKey{
+		repoPathKeys(cfg.Repos),
+		copyTargetKeys(cfg.Copies),
+		symlinkTargetKeys(cfg),
+		sshKeyPathKeys(cfg.SSH.Keys),
+		sshPublicKeyPathKeys(cfg.SSH.Keys),
+		asdfToolVersionPathKeys(cfg.ASDF.ToolVersions),
+	} {
+		for _, key := range keys {
+			if key.Value == "" {
+				continue
+			}
+			if owner, ok := owners[filepath.Clean(key.Value)]; ok {
+				errs.add(key.Field, fmt.Sprintf("conflicts with %s: both manage target %s", owner.Field, key.Value))
+			}
+		}
+		// Same-type duplicates retain their existing, more specific diagnostics.
+		for _, key := range keys {
+			if key.Value != "" {
+				owners[filepath.Clean(key.Value)] = key
+			}
+		}
+	}
+}
+
 func repoPathKeys(repos []Repo) []duplicateKey {
 	keys := make([]duplicateKey, 0, len(repos))
 	for i, repo := range repos {
@@ -399,6 +429,17 @@ func macOSDefaultKeys(items []MacOSDefault) []duplicateKey {
 		})
 	}
 	return keys
+}
+
+func sshPublicKeyPathKeys(keys []SSHKey) []duplicateKey {
+	paths := sshKeyPathKeys(keys)
+	for i := range paths {
+		if paths[i].Value != "" {
+			paths[i].Value += ".pub"
+			paths[i].Field += " (public key)"
+		}
+	}
+	return paths
 }
 
 func sshKeyPathKeys(keys []SSHKey) []duplicateKey {
