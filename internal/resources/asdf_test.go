@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -422,4 +423,90 @@ func writeToolVersions(t *testing.T, contents string) string {
 		t.Fatalf("write .tool-versions: %v", err)
 	}
 	return path
+}
+
+func TestASDFPlanningInventoryApplyReadsFreshState(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{
+		{}, {result: resultWithStdout("asdf", nil, "ruby https://example.com/ruby.git\n")}, {result: resultWithStdout("asdf", nil, "1.0\n")},
+		{}, {result: resultWithStdout("asdf", nil, "ruby https://example.com/changed.git\n")},
+	}}
+	resource := NewASDFPlugin("ruby", "https://example.com/ruby.git", []string{"1.0"}, runner)
+	resource.planningRunner = newASDFPlanningInventory(runner)
+	status, err := resource.Status(context.Background())
+	if err != nil || status.State != engine.StateSatisfied {
+		t.Fatalf("Status = %+v, %v", status, err)
+	}
+	result, err := resource.Apply(context.Background())
+	if !containsError(err, "configured URL does not match installed URL") || result.Changed {
+		t.Fatalf("Apply = %+v, %v; want fresh URL rejection", result, err)
+	}
+	if len(runner.calls) != 5 {
+		t.Fatalf("commands = %d, want 5", len(runner.calls))
+	}
+}
+
+func TestASDFPlanningInventorySharesErrorsAndHonorsCancellation(t *testing.T) {
+	for _, stage := range []string{"version", "plugins"} {
+		t.Run(stage, func(t *testing.T) {
+			wantErr := errors.New("inventory failed")
+			responses := []fakeResponse{{err: wantErr}}
+			if stage == "plugins" {
+				responses = append([]fakeResponse{{}}, responses...)
+			}
+			runner := &fakeRunner{responses: responses}
+			resource := NewASDFPlugin("ruby", "https://example.com/ruby.git", nil, runner)
+			resource.planningRunner = newASDFPlanningInventory(runner)
+			for i := 0; i < 2; i++ {
+				status, err := resource.Status(context.Background())
+				if !errors.Is(err, wantErr) || status.State != engine.StateFailed {
+					t.Fatalf("Status = %+v, %v", status, err)
+				}
+			}
+			if len(runner.calls) != len(responses) {
+				t.Fatalf("commands = %d, want %d", len(runner.calls), len(responses))
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			if _, err := resource.Status(ctx); !errors.Is(err, context.Canceled) {
+				t.Fatalf("canceled Status error = %v", err)
+			}
+			if len(runner.calls) != len(responses) {
+				t.Fatal("canceled status executed commands")
+			}
+		})
+	}
+}
+
+func TestASDFPlanningInventoryDoesNotCacheCancellation(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{{err: context.Canceled}, {}, {}}}
+	inventory := newASDFPlanningInventory(runner)
+	if _, err := inventory.Run(context.Background(), "asdf", "--version"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("first call error = %v", err)
+	}
+	if _, err := inventory.Run(context.Background(), "asdf", "--version"); err != nil {
+		t.Fatal(err)
+	}
+	fresh := newASDFPlanningInventory(runner)
+	if _, err := fresh.Run(context.Background(), "asdf", "--version"); err != nil {
+		t.Fatal(err)
+	}
+	if len(runner.calls) != 3 {
+		t.Fatalf("commands = %d, want retry and fresh inventory query", len(runner.calls))
+	}
+}
+
+func TestASDFPublicConstructorStatusRemainsLive(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeResponse{{}, {}, {}, {result: resultWithStdout("asdf", nil, "ruby https://example.com/ruby.git\n")}, {result: resultWithStdout("asdf", nil, "1.0\n")}}}
+	resource := NewASDFPlugin("ruby", "https://example.com/ruby.git", []string{"1.0"}, runner)
+	first, err := resource.Status(context.Background())
+	if err != nil || first.State != engine.StateMissing {
+		t.Fatalf("first Status = %+v, %v", first, err)
+	}
+	second, err := resource.Status(context.Background())
+	if err != nil || second.State != engine.StateSatisfied {
+		t.Fatalf("second Status = %+v, %v", second, err)
+	}
+	if len(runner.calls) != 5 {
+		t.Fatalf("commands = %d, want 5", len(runner.calls))
+	}
 }

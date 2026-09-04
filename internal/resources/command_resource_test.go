@@ -581,7 +581,7 @@ func TestBrewPackageDryRunChecksFullyQualifiedBuiltFormulaOutdatedDirectly(t *te
 func TestBrewPackageUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
-		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet", "git"}, 0)},
 		{err: commandError("brew", []string{"list", "--formula", "go"}, 1)},
 	}}
 	resources := BuildUncached(config.Config{
@@ -601,7 +601,7 @@ func TestBrewPackageUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	}
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
-		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
 		{name: "brew", args: []string{"list", "--formula", "go"}},
 	})
 }
@@ -609,9 +609,9 @@ func TestBrewPackageUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 func TestBrewPackageUncachedBuildDoesNotShareOutdatedChecks(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--formula", "git"}, 0)},
-		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--formula", "--quiet", "git"}, 0)},
 		{result: commandResult("brew", []string{"list", "--formula", "go"}, 0)},
-		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet"}, "go\n")},
+		{result: resultWithStdout("brew", []string{"outdated", "--formula", "--quiet", "go"}, "go\n")},
 	}}
 	resources := BuildUncached(config.Config{
 		Version: config.CurrentVersion,
@@ -631,9 +631,9 @@ func TestBrewPackageUncachedBuildDoesNotShareOutdatedChecks(t *testing.T) {
 	expectAdvisory(t, plan.Items[1].Advisories, "homebrew_formula_outdated", "formula update available for go", "brew upgrade go")
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--formula", "git"}},
-		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "git"}},
 		{name: "brew", args: []string{"list", "--formula", "go"}},
-		{name: "brew", args: []string{"outdated", "--formula", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--formula", "--quiet", "go"}},
 	})
 }
 
@@ -843,7 +843,7 @@ func TestCaskDryRunBatchesInstalledCheckForBuiltResources(t *testing.T) {
 func TestCaskUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeResponse{
 		{result: commandResult("brew", []string{"list", "--cask", "ghostty"}, 0)},
-		{result: commandResult("brew", []string{"outdated", "--cask", "--quiet"}, 0)},
+		{result: commandResult("brew", []string{"outdated", "--cask", "--quiet", "ghostty"}, 0)},
 		{err: commandError("brew", []string{"list", "--cask", "rectangle"}, 1)},
 	}}
 	resources := BuildUncached(config.Config{
@@ -861,7 +861,7 @@ func TestCaskUncachedBuildUsesDirectInstalledChecks(t *testing.T) {
 	}
 	expectCalls(t, runner.calls, []commandCall{
 		{name: "brew", args: []string{"list", "--cask", "ghostty"}},
-		{name: "brew", args: []string{"outdated", "--cask", "--quiet"}},
+		{name: "brew", args: []string{"outdated", "--cask", "--quiet", "ghostty"}},
 		{name: "brew", args: []string{"list", "--cask", "rectangle"}},
 	})
 }
