@@ -302,6 +302,36 @@ func TestInitAgentsUpdatesExistingRepoGuidanceWithoutOverwritingConfig(t *testin
 	}
 }
 
+func TestInitAgentsIsIdempotentAndPreservesFollowingGuidance(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "kitout.yaml")
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	var stdout, stderr bytes.Buffer
+	args := []string{"init", "--config", configPath, "--agents"}
+	if code := Run(args, nil, &stdout, &stderr); code != exitOK {
+		t.Fatalf("initial init exit = %d; stderr: %s", code, stderr.String())
+	}
+	for _, suffix := range []string{"", "\n## Other guidance\n\nKeep this intact.\n"} {
+		contents := append(mustReadFile(t, agentsPath), []byte(suffix)...)
+		if err := os.WriteFile(agentsPath, contents, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		for range 2 {
+			stdout.Reset()
+			stderr.Reset()
+			if code := Run(args, nil, &stdout, &stderr); code != exitOK {
+				t.Fatalf("repeated init exit = %d; stderr: %s", code, stderr.String())
+			}
+			if got := mustReadFile(t, agentsPath); !bytes.Equal(got, contents) {
+				t.Fatalf("repeated init changed AGENTS.md: got %q, want %q", got, contents)
+			}
+			if !strings.Contains(stdout.String(), "AGENTS.md already includes Kitout guidance") {
+				t.Fatalf("stdout = %q, want unchanged guidance notice", stdout.String())
+			}
+		}
+	}
+}
+
 func TestInitNoAgentsWarningCreatesRepoPreferenceWithoutAgentsFile(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {

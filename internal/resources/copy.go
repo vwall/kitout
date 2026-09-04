@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/vwall/kitout/internal/engine"
 )
@@ -56,6 +57,9 @@ func (resource CopyResource) Status(ctx context.Context) (engine.StatusResult, e
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 	if err := validateCopyTargetAncestors(resource.target); err != nil {
+		return resource.status(engine.StateFailed, err.Error()), err
+	}
+	if err := validateCopyOverlap(resource.source, resource.target); err != nil {
 		return resource.status(engine.StateFailed, err.Error()), err
 	}
 
@@ -134,6 +138,65 @@ func validateCopySource(path string, info fs.FileInfo) error {
 		return fmt.Errorf("copy source %s must be a file or directory", path)
 	}
 	return nil
+}
+
+func validateCopyOverlap(source, target string) error {
+	resolvedSource, err := filepath.EvalSymlinks(source)
+	if err != nil {
+		return err
+	}
+	resolvedSource, err = filepath.Abs(resolvedSource)
+	if err != nil {
+		return err
+	}
+	// Resolve existing parents, but not the final target: replacing a symlink
+	// removes the link itself rather than its referent.
+	parent, err := filepath.Abs(filepath.Dir(target))
+	if err != nil {
+		return err
+	}
+	suffix := filepath.Base(target)
+	for {
+		resolved, resolveErr := filepath.EvalSymlinks(parent)
+		if resolveErr == nil {
+			resolvedTarget := filepath.Join(resolved, suffix)
+			for _, pair := range [][2]string{{resolvedSource, resolvedTarget}, {resolvedTarget, resolvedSource}} {
+				rel, err := filepath.Rel(pair[0], pair[1])
+				if err != nil {
+					return err
+				}
+				if rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+					return errors.New("copy source and target must not overlap")
+				}
+				// Path spelling alone misses aliases on case-insensitive filesystems.
+				info, err := os.Lstat(pair[0])
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				if err != nil {
+					return err
+				}
+				for path := pair[1]; ; path = filepath.Dir(path) {
+					ancestor, err := os.Lstat(path)
+					if err == nil && os.SameFile(info, ancestor) {
+						return errors.New("copy source and target must not overlap")
+					}
+					if err != nil && !errors.Is(err, os.ErrNotExist) {
+						return err
+					}
+					if filepath.Dir(path) == path {
+						break
+					}
+				}
+			}
+			return nil
+		}
+		if !errors.Is(resolveErr, os.ErrNotExist) || filepath.Dir(parent) == parent {
+			return resolveErr
+		}
+		suffix = filepath.Join(filepath.Base(parent), suffix)
+		parent = filepath.Dir(parent)
+	}
 }
 
 func validateCopySourceTree(path string, info fs.FileInfo) error {
@@ -303,6 +366,9 @@ func directoriesMatch(source, target string) (bool, error) {
 		}
 		if !entryMatches {
 			matches = false
+			if sourceInfo.IsDir() {
+				return filepath.SkipDir
+			}
 		}
 		return nil
 	})

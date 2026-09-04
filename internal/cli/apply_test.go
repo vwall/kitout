@@ -3,7 +3,9 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,6 +17,33 @@ import (
 	"github.com/vwall/kitout/internal/engine"
 	"github.com/vwall/kitout/internal/platform"
 )
+
+func TestApplyRejectsPositionalArgumentsBeforeDryRun(t *testing.T) {
+	for _, jsonOutput := range []bool{false, true} {
+		t.Run(fmt.Sprintf("json=%t", jsonOutput), func(t *testing.T) {
+			missingDir := filepath.Join(t.TempDir(), "code")
+			configPath := writeCLIConfigFile(t, "version: 1\ndirectories:\n  - "+missingDir+"\n")
+			args := []string{"apply", "--config", configPath}
+			if jsonOutput {
+				args = append(args, "--json")
+			}
+			args = append(args, "directory:"+missingDir, "--dry-run")
+			var stdout, stderr bytes.Buffer
+			if code := Run(args, nil, &stdout, &stderr); code != exitValidation {
+				t.Fatalf("exit code = %d, want validation failure; stdout: %s; stderr: %s", code, stdout.String(), stderr.String())
+			}
+			if _, err := os.Stat(missingDir); !os.IsNotExist(err) {
+				t.Fatalf("Stat(%q) error = %v, want directory to remain missing", missingDir, err)
+			}
+			if !strings.Contains(stdout.String()+stderr.String(), "does not accept positional arguments") {
+				t.Fatalf("missing argument validation diagnostic; stdout: %s; stderr: %s", stdout.String(), stderr.String())
+			}
+			if jsonOutput && !json.Valid(stdout.Bytes()) {
+				t.Fatalf("stdout = %q, want valid JSON", stdout.String())
+			}
+		})
+	}
+}
 
 func TestApplyDryRunShowsPlanWithoutCreatingDirectory(t *testing.T) {
 	missingDir := filepath.Join(t.TempDir(), "code")

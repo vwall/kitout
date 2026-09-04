@@ -41,6 +41,7 @@ Failed when:
 - source is missing
 - source is a symlink
 - source contains a symlink
+- source and target overlap (the same path, or either contains the other)
 - target has a symlinked ancestor
 - target differs and `replace: false`
 

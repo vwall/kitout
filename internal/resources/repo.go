@@ -52,9 +52,16 @@ func (resource RepoResource) Status(ctx context.Context) (engine.StatusResult, e
 		return resource.status(engine.StateChanged, "path exists but is not a directory"), nil
 	}
 
-	result, err := resource.runner.Run(ctx, "git", "-C", resource.path, "rev-parse", "--is-inside-work-tree")
-	if err != nil || strings.TrimSpace(result.Stdout) != "true" {
+	result, err := resource.runner.Run(ctx, "git", "-C", resource.path, "rev-parse", "--show-toplevel")
+	if err != nil || result.Stdout == "" {
 		return resource.status(engine.StateChanged, "path exists but is not a Git repository"), nil
+	}
+	rootInfo, err := os.Stat(strings.TrimSuffix(result.Stdout, "\n"))
+	if err != nil {
+		return resource.status(engine.StateFailed, "could not inspect repository root"), err
+	}
+	if !os.SameFile(info, rootInfo) {
+		return resource.status(engine.StateChanged, "path is inside a Git repository but is not its root"), nil
 	}
 
 	result, err = resource.runner.Run(ctx, "git", "-C", resource.path, "remote", "get-url", "origin")
